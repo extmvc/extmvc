@@ -1,0 +1,23 @@
+!!! Strict
+%html
+  %head
+    %meta{'http-equiv' => 'Content-Type', :content => 'text/html'}
+    = stylesheet_link_tag 'ext-all', 'admin', :cache => 'admin_stylesheets'
+    %title Ad Funded Content Admin Section
+    = javascript_include_tag :ext, :ext_extensions, :ext_grid_filter, 'admin', :initializers, :controllers, :models, :views, :helpers, :cache => 'admin_mvc'
+    = yield :head
+  %body
+    #header
+      %h1 Ad Funded Content
+      %p= current_user.email
+    #menu
+      %ul
+        %li= link_to 'Dashboard',                      '#', :id => 'Dashboard_Index'
+        %li= link_to 'Videos',         '#', :id => 'Video_Index'
+        %li.not_implemented= link_to 'Advertisements', '#', :id => 'Advertisement_Index'
+        %li= link_to 'Feedback',                       '#', :id => 'Feedback_Index'
+        %li= link_to 'Static Pages',                   '#', :id => 'Page_Index'
+        %li= link_to 'Categories',                     '#', :id => 'Category_Index'
+        %li= link_to 'Suppliers',                      '#', :id => 'Supplier_Index'
+        %li= link_to 'Users',                          '#', :id => 'User_Index'
+    = yield

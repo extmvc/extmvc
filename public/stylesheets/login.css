@@ -1,0 +1,44 @@
+body {
+  background-color: #c3d2e5;
+}
+
+#header {
+  background: #DFE8F6 url(/images/background_admin_header.gif) repeat-x;
+  height: 50px;
+}
+
+#header h1 {
+  font-size: 29px;
+  color: #3a649e;
+  font-family: arial;
+  font-weight: normal;
+  padding: 6px 0 0 15px;
+}
+
+form.login {
+  margin: 50px auto;
+  width: 207px; 
+  height: 121px;
+  padding: 35px 20px 25px 20px;
+  background: url(/images/background_login_box.gif) no-repeat;
+}
+
+form.login label {
+  display: block;
+  font-size: 12px;
+  font-family: verdana;
+  padding-bottom: 2px;
+}
+
+form.login .loginRow input {
+  width: 195px;
+  margin-bottom: 12px;
+}
+
+form.login .submitRow {
+  text-align: center;
+}
+
+form.login .submitRow input {
+  padding: 1px 15px;
+}
