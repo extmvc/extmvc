@@ -16,7 +16,7 @@ class ExtMvcGenerator < Rails::Generator::Base
       m.directory("config/initializers")
       
       # copy over key rails files
-      m.file("public/initializers/javascript_symbols.rb", "public/initializers/javascript_symbols.rb") #asset tag expansions
+      m.file("config/initializers/javascript_symbols.rb", "config/initializers/javascript_symbols.rb") #asset tag expansions
       m.file("controllers/admin_controller.rb", "app/controllers/admin_controller.rb")
       m.file("views/layouts/admin.html.haml", "app/views/layouts/admin.html.haml")
       
