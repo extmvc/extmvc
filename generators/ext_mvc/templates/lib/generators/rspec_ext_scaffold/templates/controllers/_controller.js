@@ -1,0 +1,2 @@
+var <%= controller_class_name %>Controller = {model_name: '<%= file_name %>', human_name: '<%= class_name %>', class_name: '<%= class_name %>'};
+Ext.apply(<%= controller_class_name %>Controller, ApplicationController);
