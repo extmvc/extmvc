@@ -1,6 +1,6 @@
 var <%= class_name %>Record = Ext.data.Record.create([
-  { name: 'id',  mapping: '<%= file_name %>.id', type: 'int'},
-<%= field_collection.fields.collect {|f| "  { name: '#{f.field_name}', mapping: '#{file_name}.#{f.field_name}', type: 'string'}"}.join(",\n") %>
+  { name: 'id', type: 'int'},
+<%= field_collection.fields.collect {|f| "  { name: '#{f.field_name}', type: 'string'}"}.join(",\n") %>
 ]);
 
 var <%= file_name %>Reader = new Ext.data.JsonReader({root: '<%= table_name %>',totalProperty: 'results'}, <%= class_name %>Record);
