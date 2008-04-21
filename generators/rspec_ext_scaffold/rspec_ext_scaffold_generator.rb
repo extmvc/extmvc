@@ -53,6 +53,8 @@ class RspecExtScaffoldGenerator < Rails::Generator::NamedBase
       m.directory('spec/controllers/admin')
       m.directory('spec/models')
       
+      m.file("controllers/admin/crud_controller.rb", "controllers/admin/crud_controller.rb")
+            
       #views
       scaffold_views.each do |view|
         m.template("views/#{view}.js", "#{js_dir}/views/#{table_name}/#{view}.js")
