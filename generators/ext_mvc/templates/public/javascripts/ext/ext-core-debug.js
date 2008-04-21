@@ -1,5 +1,5 @@
 /*
- * Ext JS Library 2.0.2
+ * Ext JS Library 2.1
  * Copyright(c) 2006-2008, Ext JS, LLC.
  * licensing@extjs.com
  * 
@@ -11,9 +11,8 @@ Ext.DomHelper = function(){
     var tempTableEl = null;
     var emptyTags = /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i;
     var tableRe = /^table|tbody|tr|td$/i;
-    
-    
-    var createHtml = function(o){
+
+        var createHtml = function(o){
         if(typeof o == 'string'){
             return o;
         }
@@ -71,21 +70,16 @@ Ext.DomHelper = function(){
         return b;
     };
 
-    
-    
+        
     var createDom = function(o, parentNode){
         var el;
-        if (Ext.isArray(o)) {                       
-            el = document.createDocumentFragment(); 
-            for(var i = 0, l = o.length; i < l; i++) {
+        if (Ext.isArray(o)) {                                   el = document.createDocumentFragment();             for(var i = 0, l = o.length; i < l; i++) {
                 createDom(o[i], el);
             }
-        } else if (typeof o == "string)") {         
-            el = document.createTextNode(o);
+        } else if (typeof o == "string") {                     el = document.createTextNode(o);
         } else {
             el = document.createElement(o.tag||'div');
-            var useSet = !!el.setAttribute; 
-            for(var attr in o){
+            var useSet = !!el.setAttribute;             for(var attr in o){
                 if(attr == "tag" || attr == "children" || attr == "cn" || attr == "html" || attr == "style" || typeof o[attr] == "function") continue;
                 if(attr=="cls"){
                     el.className = o["cls"];
@@ -117,8 +111,7 @@ Ext.DomHelper = function(){
         return el;
     };
 
-    
-    var ts = '<table>',
+        var ts = '<table>',
         te = '</table>',
         tbs = ts+'<tbody>',
         tbe = '</tbody>'+te,
@@ -133,8 +126,7 @@ Ext.DomHelper = function(){
         var node;
         var before = null;
         if(tag == 'td'){
-            if(where == 'afterbegin' || where == 'beforeend'){ 
-                return;
+            if(where == 'afterbegin' || where == 'beforeend'){                 return;
             }
             if(where == 'beforebegin'){
                 before = el;
@@ -154,8 +146,7 @@ Ext.DomHelper = function(){
                 before = el.nextSibling;
                 el = el.parentNode;
                 node = ieTable(3, tbs, html, tbe);
-            } else{ 
-                if(where == 'afterbegin'){
+            } else{                 if(where == 'afterbegin'){
                     before = el.firstChild;
                 }
                 node = ieTable(4, trs, html, tre);
@@ -175,9 +166,7 @@ Ext.DomHelper = function(){
                 }
                 node = ieTable(3, tbs, html, tbe);
             }
-        } else{ 
-            if(where == 'beforebegin' || where == 'afterend'){ 
-                return;
+        } else{             if(where == 'beforebegin' || where == 'afterend'){                 return;
             }
             if(where == 'afterbegin'){
                 before = el.firstChild;
@@ -296,8 +285,7 @@ Ext.DomHelper = function(){
         return this.doInsert(el, o, returnElement, "afterBegin", "firstChild");
     },
 
-    
-    doInsert : function(el, o, returnElement, pos, sibling){
+        doInsert : function(el, o, returnElement, pos, sibling){
         el = Ext.getDom(el);
         var newNode;
         if(this.useDom){
@@ -358,7 +346,7 @@ Ext.Template = function(html){
     
     this.html = html;
     if(this.compiled){
-        this.compile();   
+        this.compile();
     }
 };
 Ext.Template.prototype = {
@@ -375,10 +363,7 @@ Ext.Template.prototype = {
                     return tpl.call(format.substr(5), values[name], values);
                 }else{
                     if(args){
-                        
-                        
-                        
-                        var re = /^\s*['"](.*)["']\s*$/;
+                                                                                                var re = /^\s*['"](.*)["']\s*$/;
                         args = args.split(',');
                         for(var i = 0, len = args.length; i < len; i++){
                             args[i] = args[i].replace(re, "$1");
@@ -395,7 +380,7 @@ Ext.Template.prototype = {
         };
         return this.html.replace(this.re, fn);
     },
-    
+
     
     set : function(html, compile){
         this.html = html;
@@ -405,13 +390,13 @@ Ext.Template.prototype = {
         }
         return this;
     },
-    
+
     
     disableFormats : false,
-    
+
     
     re : /\{([\w-]+)(?:\:([\w\.]*)(?:\((.*?)?\))?)?\}/g,
-    
+
     
     compile : function(){
         var fm = Ext.util.Format;
@@ -432,8 +417,7 @@ Ext.Template.prototype = {
             return "'"+ sep + format + "values['" + name + "']" + args + ")"+sep+"'";
         };
         var body;
-        
-        if(Ext.isGecko){
+                if(Ext.isGecko){
             body = "this.compiled = function(values){ return '" +
                    this.html.replace(/\\/g, '\\\\').replace(/(\r\n|\n)/g, '\\n').replace(/'/g, "\\'").replace(this.re, fn) +
                     "';};";
@@ -446,12 +430,11 @@ Ext.Template.prototype = {
         eval(body);
         return this;
     },
-    
-    
-    call : function(fnName, value, allValues){
+
+        call : function(fnName, value, allValues){
         return this[fnName](value, allValues);
     },
-    
+
     
     insertFirst: function(el, values, returnElement){
         return this.doInsert('afterBegin', el, values, returnElement);
@@ -466,7 +449,7 @@ Ext.Template.prototype = {
     insertAfter : function(el, values, returnElement){
         return this.doInsert('afterEnd', el, values, returnElement);
     },
-    
+
     
     append : function(el, values, returnElement){
         return this.doInsert('beforeEnd', el, values, returnElement);
@@ -487,7 +470,6 @@ Ext.Template.prototype = {
 };
 
 Ext.Template.prototype.apply = Ext.Template.prototype.applyTemplate;
-
 
 Ext.DomHelper.Template = Ext.Template;
 
@@ -1250,6 +1232,7 @@ Ext.util.Observable.prototype = {
         }
     },
 
+    
     relayEvents : function(o, events){
         var createHandler = function(ename){
             return function(){
@@ -1271,7 +1254,7 @@ Ext.util.Observable.prototype = {
         if(typeof o == 'string'){
             for(var i = 0, a = arguments, v; v = a[i]; i++){
                 if(!this.events[a[i]]){
-                    o[a[i]] = true;
+                    this.events[a[i]] = true;
                 }
             }
         }else{
@@ -2009,8 +1992,7 @@ Ext.EventObject = function(){
 
         
         getTarget : function(selector, maxDepth, returnEl){
-        	var t = Ext.get(this.target);
-            return selector ? t.findParent(selector, maxDepth, returnEl) : (returnEl ? t : this.target);
+            return selector ? Ext.fly(this.target).findParent(selector, maxDepth, returnEl) : (returnEl ? Ext.get(this.target) : this.target);
         },
         
         
@@ -3519,7 +3501,7 @@ El.prototype = {
     },
 
     
-    addClassOnOver : function(className, preventFlicker){
+    addClassOnOver : function(className){
         this.hover(
             function(){
                 Ext.fly(this, '_internal').addClass(className);
@@ -4508,6 +4490,18 @@ Ext.Fx = {
             if(h !== undefined){
                 a.height = {to: this.adjustHeight(h)};
             }
+            if(o.left !== undefined){
+                a.left = {to: o.left};
+            }
+            if(o.top !== undefined){
+                a.top = {to: o.top};
+            }
+            if(o.right !== undefined){
+                a.right = {to: o.right};
+            }
+            if(o.bottom !== undefined){
+                a.bottom = {to: o.bottom};
+            }
             if(x !== undefined || y !== undefined){
                 a.points = {to: [
                     x !== undefined ? x : this.getX(),
@@ -5099,14 +5093,13 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
                 url += (url.indexOf('?') != -1 ? '&' : '?') + '_dc=' + (new Date().getTime());
             }
 
-            if(typeof o.autoAbort == 'boolean'){ 
-                if(o.autoAbort){
+            if(typeof o.autoAbort == 'boolean'){                 if(o.autoAbort){
                     this.abort();
                 }
             }else if(this.autoAbort !== false){
                 this.abort();
             }
-            if((method == 'GET' && p) || o.xmlData || o.jsonData){
+            if((method == 'GET' || o.xmlData || o.jsonData) && p){
                 url += (url.indexOf('?') != -1 ? '&' : '?') + p;
                 p = '';
             }
@@ -5134,8 +5127,7 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
         }
     },
 
-    
-    handleResponse : function(response){
+        handleResponse : function(response){
         this.transId = false;
         var options = response.argument.options;
         response.argument = options ? options.argument : null;
@@ -5144,8 +5136,7 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
         Ext.callback(options.callback, options.scope, [options, true, response]);
     },
 
-    
-    handleFailure : function(response, e){
+        handleFailure : function(response, e){
         this.transId = false;
         var options = response.argument.options;
         response.argument = options ? options.argument : null;
@@ -5154,8 +5145,7 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
         Ext.callback(options.callback, options.scope, [options, false, response]);
     },
 
-    
-    doFormUpload : function(o, ps, url){
+        doFormUpload : function(o, ps, url){
         var id = Ext.id();
         var frame = document.createElement('iframe');
         frame.id = id;
@@ -5179,8 +5169,7 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
         }
 
         var hiddens, hd;
-        if(ps){ 
-            hiddens = [];
+        if(ps){             hiddens = [];
             ps = Ext.urlDecode(ps, false);
             for(var k in ps){
                 if(ps.hasOwnProperty(k)){
@@ -5195,15 +5184,13 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
         }
 
         function cb(){
-            var r = {  
-                responseText : '',
+            var r = {                  responseText : '',
                 responseXML : null
             };
 
             r.argument = o ? o.argument : null;
 
-            try { 
-                var doc;
+            try {                 var doc;
                 if(Ext.isIE){
                     doc = frame.contentWindow.document;
                 }else {
@@ -5219,8 +5206,7 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
                 }
             }
             catch(e) {
-                
-            }
+                            }
 
             Ext.EventManager.removeListener(frame, 'load', cb, this);
 
@@ -5235,8 +5221,7 @@ Ext.extend(Ext.data.Connection, Ext.util.Observable, {
         Ext.EventManager.on(frame, 'load', cb, this);
         form.submit();
 
-        if(hiddens){ 
-            for(var i = 0, len = hiddens.length; i < len; i++){
+        if(hiddens){             for(var i = 0, len = hiddens.length; i < len; i++){
                 Ext.removeNode(hiddens[i]);
             }
         }
@@ -5299,15 +5284,10 @@ Ext.Updater = function(el, forceNew){
     this.showLoadIndicator = d.showLoadIndicator;
     
     this.timeout = d.timeout;
-
     
     this.loadScripts = d.loadScripts;
-
     
     this.transaction = null;
-
-    
-    this.autoRefreshProcId = null;
     
     this.refreshDelegate = this.refresh.createDelegate(this);
     
@@ -5328,33 +5308,29 @@ Ext.extend(Ext.Updater, Ext.util.Observable, {
         return this.el;
     },
     
+    
     update : function(url, params, callback, discardUrl){
         if(this.fireEvent("beforeupdate", this.el, url, params) !== false){
-            var method = this.method, cfg, callerScope;
+            var cfg, callerScope;
             if(typeof url == "object"){ 
                 cfg = url;
                 url = cfg.url;
                 params = params || cfg.params;
                 callback = callback || cfg.callback;
                 discardUrl = discardUrl || cfg.discardUrl;
-	            callerScope = cfg.scope;
-                if(typeof cfg.method != "undefined"){method = cfg.method;};
+                callerScope = cfg.scope;
                 if(typeof cfg.nocache != "undefined"){this.disableCaching = cfg.nocache;};
                 if(typeof cfg.text != "undefined"){this.indicatorText = '<div class="loading-indicator">'+cfg.text+"</div>";};
                 if(typeof cfg.scripts != "undefined"){this.loadScripts = cfg.scripts;};
                 if(typeof cfg.timeout != "undefined"){this.timeout = cfg.timeout;};
             }
             this.showLoading();
+
             if(!discardUrl){
                 this.defaultUrl = url;
             }
             if(typeof url == "function"){
                 url = url.call(this);
-            }
-
-            method = method || (params ? "POST" : "GET");
-            if(method == "GET"){
-                url = this.prepareUrl(url);
             }
 
             var o = Ext.apply(cfg ||{}, {
@@ -5365,13 +5341,14 @@ Ext.extend(Ext.Updater, Ext.util.Observable, {
                 scope: this,
                 callback: undefined,
                 timeout: (this.timeout*1000),
+                disableCaching: this.disableCaching,
                 argument: {
-                	"options": cfg,
-                	"url": url,
-                	"form": null,
-                	"callback": callback,
-                	"scope": callerScope || window,
-                	"params": params
+                    "options": cfg,
+                    "url": url,
+                    "form": null,
+                    "callback": callback,
+                    "scope": callerScope || window,
+                    "params": params
                 }
             });
 
@@ -5394,10 +5371,10 @@ Ext.extend(Ext.Updater, Ext.util.Observable, {
                 scope: this,
                 timeout: (this.timeout*1000),
                 argument: {
-                	"url": url,
-                	"form": form,
-                	"callback": callback,
-                	"reset": reset
+                    "url": url,
+                    "form": form,
+                    "callback": callback,
+                    "reset": reset
                 }
             });
             this.showLoading.defer(1, this);
@@ -5431,27 +5408,16 @@ Ext.extend(Ext.Updater, Ext.util.Observable, {
         }
     },
 
+    
     isAutoRefreshing : function(){
        return this.autoRefreshProcId ? true : false;
     },
+    
     
     showLoading : function(){
         if(this.showLoadIndicator){
             this.el.update(this.indicatorText);
         }
-    },
-
-    
-    prepareUrl : function(url){
-        if(this.disableCaching){
-            var append = "_dc=" + (new Date().getTime());
-            if(url.indexOf("?") !== -1){
-                url += "&" + append;
-            }else{
-                url += "?" + append;
-            }
-        }
-        return url;
     },
 
     
@@ -5471,6 +5437,7 @@ Ext.extend(Ext.Updater, Ext.util.Observable, {
         }
     },
 
+    
     updateComplete : function(response){
         this.fireEvent("update", this.el, response);
         if(typeof response.argument.callback == "function"){
@@ -5492,6 +5459,7 @@ Ext.extend(Ext.Updater, Ext.util.Observable, {
         this.renderer = renderer;
     },
 
+    
     getRenderer : function(){
        return this.renderer;
     },
@@ -5521,10 +5489,8 @@ Ext.extend(Ext.Updater, Ext.util.Observable, {
    Ext.Updater.defaults = {
        
          timeout : 30,
-
          
         loadScripts : false,
-
         
         sslBlankUrl : (Ext.SSL_SECURE_URL || "javascript:false"),
         
@@ -5541,8 +5507,6 @@ Ext.Updater.updateElement = function(el, url, params, options){
     Ext.apply(um, options);
     um.update(url, params, options ? options.callback : null);
 };
-
-Ext.Updater.update = Ext.Updater.updateElement;
 
 Ext.Updater.BasicRenderer = function(){};
 

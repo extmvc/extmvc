@@ -11,19 +11,21 @@ def js_files_in_directory dirname
 end
 
 view_directories = Dir.entries("#{Rails.root}/public/javascripts/views").reject {|v| v =~ /\./}
-view_files = js_files_in_directory('views')
+view_files  = js_files_in_directory('views')
 view_files += view_directories.collect {|v| js_files_in_directory("views/#{v}")}.flatten
 
-model_files = ['models/model'] + js_files_in_directory('models').reject {|m| m =='models/model'}
-controller_files = js_files_in_directory('controllers')
-helper_files = js_files_in_directory('helpers')
+model_files       = ['models/model'] + js_files_in_directory('models').reject {|m| m =='models/model'}
+controller_files  = ['controllers/application_controller.js', 'controllers/crud_controller.js'] + js_files_in_directory('controllers').reject {|m| m == 'controllers/application_controller.js' || m == 'controllers/crud_controller.js'}
+helper_files      = js_files_in_directory('helpers')
 initializer_files = js_files_in_directory('initializers')
+lib_files         = js_files_in_directory('lib')
 
-ActionView::Helpers::AssetTagHelper.register_javascript_expansion :models => model_files
-ActionView::Helpers::AssetTagHelper.register_javascript_expansion :views => view_files
-ActionView::Helpers::AssetTagHelper.register_javascript_expansion :controllers => controller_files
-ActionView::Helpers::AssetTagHelper.register_javascript_expansion :helpers => helper_files
+ActionView::Helpers::AssetTagHelper.register_javascript_expansion :models       => model_files
+ActionView::Helpers::AssetTagHelper.register_javascript_expansion :views        => view_files
+ActionView::Helpers::AssetTagHelper.register_javascript_expansion :controllers  => controller_files
+ActionView::Helpers::AssetTagHelper.register_javascript_expansion :helpers      => helper_files
 ActionView::Helpers::AssetTagHelper.register_javascript_expansion :initializers => initializer_files
+ActionView::Helpers::AssetTagHelper.register_javascript_expansion :libs         => lib_files
 
 # EXT EXPANSIONS
 

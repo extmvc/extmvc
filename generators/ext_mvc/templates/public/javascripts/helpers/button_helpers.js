@@ -12,7 +12,7 @@ function defaultAddButton(options) {
   });
   
   Ext.apply(this, {}, {
-    tooltip: 'Shows new ' + this.model_name.titleize() + ' form (shortcut key: a)'
+    tooltip: 'Shows new ' + this.model_name.human_singular_name + ' form (shortcut key: a)'
   });
   
   return defaultButton(this);
@@ -28,7 +28,7 @@ function defaultEditButton(options) {
   });
   
   Ext.apply(this, {}, {
-    tooltip: 'Edits all selected ' + this.model_name.titleized_plural_name() + ' (shortcut key: e)'
+    tooltip: 'Edits all selected ' + this.model_name.human_plural_name + ' (shortcut key: e)'
   });
   
   return defaultButton(this);
@@ -44,7 +44,7 @@ function defaultDeleteButton(options) {
   });
   
   Ext.apply(this, {}, {
-    tooltip: 'Deletes all selected ' + this.model_name.titleized_plural_name() + ' (shortcut key: Delete)'
+    tooltip: 'Deletes all selected ' + this.model_name.human_plural_name + ' (shortcut key: Delete)'
   });
   
   return defaultButton(this);

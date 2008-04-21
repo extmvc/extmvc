@@ -16,8 +16,8 @@ function defaultPagingToolbar(store, config) {
   });
   
   Ext.apply(this.options, {}, {
-    displayMsg: 'Displaying ' + this.model_name.titleized_plural_name() + ' {0} - {1} of {2}',
-    emptyMsg: 'No ' + this.model_name.titleized_plural_name() + ' to display'
+    displayMsg: 'Displaying ' + this.model_name.human_plural_name + ' {0} - {1} of {2}',
+    emptyMsg: 'No ' + this.model_name.human_plural_name + ' to display'
   });
   
   return new Ext.PagingToolbar(options);

@@ -3,27 +3,31 @@ function defaultNewForm(config) {
     
   Ext.apply(options, config, {
     items: null,
-    model_name: Model,
+    model: Model,
     frame: true,
     labelAlign: 'left',
+    autoScroll: true,
     iconCls: 'form_new',
     success: function() {}
   });
   
   Ext.apply(options, {}, {
-    url: '/admin/' + options.model_name.plural_name,
-    title: 'New ' + options.model_name.human_name,
-    cancelAction: function() {ApplicationController.displayPanelFromModelAndKeyword(options.model_name.human_name, 'Index');},
+    url: '/admin/' + options.model.url_name,
+    title: 'New ' + options.model.human_singular_name,
+    cancelAction: function() {
+      controller = application.getControllerByName(options.model.controller_name);
+      controller.viewIndex();
+    },
     saveAction: function() {
       form.form.submit({
-        url: '/admin/' + options.model_name.plural_name + '.ext_json', 
+        url: '/admin/' + options.model.url_name + '.ext_json', 
         waitMsg: 'Saving Data...',
-        failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model_name.human_name + ', please see any fields with red icons')},
+        failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons')},
         success: function(formElement, action) {
           if (options.success) {
             options.success.call(this, action.result, form);
           } else {
-            Ext.Msg.alert(options.model_name.human_name + ' Saved', 'The ' + options.model_name.human_name + ' has been saved successfully')
+            Ext.Msg.alert(options.model.human_singular_name + ' Saved', 'The ' + options.model.human_singular_name + ' has been saved successfully')
           };
         }
       });
@@ -36,7 +40,7 @@ function defaultNewForm(config) {
     text: 'Save',
     iconCls: 'save',
     handler: options.saveAction,
-    tooltip: 'Saves this ' + options.model_name.human_name + ' (keyboard shortcut: CTRL + s)'
+    tooltip: 'Saves this ' + options.model.human_singular_name + ' (keyboard shortcut: CTRL + s)'
   }); 
      
   this.form.addButton({
@@ -68,23 +72,24 @@ function defaultEditForm(config) {
   
   Ext.apply(options, config, {
     items: null,
-    model_name: Model,
+    model: Model,
     frame: true,
     iconCls: 'form_edit',
+    autoScroll: true,
     labelAlign: 'left',
     success: function() {},
     cancelAction: function() {},
     editNext: function() {}
   });
-    
+  
   Ext.apply(options, {}, {
-    title: 'Edit ' + options.model_name.human_name,
+    title: 'Edit ' + options.model.human_singular_name,
     cancelAction: function() {options.editNext(options.ids);},
     saveAction: function() {      
       form.form.submit({
         waitMsg: 'Saving Data...',
-        url: '/admin/' + options.model_name.plural_name + '/' + options.ids[0] + '.ext_json',
-        failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model_name.human_name + ', please see any fields with red icons')},
+        url: '/admin/' + options.model.url_name + '/' + options.ids[0] + '.ext_json',
+        failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons')},
         success: function(formElement, action) {
           if (options.success) {options.success.call(this, action.result, form);};
           options.editNext(options.ids);
@@ -93,10 +98,12 @@ function defaultEditForm(config) {
     },
     editNext: function(ids) {
       ids.reverse();ids.pop();ids.reverse();
+            
+      controller = application.getControllerByName(this.model.controller_name);
       if (ids instanceof Array && ids.length > 0) {
-        ApplicationController.displayPanelFromModelAndKeyword(options.model_name.human_name, 'Edit', {ids: ids});
+        controller.viewEdit(ids);
       } else {
-        ApplicationController.displayPanelFromModelAndKeyword(options.model_name.human_name, 'Index');
+        controller.viewIndex();
       }        
     }
   });
@@ -107,7 +114,7 @@ function defaultEditForm(config) {
     text: 'Save',
     iconCls: 'save',
     handler: options.saveAction,
-    tooltip: 'Saves this ' + options.model_name.human_name + ' (keyboard shortcut: CTRL + s)'
+    tooltip: 'Saves this ' + options.model.human_singular_name + ' (keyboard shortcut: CTRL + s)'
   });
   
   this.form.addButton({

@@ -1,12 +1,31 @@
 Ext.namespace('Model');
 
 var Model = {
+  
+  init : function(config) {
+    
+    // guess at best string names for the variations on the model name.  e.g. for a model with
+    // model_name = 'advert_group':
+    // underscore_name = 'advert_group'
+    // url_name = 'advert_groups'
+    // human_singular_name = 'Advert Group'
+    // human_plural_name = 'Advert Groups'
+    Ext.apply(this, config, {
+      underscore_name     : this.model_name,
+      url_name            : this.urlize_name(this.model_name),
+      human_singular_name : this.singularize_human_name(this.model_name),
+      human_plural_name   : this.pluralize_human_name(this.model_name),
+      controller_name     : this.controller_name(this.model_name),
+      class_name          : this.classify_name(this.model_name)
+    });
+  },
+  
   singleUrl : function(id) {
-    return '/admin/' + (this.plural_name || (this.model_name + 's')) + '/' + id + '.ext_json';
+    return '/admin/' + this.url_name + '/' + id + '.ext_json';
   },
   
   collectionUrl : function() {
-    return '/admin/paginate_' + (this.plural_name || (this.model_name + 's')) + '.ext_json';
+    return '/admin/paginate_' + this.url_name + '.ext_json';
   },
   
   singleStore : function(id) {
@@ -39,14 +58,30 @@ var Model = {
   },
   
   readerName : function() {
-    return eval(this.model_name + 'Reader');
+    return eval(this.class_name + 'Reader');
   },
   
-  titleize : function() {
-    return this.model_name.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+  singularize_human_name : function(name) {
+    return name.replace("_", " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
   },
   
-  titleized_plural_name : function() {
-    return this.plural_name.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+  pluralize_human_name : function(name) {
+    return (name + 's').replace("_", " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+  },
+  
+  underscore_name : function(name) {
+    return name.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+  },
+  
+  urlize_name : function(name) {
+    return name + 's';
+  },
+  
+  controller_name : function(name) {
+    return this.pluralize_human_name(name).replace(" ", "")  + "Controller";
+  },
+  
+  classify_name : function(name) {
+    return this.singularize_human_name(name).replace(" ", "");
   }
 };
