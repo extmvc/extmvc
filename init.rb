@@ -3,9 +3,11 @@ require 'ext_scaffold_core_extensions/action_controller/base'
 require 'ext_scaffold_core_extensions/array'
 require 'ext_tree_extensions/active_record/base'
 require 'ext_tree_extensions/action_controller/base'
+require 'ext_datetime_extensions/active_record/base'
 
 ActiveRecord::Base.send(:include, ExtScaffoldCoreExtensions::ActiveRecord::Base)
 ActiveRecord::Base.send(:include, ExtTreeExtensions::ActiveRecord::Base)
+ActiveRecord::Base.send(:include, ExtDatetimeExtensions::ActiveRecord::Base)
 ActionController::Base.send(:include, ExtScaffoldCoreExtensions::ActionController::Base)
 ActionController::Base.send(:include, ExtTreeExtensions::ActionController::Base)
 Array.send(:include, ExtScaffoldCoreExtensions::Array)
