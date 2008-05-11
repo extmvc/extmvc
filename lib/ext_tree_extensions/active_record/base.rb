@@ -21,7 +21,7 @@ module ExtTreeExtensions
           
           if treenode.children.empty?
             # node[:expanded] = false
-            node[:leaf] = true
+            # node[:leaf] = true
           else
             node[:expanded] = true
             node[:children] = treenode.children.collect {|c| build_tree(c, opts)}
