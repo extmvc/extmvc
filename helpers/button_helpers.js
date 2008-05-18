@@ -4,7 +4,7 @@ function defaultButton(options) {
 
 function defaultAddButton(options) {
   Ext.apply(this, options, {
-    model_name: Model,
+    model: Model,
     iconCls: 'add',
     text: 'Add',
     disabled: false,
@@ -12,7 +12,7 @@ function defaultAddButton(options) {
   });
   
   Ext.apply(this, {}, {
-    tooltip: 'Shows new ' + this.model_name.human_singular_name + ' form (shortcut key: a)'
+    tooltip: 'Shows new ' + this.model.human_singular_name + ' form (shortcut key: a)'
   });
   
   return defaultButton(this);
@@ -20,7 +20,7 @@ function defaultAddButton(options) {
 
 function defaultEditButton(options) {
   Ext.apply(this, options, {
-    model_name: Model,
+    model: Model,
     iconCls: 'edit',
     text: 'Edit',
     disabled: true,
@@ -28,7 +28,7 @@ function defaultEditButton(options) {
   });
   
   Ext.apply(this, {}, {
-    tooltip: 'Edits all selected ' + this.model_name.human_plural_name + ' (shortcut key: e)'
+    tooltip: 'Edits all selected ' + this.model.human_plural_name + ' (shortcut key: e)'
   });
   
   return defaultButton(this);
@@ -36,7 +36,7 @@ function defaultEditButton(options) {
 
 function defaultDeleteButton(options) {
   Ext.apply(this, options, {
-    model_name: Model,
+    model: Model,
     iconCls: 'delete',
     text: 'Delete',
     disabled: true,
@@ -44,7 +44,7 @@ function defaultDeleteButton(options) {
   });
   
   Ext.apply(this, {}, {
-    tooltip: 'Deletes all selected ' + this.model_name.human_plural_name + ' (shortcut key: Delete)'
+    tooltip: 'Deletes all selected ' + this.model.human_plural_name + ' (shortcut key: Delete)'
   });
   
   return defaultButton(this);

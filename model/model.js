@@ -25,7 +25,7 @@ var Model = {
   },
   
   collectionUrl : function() {
-    return '/admin/paginate_' + this.url_name + '.ext_json';
+    return '/admin/' + this.url_name + '.ext_json';
   },
   
   singleStore : function(id) {
@@ -37,12 +37,41 @@ var Model = {
   
   collectionStore : function(config) {
     options = Ext.apply({}, config, {
-      url: this.collectionUrl(),
+      proxy: new Ext.data.HttpProxy({
+        url: this.collectionUrl(),
+        method: 'get',
+        params: {start: 0, limit: 25}
+      }),
       reader: this.readerName(),
       remoteSort: true
     });
     
-    return new Ext.data.Store(options);
+    store = new Ext.data.Store(options);
+    
+    // override the default store.load function to load data through GET rather than POST
+    store.load = function(options){
+      options = options || {};
+      if(this.fireEvent("beforeload", this, options) !== false){
+          this.storeOptions(options);
+          
+          var p = Ext.apply(options.params || {}, this.baseParams);
+          if(this.sortInfo && this.remoteSort){
+              var pn = this.paramNames;
+              p[pn["sort"]] = this.sortInfo.field;
+              p[pn["dir"]] = this.sortInfo.direction;
+          }
+          
+          // set the proxy's url with the correct parameters
+          this.proxy.conn.url = this.proxy.conn.url.split("?")[0] + "?" + Ext.urlEncode(p);
+          
+          this.proxy.load(p, this.reader, this.loadRecords, this, options);
+          return true;
+      } else {
+        return false;
+      }
+    };
+    
+    return store;
   },
   
   loadFormWithId : function(id, form, storeConfig) {
