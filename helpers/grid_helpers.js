@@ -6,16 +6,13 @@ function defaultPagingGrid(config) {
     model: Model,
     viewConfig: {forceFit: true},
     tbar: null,
+    autoLoadStore: true,
     headings: [],
     clicksToEdit:1,
-    loadMask: true,
-    newAction: function() {},
-    editAction: function() {},
-    deleteAction: function() {},
-    toggleEditableAction: function() {}
+    loadMask: true
   });
   
-  Ext.apply(options, {}, {
+  Ext.applyIf(options, {
     title: options.model.human_plural_name,
     iconCls: 'grid_list',
     id: options.model.url_name + '_index',
@@ -108,7 +105,9 @@ function defaultPagingGrid(config) {
     var start = 0;
   }
   
-  this.grid.store.load({params: {start: start, limit: 25}});
+  if (options.autoLoadStore) {
+    this.grid.store.load({params: {start: start, limit: 25}});    
+  };
   
   return this.grid;
 }
@@ -121,32 +120,40 @@ function defaultPagingGridWithTopToolbar(config) {
     editable: false
   });
   
-  options.toggleEditableAction = function(opts) {
-    opts.editable = !opts.editable;
-    controller = application.getControllerByName(this.model.controller_name);
-    controller.viewIndex(opts)
-  }
-  
-  options.newAction = function() {
-    controller = application.getControllerByName(this.model.controller_name);
-    controller.viewNew();
-  };
-  
-  options.editAction = function() {
-    var ids = new Array();
-    selections = grid.getSelectionModel().getSelections();
-    for (var i=0; i < selections.length; i++) {
-      ids.push(selections[i].data.id);
-    };
+  Ext.applyIf(options, {
+    toggleEditableAction : function(opts) {
+      opts.editable = !opts.editable;
+      controller = application.getControllerByName(this.model.controller_name);
+      controller.viewIndex(opts);
+    },
     
-    controller = application.getControllerByName(this.model.controller_name);
-    controller.viewEdit(ids);
-  }
-  
-  options.deleteAction = function() {
-    controller = application.getControllerByName(this.model.controller_name);
-    controller.deleteSelected(grid);
-  }
+    newAction : function() {
+      controller = application.getControllerByName(this.model.controller_name);
+      
+      // if (options.model.parent_model) {
+      //   foreign_key_name = options.model.parent_model.foreign_key_name;
+      //   controller.viewNew({foreign_key_name : config.ids[0]});
+      // } else {
+        controller.viewNew();
+      // };
+    },
+    
+    editAction : function() {
+      var records = new Array();
+      selections = grid.getSelectionModel().getSelections();
+      for (var i=0; i < selections.length; i++) {
+        records.push(selections[i]);
+      };
+      
+      controller = application.getControllerByName(this.model.controller_name);
+      controller.viewEdit(records);
+    },
+    
+    deleteAction : function() {
+      controller = application.getControllerByName(this.model.controller_name);
+      controller.deleteSelected(grid);
+    }
+  });
   
   newButton    = defaultAddButton   ({model: options.model, handler: options.newAction});
   editButton   = defaultEditButton  ({model: options.model, handler: options.editAction});

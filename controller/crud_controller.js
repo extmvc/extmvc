@@ -33,9 +33,9 @@ Ext.extend(CrudController, ApplicationController, {
     this.showPanel(new this.newPanel(options));
   },
   
-  viewEdit : function(ids) {
-    if (ids.length == 0) {return false;};
-    this.showPanel(new this.editPanel({ids: ids}));
+  viewEdit : function(records, config) {
+    if (records.length == 0) {return false;};
+    this.showPanel(new this.editPanel({records: records}));
   },
   
   nextPage : function(store) {

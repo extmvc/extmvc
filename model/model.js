@@ -16,15 +16,16 @@ var Model = {
       human_singular_name : this.singularize_human_name(this.model_name),
       human_plural_name   : this.pluralize_human_name(this.model_name),
       controller_name     : this.controller_name(this.model_name),
-      class_name          : this.classify_name(this.model_name)
+      class_name          : this.classify_name(this.model_name),
+      foreign_key_name    : this.model_name + "_id"
     });
   },
   
-  singleUrl : function(id) {
-    return '/admin/' + this.url_name + '/' + id + '.ext_json';
+  singleUrl : function(record) {
+    return '/admin/' + this.url_name + '/' + record.data.id + '.ext_json';
   },
   
-  collectionUrl : function() {
+  collectionUrl : function(config) {
     return '/admin/' + this.url_name + '.ext_json';
   },
   
@@ -38,7 +39,7 @@ var Model = {
   collectionStore : function(config) {
     options = Ext.apply({}, config, {
       proxy: new Ext.data.HttpProxy({
-        url: this.collectionUrl(),
+        url: this.collectionUrl(config),
         method: 'get',
         params: {start: 0, limit: 25}
       }),
@@ -86,6 +87,18 @@ var Model = {
     return store;
   },
   
+  loadFormWithRecord : function(rec, form, storeConfig) {
+    var store = this.singleStore(rec);
+    store.on('load', function(s, records, options) {
+      var record = records[0];
+      form.form.loadRecord(record);
+    });
+    
+    store.load(storeConfig);
+    
+    return store;
+  },
+  
   readerName : function() {
     return eval(this.class_name + 'Reader');
   },
@@ -96,10 +109,6 @@ var Model = {
   
   pluralize_human_name : function(name) {
     return (name + 's').replace("_", " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
-  },
-  
-  underscore_name : function(name) {
-    return name.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
   },
   
   urlize_name : function(name) {

@@ -11,16 +11,26 @@ function defaultNewForm(config) {
     bodyStyle: 'position: relative'
   });
   
-  Ext.apply(options, {}, {
-    url: '/admin/' + options.model.url_name,
+  Ext.applyIf(options, {
+    url: options.model.collectionUrl(config),
     title: 'New ' + options.model.human_singular_name,
     cancelAction: function() {
-      controller = application.getControllerByName(options.model.controller_name);
-      controller.viewIndex();
-    },
+      if (model.parent_model) {
+        // show the edit page for this model's parent
+        controller = application.getControllerByName(options.model.parent_model.controller_name);
+        controller.viewEdit([{data: config}]);
+      } else {
+        // show this model's index grid
+        controller = application.getControllerByName(options.model.controller_name);
+        controller.viewIndex();
+      };
+    }
+  });
+  
+  Ext.applyIf(options, {
     saveAction: function() {
       form.form.submit({
-        url: '/admin/' + options.model.url_name + '.ext_json', 
+        url: options.model.collectionUrl(config), 
         waitMsg: 'Saving Data...',
         failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons')},
         success: function(formElement, action) {
@@ -28,8 +38,7 @@ function defaultNewForm(config) {
           if (options.success) {
             options.success.call(this, action.result, form);
           } else {
-            controller = application.getControllerByName(options.model.controller_name);
-            controller.viewIndex();
+            options.cancelAction();
           };
         }
       });
@@ -83,27 +92,46 @@ function defaultEditForm(config) {
   
   Ext.applyIf(options, {
     title: 'Edit ' + options.model.human_singular_name,
-    cancelAction: function() {options.editNext(options.ids);},
+    cancelAction: function() {options.editNext(options.records);},
     saveAction: function() {      
       form.form.submit({
         waitMsg: 'Saving Data...',
-        url: '/admin/' + options.model.url_name + '/' + options.ids[0] + '.ext_json',
+        url: '/admin/' + options.model.url_name + '/' + options.records[0].data.id + '.ext_json',
         failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons')},
         success: function(formElement, action) {
           if (options.success) {options.success.call(this, action.result, form);};
           flash("Your changes have been saved", options.model.human_singular_name + ' successfully updated')
-          options.editNext(options.ids);
+          options.editNext(options.records);
         }
       });
     },
-    editNext: function(ids) {
-      ids.reverse();ids.pop();ids.reverse();
-            
-      controller = application.getControllerByName(this.model.controller_name);
-      if (ids instanceof Array && ids.length > 0) {
-        controller.viewEdit(ids);
+    editNext: function(records) {
+      records.reverse();
+      current_record = records.pop();
+      records.reverse();
+      
+      if (records instanceof Array && records.length > 0) {
+        // edit the next item
+        application.getControllerByName(this.model.controller_name).viewEdit(records);
       } else {
-        controller.viewIndex();
+        if (this.model.parent_model) {
+          // view this model's parent's edit form
+          controller = application.getControllerByName(this.model.parent_model.controller_name);
+          
+          // FIXME: create a fake record.  We're relying on the fact that this record has all of its parents'
+          // IDs in current_record.data.  We just replace the value of current_record.data.id with the value of
+          // its parent's ID and then pass that to the parent edit form to load.  The parent edit form only looks
+          // at the ID field and any of it's own parent IDs when loading, so ignores all of the actual data
+          // insde current_record.data.
+          // Still, this is horrible
+          parent_record = current_record;
+          parent_record.data.id = current_record.data[this.model.parent_model.foreign_key_name];
+          
+          controller.viewEdit([parent_record]);
+        } else {
+          // view this model's index
+          application.getControllerByName(this.model.controller_name).viewIndex();
+        }
       }        
     }
   });
