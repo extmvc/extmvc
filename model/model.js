@@ -1,4 +1,4 @@
-Ext.namespace('Model');
+// Ext.namespace('Model');
 
 var Model = {
   
@@ -57,9 +57,48 @@ var Model = {
           
           var p = Ext.apply(options.params || {}, this.baseParams);
           if(this.sortInfo && this.remoteSort){
-              var pn = this.paramNames;
-              p[pn["sort"]] = this.sortInfo.field;
-              p[pn["dir"]] = this.sortInfo.direction;
+            var pn = this.paramNames;
+            p[pn["sort"]] = this.sortInfo.field;
+            p[pn["dir"]] = this.sortInfo.direction;
+          }
+          
+          // set the proxy's url with the correct parameters
+          this.proxy.conn.url = this.proxy.conn.url.split("?")[0] + "?" + Ext.urlEncode(p);
+          
+          this.proxy.load(p, this.reader, this.loadRecords, this, options);
+          return true;
+      } else {
+        return false;
+      }
+    };
+    
+    return store;
+  },
+  
+  collectionGroupStore : function(config) {
+    options = Ext.apply({}, config, {
+      proxy: new Ext.data.HttpProxy({
+        url: this.collectionUrl(config),
+        method: 'get',
+        params: {start: 0, limit: 25}
+      }),
+      reader: this.readerName(),
+      remoteSort: true
+    });
+    
+    store = new Ext.data.GroupingStore(options);
+    
+    // override the default store.load function to load data through GET rather than POST
+    store.load = function(options){
+      options = options || {};
+      if(this.fireEvent("beforeload", this, options) !== false){
+          this.storeOptions(options);
+          
+          var p = Ext.apply(options.params || {}, this.baseParams);
+          if(this.sortInfo && this.remoteSort){
+            var pn = this.paramNames;
+            p[pn["sort"]] = this.sortInfo.field;
+            p[pn["dir"]]  = this.sortInfo.direction;
           }
           
           // set the proxy's url with the correct parameters
@@ -79,6 +118,7 @@ var Model = {
     var store = this.singleStore(id);
     store.on('load', function(s, records, options) {
       var record = records[0];
+      boo = record;
       form.form.loadRecord(record);
     });
     
@@ -104,11 +144,11 @@ var Model = {
   },
   
   singularize_human_name : function(name) {
-    return name.replace("_", " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+    return name.replace(/_/g, " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
   },
   
   pluralize_human_name : function(name) {
-    return (name + 's').replace("_", " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+    return (name + 's').replace(/_/g, " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
   },
   
   urlize_name : function(name) {
@@ -116,10 +156,10 @@ var Model = {
   },
   
   controller_name : function(name) {
-    return this.pluralize_human_name(name).replace(" ", "")  + "Controller";
+    return this.pluralize_human_name(name).replace(/ /g, "")  + "Controller";
   },
   
   classify_name : function(name) {
-    return this.singularize_human_name(name).replace(" ", "");
+    return this.singularize_human_name(name).replace(/ /g, "");
   }
 };

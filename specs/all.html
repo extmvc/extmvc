@@ -1,0 +1,60 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ko">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+  <title>JSSpec results</title>
+  <link rel="stylesheet" type="text/css" href="JSSpec.css" />
+  <script src="diff_match_patch.js" type="text/javascript"></script>
+  <script src="JSSpec.js" type="text/javascript"></script>
+  <script src="../../ext/adapter/ext/ext-base.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../../ext/ext-all.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../lib/application.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../model/model.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../controller/application_controller.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../controller/crud_controller.js" type="text/javascript" charset="utf-8"></script>
+  
+  
+  <script type="text/javascript">// <![CDATA[
+  // Define a new model and test that the various methods work correctly
+  var AgentPageTemplateRecord = Ext.data.Record.create([{ name: 'id', type: 'int'}]);  
+  var AgentPageTemplateReader = new Ext.data.JsonReader({root: 'agent_page_templates', totalProperty: 'results'}, AgentPageTemplateRecord);
+  
+  var AgentPageTemplate = {model_name : 'agent_page_template'};
+  Ext.apply(AgentPageTemplate, Model);
+  AgentPageTemplate.init();
+  
+  // mock some views
+  AgentPageTemplateIndexPanel = {};
+  AgentPageTemplateEditPanel  = {};
+  AgentPageTemplateNewPanel   = {};
+  
+  // stub out a layout manager
+  LeftMenuLayoutManager = function() {
+    this.initializeMenu = function() {
+      return true;
+    }
+  };
+  
+  application = new Application();
+  
+  // set up a corresponding controller for the model above
+  AgentPageTemplatesController = Ext.extend(CrudController, {
+    constructor: function(config) {
+      AgentPageTemplatesController.superclass.constructor.call(this, {
+        model      : AgentPageTemplate, 
+        indexPanel : AgentPageTemplateIndexPanel,
+        editPanel  : AgentPageTemplateEditPanel,
+        newPanel   : AgentPageTemplateNewPanel
+      });
+    }
+  });
+  
+  controller = new AgentPageTemplatesController();
+
+  // ]]></script>
+  
+  <script src="model.js" type="text/javascript" charset="utf-8"></script>
+  <script src="controller.js" type="text/javascript" charset="utf-8"></script>
+  </head>
+  <body><div style="display:none;"><p>A</p><p>B</p></div></body>
+</html>

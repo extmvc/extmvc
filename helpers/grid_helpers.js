@@ -48,7 +48,7 @@ function defaultPagingGrid(config) {
   this.columnModel.defaultWidth = 160;
 
   options.filters = new Ext.ux.grid.GridFilters({filters: options.headings});
-  options.bbar = defaultPagingToolbar(options.store, {model: options.model.human_singular_name});
+  options.bbar = defaultPagingToolbar(options.store, {model: options.model});
   options.plugins = [options.bbar, options.filters];
   options.cm = this.columnModel;
   
@@ -59,7 +59,7 @@ function defaultPagingGrid(config) {
     this.grid = new Ext.grid.GridPanel(options); 
   };
   
-  options.controller = application.getControllerByName(this.model.controller_name);
+  options.controller = application.getControllerByName(options.model.controller_name);
   
   this.grid.handleKeypress = function(e) {
     if (options.searchField.hasFocus) { return false;};
@@ -123,12 +123,12 @@ function defaultPagingGridWithTopToolbar(config) {
   Ext.applyIf(options, {
     toggleEditableAction : function(opts) {
       opts.editable = !opts.editable;
-      controller = application.getControllerByName(this.model.controller_name);
+      controller = application.getControllerByName(options.model.controller_name);
       controller.viewIndex(opts);
     },
     
     newAction : function() {
-      controller = application.getControllerByName(this.model.controller_name);
+      controller = application.getControllerByName(options.model.controller_name);
       
       // if (options.model.parent_model) {
       //   foreign_key_name = options.model.parent_model.foreign_key_name;
@@ -145,12 +145,12 @@ function defaultPagingGridWithTopToolbar(config) {
         records.push(selections[i]);
       };
       
-      controller = application.getControllerByName(this.model.controller_name);
+      controller = application.getControllerByName(options.model.controller_name);
       controller.viewEdit(records);
     },
     
     deleteAction : function() {
-      controller = application.getControllerByName(this.model.controller_name);
+      controller = application.getControllerByName(options.model.controller_name);
       controller.deleteSelected(grid);
     }
   });

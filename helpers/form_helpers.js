@@ -87,6 +87,7 @@ function defaultEditForm(config) {
     frame: true,
     iconCls: 'form_edit',
     autoScroll: true,
+    bodyStyle: 'position: relative',
     labelAlign: 'left'
   });
   
