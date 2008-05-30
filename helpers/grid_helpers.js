@@ -117,7 +117,9 @@ function defaultPagingGridWithTopToolbar(config) {
   
   Ext.apply(options, config, {
     model: Model,
-    editable: false
+    editable: false,
+    topToolbarButtonsBefore: [],
+    topToolbarButtonsAfter: [],
   });
   
   Ext.applyIf(options, {
@@ -175,9 +177,13 @@ function defaultPagingGridWithTopToolbar(config) {
   });
   
   options.searchField = new Ext.app.SearchField({store: options.store, width:220});
-  options.tbar = new Ext.Toolbar({
-    items: ['Search by Name:', ' ', options.searchField, '-', newButton, '-', editButton, '-', deleteButton, '-', toggleEditableButton]
-  });
+  
+  topToolbarButtons = ['Search by Name:', ' ', options.searchField, '-'];
+  topToolbarButtons = topToolbarButtons.concat(options.topToolbarButtonsBefore);
+  topToolbarButtons = topToolbarButtons.concat([newButton, '-', editButton, '-', deleteButton, '-', toggleEditableButton]);
+  topToolbarButtons = topToolbarButtons.concat(options.topToolbarButtonsAfter);
+    
+  options.tbar = new Ext.Toolbar({ items: topToolbarButtons });
   
   this.grid = defaultPagingGrid(options);
   
