@@ -118,7 +118,6 @@ var Model = {
     var store = this.singleStore(id);
     store.on('load', function(s, records, options) {
       var record = records[0];
-      boo = record;
       form.form.loadRecord(record);
     });
     
