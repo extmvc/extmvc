@@ -32,7 +32,9 @@ function defaultNewForm(config) {
       form.form.submit({
         url: options.model.collectionUrl(config), 
         waitMsg: 'Saving Data...',
-        failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons')},
+        failure: function() {
+          Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons');
+        },
         success: function(formElement, action) {
           flash('The ' + options.model.human_singular_name + ' was created successfully', options.model.human_singular_name + ' Created');
           if (options.success) {
@@ -76,7 +78,7 @@ function defaultNewForm(config) {
   };
   
   return this.form;
-}
+};
 
 function defaultEditForm(config) {
   var options = {};
@@ -98,10 +100,14 @@ function defaultEditForm(config) {
       form.form.submit({
         waitMsg: 'Saving Data...',
         url: '/admin/' + options.model.url_name + '/' + options.records[0].data.id + '.ext_json',
-        failure: function() {Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons')},
+        failure: function() {
+          Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons');
+        },
         success: function(formElement, action) {
-          if (options.success) {options.success.call(this, action.result, form);};
-          flash("Your changes have been saved", options.model.human_singular_name + ' successfully updated')
+          if (options.success) {
+            options.success.call(this, action.result, form);
+          };
+          flash("Your changes have been saved", options.model.human_singular_name + ' successfully updated');
           options.editNext(options.records);
         }
       });
@@ -161,6 +167,65 @@ function defaultEditForm(config) {
       var keyNum = ev.getCharCode();
       switch (keyNum) {
         case 115: options.saveAction(); ev.stopEvent(); //CTRL + s
+      }
+    }
+  };
+  
+  return this.form;
+};
+
+function defaultSingletonForm(config) {
+  var options = {};
+    
+  Ext.apply(options, config, {
+    items: null,
+    model: Model,
+    frame: true,
+    labelAlign: 'left',
+    autoScroll: true,
+    iconCls: 'form_new',
+    bodyStyle: 'position: relative'
+  });
+  
+  Ext.applyIf(options, {
+    url: options.model.collectionUrl(config),
+    title: 'Edit ' + options.model.human_singular_name
+  });
+  
+  Ext.applyIf(options, {
+    saveAction: function() {
+      form.form.submit({
+        url: options.model.singleUrl,
+        waitMsg: 'Saving Data...',
+        failure: function() {
+          Ext.Msg.alert('Operation Failed', 'There were errors saving the ' + options.model.human_singular_name + ', please see any fields with red icons');
+        },
+        success: function(formElement, action) {
+          flash('The ' + options.model.human_singular_name + ' was updated successfully', options.model.human_singular_name + ' Updated');
+          if (options.success) {
+            options.success.call(this, action.result, form);
+          };
+        }
+      });
+    }
+  });
+  
+  this.form = new Ext.FormPanel(options);
+  
+  this.form.addButton({
+    text: 'Save',
+    iconCls: 'save',
+    handler: options.saveAction,
+    tooltip: 'Saves this ' + options.model.human_singular_name + ' (keyboard shortcut: CTRL + s)'
+  }); 
+  
+  this.form.handleKeypress = function(ev) {
+    if (ev.ctrlKey) {
+      var keyNum = ev.getCharCode();
+      switch (keyNum) {
+        case 115: options.saveAction(); //CTRL + s
+        
+        ev.stopEvent();
       }
     }
   };

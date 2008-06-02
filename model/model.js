@@ -138,6 +138,18 @@ var Model = {
     return store;
   },
   
+  loadFormWithSingletonRecord: function(form, storeConfig) {
+    var store = this.singleStore();
+    store.on('load', function(s, records, options) {
+      var record = records[0];
+      form.form.loadRecord(record);
+    });
+    
+    store.load(storeConfig);
+    
+    return store;
+  },
+  
   readerName : function() {
     return eval(this.class_name + 'Reader');
   },
