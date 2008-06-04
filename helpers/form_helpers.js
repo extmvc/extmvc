@@ -1,6 +1,6 @@
 function defaultNewForm(config) {
   var options = {};
-    
+      
   Ext.apply(options, config, {
     items: null,
     model: Model,
@@ -29,6 +29,11 @@ function defaultNewForm(config) {
   
   Ext.applyIf(options, {
     saveAction: function() {
+      //trigger any Tiny MCE instances to save first
+      try {
+        tinymce.EditorManager.triggerSave();
+      } catch(e) {}
+      
       form.form.submit({
         url: options.model.collectionUrl(config), 
         waitMsg: 'Saving Data...',
@@ -97,6 +102,11 @@ function defaultEditForm(config) {
     title: 'Edit ' + options.model.human_singular_name,
     cancelAction: function() {options.editNext(options.records);},
     saveAction: function() {      
+      //trigger any Tiny MCE instances to save first
+      try {
+        tinymce.EditorManager.triggerSave();
+      } catch(e) {}
+      
       form.form.submit({
         waitMsg: 'Saving Data...',
         url: '/admin/' + options.model.url_name + '/' + options.records[0].data.id + '.ext_json',
@@ -129,7 +139,7 @@ function defaultEditForm(config) {
           // IDs in current_record.data.  We just replace the value of current_record.data.id with the value of
           // its parent's ID and then pass that to the parent edit form to load.  The parent edit form only looks
           // at the ID field and any of it's own parent IDs when loading, so ignores all of the actual data
-          // insde current_record.data.
+          // inside current_record.data.
           // Still, this is horrible
           parent_record = current_record;
           parent_record.data.id = current_record.data[this.model.parent_model.foreign_key_name];
