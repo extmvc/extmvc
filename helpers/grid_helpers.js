@@ -119,7 +119,7 @@ function defaultPagingGridWithTopToolbar(config) {
     model: Model,
     editable: false,
     topToolbarButtonsBefore: [],
-    topToolbarButtonsAfter: [],
+    topToolbarButtonsAfter: []
   });
   
   Ext.applyIf(options, {
