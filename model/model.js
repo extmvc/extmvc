@@ -115,7 +115,7 @@ var Model = {
   },
   
   loadFormWithId : function(id, form, storeConfig) {
-    var store = this.singleStore(id);
+    var store = this.singleStore({data: {id: id}});
     store.on('load', function(s, records, options) {
       var record = records[0];
       form.form.loadRecord(record);
