@@ -95,7 +95,8 @@ function defaultEditForm(config) {
     iconCls: 'form_edit',
     autoScroll: true,
     bodyStyle: 'position: relative',
-    labelAlign: 'left'
+    labelAlign: 'left',
+    addDefaultButtons: true
   });
   
   Ext.applyIf(options, {
@@ -155,19 +156,21 @@ function defaultEditForm(config) {
   
   this.form = new Ext.FormPanel(options);
   
-  this.form.addButton({
-    text: 'Save',
-    iconCls: 'save',
-    handler: options.saveAction,
-    tooltip: 'Saves this ' + options.model.human_singular_name + ' (keyboard shortcut: CTRL + s)'
-  });
-  
-  this.form.addButton({
-    text: 'Cancel', 
-    iconCls: 'cancel',
-    handler: options.cancelAction, 
-    tooltip: 'Keyboard shortcut: ESC'
-  });
+  if (options.addDefaultButtons) {
+    this.form.addButton({
+      text: 'Save',
+      iconCls: 'save',
+      handler: options.saveAction,
+      tooltip: 'Saves this ' + options.model.human_singular_name + ' (keyboard shortcut: CTRL + s)'
+    });
+    
+    this.form.addButton({
+      text: 'Cancel', 
+      iconCls: 'cancel',
+      handler: options.cancelAction, 
+      tooltip: 'Keyboard shortcut: ESC'
+    });  
+  };
 
   this.form.handleKeypress = function(ev) {
     if(ev.getKey() == Ext.EventObject.ESC) {

@@ -11,7 +11,7 @@ function defaultAddButton(options) {
     handler: function() {alert("If this message appears contact the programmers!");}
   });
   
-  Ext.apply(this, {}, {
+  Ext.applyIf(this, {
     tooltip: 'Shows new ' + this.model.human_singular_name + ' form (shortcut key: a)'
   });
   
@@ -27,7 +27,7 @@ function defaultEditButton(options) {
     handler: function() {alert("If this message appears contact the programmers!");}
   });
   
-  Ext.apply(this, {}, {
+  Ext.applyIf(this, {
     tooltip: 'Edits all selected ' + this.model.human_plural_name + ' (shortcut key: e)'
   });
   
@@ -43,7 +43,7 @@ function defaultDeleteButton(options) {
     handler: function() {alert("If this message appears contact the programmers!");}
   });
   
-  Ext.apply(this, {}, {
+  Ext.applyIf(this, {
     tooltip: 'Deletes all selected ' + this.model.human_plural_name + ' (shortcut key: Delete)'
   });
   

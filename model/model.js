@@ -29,11 +29,21 @@ var Model = {
     return '/admin/' + this.url_name + '.ext_json';
   },
   
-  singleStore : function(id) {
-    return new Ext.data.Store({
-      url: this.singleUrl(id),
-      reader: this.readerName()
-    });
+  treeUrl: function(config) {
+    return '/admin/' + this.url_name + '/tree.ext_json';
+  },
+  
+  treeReorderUrl: function(record) {
+    return '/admin/' + this.url_name + '/reorder/' + record.data.id + '.ext_json';
+  },
+  
+  singleStore : function(id, storeConfig) {
+    return new Ext.data.Store(
+      Ext.applyIf(storeConfig, {
+        url: this.singleUrl(id),
+        reader: this.readerName()
+      })
+    );
   },
   
   collectionStore : function(config) {
@@ -114,38 +124,38 @@ var Model = {
     return store;
   },
   
-  loadFormWithId : function(id, form, storeConfig) {
-    var store = this.singleStore({data: {id: id}});
+  loadFormWithId : function(id, form, storeLoadConfig, storeConfig) {
+    var store = this.singleStore({data: {id: id}}, storeConfig);
     store.on('load', function(s, records, options) {
       var record = records[0];
       form.form.loadRecord(record);
     });
     
-    store.load(storeConfig);
+    store.load(storeLoadConfig);
     
     return store;
   },
   
-  loadFormWithRecord : function(rec, form, storeConfig) {
+  loadFormWithRecord : function(rec, form, storeLoadConfig) {
     var store = this.singleStore(rec);
     store.on('load', function(s, records, options) {
       var record = records[0];
       form.form.loadRecord(record);
     });
     
-    store.load(storeConfig);
+    store.load(storeLoadConfig);
     
     return store;
   },
   
-  loadFormWithSingletonRecord: function(form, storeConfig) {
+  loadFormWithSingletonRecord: function(form, storeLoadConfig) {
     var store = this.singleStore();
     store.on('load', function(s, records, options) {
       var record = records[0];
       form.form.loadRecord(record);
     });
     
-    store.load(storeConfig);
+    store.load(storeLoadConfig);
     
     return store;
   },
