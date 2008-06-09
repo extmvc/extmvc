@@ -157,19 +157,22 @@ function defaultEditForm(config) {
   this.form = new Ext.FormPanel(options);
   
   if (options.addDefaultButtons) {
-    this.form.addButton({
+    this.saveButton = new Ext.Button({
       text: 'Save',
       iconCls: 'save',
       handler: options.saveAction,
       tooltip: 'Saves this ' + options.model.human_singular_name + ' (keyboard shortcut: CTRL + s)'
     });
     
-    this.form.addButton({
+    this.cancelButton = new Ext.Button({
       text: 'Cancel', 
       iconCls: 'cancel',
       handler: options.cancelAction, 
       tooltip: 'Keyboard shortcut: ESC'
-    });  
+    });
+    
+    this.form.addButton(this.saveButton);
+    this.form.addButton(this.cancelButton);  
   };
 
   this.form.handleKeypress = function(ev) {

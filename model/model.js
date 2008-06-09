@@ -38,6 +38,8 @@ var Model = {
   },
   
   singleStore : function(id, storeConfig) {
+    if (storeConfig === undefined) {storeConfig = {};};
+    
     return new Ext.data.Store(
       Ext.applyIf(storeConfig, {
         url: this.singleUrl(id),
@@ -137,6 +139,8 @@ var Model = {
   },
   
   loadFormWithRecord : function(rec, form, storeLoadConfig) {
+    if (storeLoadConfig === undefined) {storeLoadConfig = {};};
+    
     var store = this.singleStore(rec);
     store.on('load', function(s, records, options) {
       var record = records[0];
@@ -158,6 +162,11 @@ var Model = {
     store.load(storeLoadConfig);
     
     return store;
+  },
+  
+  //eek how horrid!
+  newRecord: function() {
+    return eval("new " + this.class_name + "Record");
   },
   
   readerName : function() {

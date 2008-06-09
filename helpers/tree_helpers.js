@@ -1,6 +1,6 @@
 function treeWithForm(config) {
   var options = {};
-      
+  
   Ext.apply(options, config, {
     items: null,
     frame: true,
@@ -9,19 +9,53 @@ function treeWithForm(config) {
     autoScroll: true,
     treeEditable: true,
     treeEditableField: 'title',
-    beforeForeLoad: function() {},
-    afterFormLoad: function() {}
+    beforeFormLoad: function() {},
+    afterFormLoad:  function() {},
+    beforeDelete:   function() {},
+    afterDelete:    function() {},
+    beforeSave:     function() {},
+    afterSave:      function() {},
+    beforeCreate:   function() {},
+    afterCreate:    function() {},
+    beforeNew:      function() {},
+    afterNew:       function() {}
   });
   
   //local aliases to stop me getting RSI
   human_name = options.model.human_singular_name;
-  
+    
   newButton = new defaultAddButton({
     model: options.model,
     text: 'Add a new ' + human_name,
     tooltip: 'Adds a new ' + human_name,
     handler: function() {
-      alert("Add button");
+      if (options.beforeNew() !== false) {
+        var node = (new Ext.tree.TreeNode({
+          text:'New ' + human_name,
+          allowDrag:false,
+          qtip: 'This ' + human_name + ' has not been saved yet, you need to fill in the form and click "Save Changes" first'
+        }));
+        
+        if (selectionModel.selNode && !(/ynode/.test(selectionModel.selNode.id))) {
+          selectionModel.selNode.appendChild(node);
+          panel.insertAsChildOf = selectionModel.selNode.id;
+        } else {
+          tree.root.appendChild(node);
+        };
+        
+        record = options.model.newRecord();
+        form.form.reset();
+        form.form.loadRecord(record);
+        panel.recordId = null;
+        
+        selectionModel.select(node);
+        setTimeout(function(){
+          editor.editNode = node;
+          editor.startEdit(node.ui.textNode);
+        }, 10);
+        
+        options.afterNew();
+      };      
     }
   });
   
@@ -32,18 +66,29 @@ function treeWithForm(config) {
     handler: function() {
       id = selectionModel.getSelectedNode().id;
       
-      Ext.Ajax.request({
-        url: options.model.singleUrl({data: {id: id}}),
-        method: 'post',
-        params: '_method=delete',
-        success: function() {
-          flash('The ' + human_name + ' has been successfully deleted', human_name + ' deleted');
-          updateTree();
-        },
-        failure: function() {
-          Ext.Msg.alert(human_name + ' NOT Deleted', 'Something went wrong while deleting this ' + human_name + ', it has NOT been deleted');
-        }
-      });
+      //beforeDelete callback can cancel delete by returning false
+      if (options.beforeDelete() !== false) {
+        Ext.Msg.confirm('Delete ' + human_name + '?', 'Are you sure you want to delete this ' + human_name + '?  This cannot be undone', function(btn) {
+          if (btn == 'yes') {
+            Ext.Ajax.request({
+              url: options.model.singleUrl({data: {id: id}}),
+              method: 'post',
+              params: '_method=delete',
+              success: function() {
+                flash('The ' + human_name + ' has been successfully deleted', human_name + ' deleted');
+                updateTree();
+                
+                options.afterDelete();
+                form.form.reset();
+                panel.formLoaded = false;
+              },
+              failure: function() {
+                Ext.Msg.alert(human_name + ' NOT Deleted', 'Something went wrong while deleting this ' + human_name + ', it has NOT been deleted');
+              }
+            });
+          };
+        });  
+      };    
     }
   });
   
@@ -51,7 +96,55 @@ function treeWithForm(config) {
     text: 'Save changes',
     iconCls: 'save',
     handler: function() {
-      alert("save");
+      //return false on beforeSave callback to stop save
+      if (options.beforeSave() !== false) {
+        
+        if (panel.formLoaded) {
+          if (panel.recordId == null) {
+            
+            // this is a NEW form, so post to the appropriate URL
+            extra_params = '';
+            if (panel.insertAsChildOf != null) { extra_params = "insert_as_child_of=" + panel.insertAsChildOf;};
+            
+            form.form.submit({
+              waitMsg: 'Saving Data...',
+              url: '/admin/' + options.model.url_name + '.ext_json',
+              params: extra_params,
+              failure: function() {
+                Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + human_name + ', please see any fields with red icons');
+                updateTree();
+              },
+              success: function(formElement, action) {
+                if (options.success) {
+                  options.success.call(this, action.result, form);
+                };
+                flash("Your changes have been saved", human_name + ' successfully updated');
+                updateTree();
+              }
+            });
+          
+          } else {
+            // this is an EDIT form
+            form.form.submit({
+              waitMsg: 'Saving Data...',
+              url: '/admin/' + options.model.url_name + '/' + panel.recordId + '.ext_json',
+              params: '_method=put',
+              failure: function() {
+                Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + human_name + ', please see any fields with red icons');
+              },
+              success: function(formElement, action) {
+                if (options.success) {
+                  options.success.call(this, action.result, form);
+                };
+                flash("Your changes have been saved", human_name + ' successfully updated');
+              }
+            });
+          };
+          
+        } else {
+          Ext.Msg.alert('Form Not Loaded', 'Please load the form first by clicking a ' + human_name + ' from the tree');
+        };
+      };
     }
   });
   
@@ -64,7 +157,7 @@ function treeWithForm(config) {
     autoScroll: true,
     containerScroll: true,
     collapsible: true,
-    bodyStyle: 'background-color: #fff',
+    bodyStyle: 'background-color: #fff; border: 1px solid #99BBE8;',
     enableDD: true,
     region: 'west',
     width: 300,
@@ -72,6 +165,7 @@ function treeWithForm(config) {
     minWidth: 200,
     rootVisible: false,
     tbar: toolbar,
+    title: options.model.human_plural_name,
     loader: new Ext.tree.TreeLoader({
       requestMethod: 'GET',
       dataUrl: options.model.treeUrl()
@@ -89,6 +183,7 @@ function treeWithForm(config) {
   if (options.treeEditable) {
     editor = new Ext.tree.TreeEditor(tree, {
       allowBlank: false,
+      ignoreNoChange: true,
       blankText: 'A title is required',
       selectOnFocus: true
     });
@@ -96,34 +191,37 @@ function treeWithForm(config) {
     editor.on('complete', function(editor, value, previousValue) {
       id = editor.editNode.attributes.id;
       
-      if (/ynode/.test(id)) {
-        //this is a new object, so do a POST create
-        params = options.model.model_name + "[" + options.treeEditableField + "]=" + value;
-        if (editor.editNode.parentNode) {
-          //tell the server that we should be inserting this node as a child of the passed parent
-          params += '&insert_as_child_of=' + editor.editNode.parentNode.id;
+      // return false from beforeCreate callback to cancel creation
+      if (options.beforeCreate() !== false) {
+        if (/ynode/.test(id)) {
+          //this is a new object, so do a POST create
+          params = options.model.model_name + "[" + options.treeEditableField + "]=" + value;
+          if (editor.editNode.parentNode) {
+            //tell the server that we should be inserting this node as a child of the passed parent
+            params += '&insert_as_child_of=' + editor.editNode.parentNode.id;
+          };
+          
+          Ext.Ajax.request({
+            method: 'post',
+            url: options.model.collectionUrl(),
+            params: params,
+            success: options.afterCreate
+          });
+          
+        } else {
+          //this is updating an existing object
+          Ext.Ajax.request({
+            method: 'post',
+            url: options.model.singleUrl({data: {id: id}}),
+            params: "_method=put&" + options.model.model_name + "[" + options.treeEditableField + "]=" + value,
+            success: function() {
+              flash('The ' + human_name + ' ' + options.treeEditableField + ' was successfully updated', human_name + ' ' + options.treeEditableField + ' updated');
+            },
+            failure: function() {
+              Ext.Msg.alert(human_name + ' ' + options.treeEditableField + ' NOT updated', 'The ' + options.treeEditableField + ' of this ' + human_name + ' could not be updated - please try again');
+            }
+          });
         };
-        
-        Ext.Ajax.request({
-          method: 'post',
-          url: options.model.collectionUrl(),
-          params: params,
-          success: afterCreate
-        });
-        
-      } else {
-        //this is updating an existing object
-        Ext.Ajax.request({
-          method: 'post',
-          url: options.model.singleUrl({data: {id: id}}),
-          params: "_method=put&" + options.model.model_name + "[" + options.treeEditableField + "]=" + value,
-          success: function() {
-            flash('The ' + human_name + ' ' + options.treeEditableField + ' was successfully updated', human_name + ' ' + options.treeEditableField + ' updated');
-          },
-          failure: function() {
-            Ext.Msg.alert(human_name + ' ' + options.treeEditableField + ' NOT updated', 'The ' + options.treeEditableField + ' of this ' + human_name + ' could not be updated - please try again');
-          }
-        });
       };
     });    
   };
@@ -148,7 +246,8 @@ function treeWithForm(config) {
     //if we can't get a reference to the selected node, just return without acting
     if (!node.selNode) {return;};
     
-    if (selectionModel.getSelectedNode() == null || node.selNode.id == 'source') {
+    // ignore no selection || root selection || new node selected (one that has not been saved yet)
+    if (selectionModel.getSelectedNode() == null || node.selNode.id == 'source' || (/ynode/).test(node.selNode.id)) {
       //root node is selected, disabled delete
       deleteButton.disable();
       
@@ -160,6 +259,9 @@ function treeWithForm(config) {
       //enable the delete and save buttons
       deleteButton.enable();
       saveButton.enable();
+      
+      panel.formLoaded = true;
+      panel.recordId   = id;
     };
   });
   
@@ -180,10 +282,16 @@ function treeWithForm(config) {
   panel = new Ext.Panel({
     frame: true,
     layout: 'border',
-    title: options.model.human_plural_name,
     items: [tree, form]
   });
   
+  //used by the save button to determine whether or not the form is currently loaded
+  panel.formLoaded = false;
+  
+  //keep a reference of the ID currently loaded in the form (null if this is a new record)
+  panel.recordId = null;
+  
+  panel.insertAsChildOf = null;
+  
   return panel;
 };
-
