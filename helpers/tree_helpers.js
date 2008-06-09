@@ -7,7 +7,7 @@ function treeWithForm(config) {
     autoLoad: true,
     labelAlign: 'left',
     autoScroll: true,
-    treeEditable: true,
+    treeEditable: false,
     treeEditableField: 'title',
     beforeFormLoad: function() {},
     afterFormLoad:  function() {},
@@ -31,8 +31,9 @@ function treeWithForm(config) {
     handler: function() {
       if (options.beforeNew() !== false) {
         var node = (new Ext.tree.TreeNode({
-          text:'New ' + human_name,
-          allowDrag:false,
+          text: 'Unsaved New ' + human_name,
+          allowDrag: false,
+          iconCls: options.model.model_name + '_unsaved',
           qtip: 'This ' + human_name + ' has not been saved yet, you need to fill in the form and click "Save Changes" first'
         }));
         
@@ -48,12 +49,7 @@ function treeWithForm(config) {
         form.form.loadRecord(record);
         panel.recordId = null;
         
-        selectionModel.select(node);
-        setTimeout(function(){
-          editor.editNode = node;
-          editor.startEdit(node.ui.textNode);
-        }, 10);
-        
+        selectionModel.select(node);        
         options.afterNew();
       };      
     }
