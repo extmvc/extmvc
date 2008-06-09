@@ -108,7 +108,6 @@ function treeWithForm(config) {
               params: extra_params,
               failure: function() {
                 Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + human_name + ', please see any fields with red icons');
-                updateTree();
               },
               success: function(formElement, action) {
                 if (options.success) {
