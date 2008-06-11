@@ -42,3 +42,55 @@ function belongsToCombo(model, belongs_to_model, config) {
   
   return combo;
 };
+
+/**
+ * LocalComboBox
+ * @extends Ext.form.ComboBox
+ * @cfg {Object} model The model to attach the combo box to
+ * @cfg {Int} id The id of the field to attach the combo box to
+ * @cfg {Ext.data.Store} The store to take combobox values from
+ *
+ * Example Usage:
+ * <pre><code>
+new LocalComboBox({
+  model: Page,
+  id: 'section_id',
+  store: someStore
+})
+
+Is equivalent to:
+new Ext.form.ComboBox({
+  mode: local,
+  store: someStore,
+  id: 'section_id',
+  name: 'page[section_id],
+  hiddenName: 'page[section_id]',
+  displayField: 'human_name',
+  valueField: 'class_name',
+  fieldLabel: 'section_id',
+  forceSelection: true,
+  triggerAction: 'all'
+})
+</code></pre>
+*/
+LocalComboBox = function(config) {
+  var config = config || {};
+  
+  Ext.applyIf(config, {
+    mode: local,
+    displayField: 'human_name',
+    valueField: 'class_name',
+    triggerAction: 'all',
+    forceSelection: true
+  });
+  
+  Ext.applyIf(config, {
+    name: config.model.model_name + '[' + config.id + ']',
+    hiddenName: config.model.model_name + '[' + config.id + ']',
+    fieldLabel: config.id
+  });
+  
+  LocalComboBox.superclass.constructor.call(this, config);
+};
+Ext.extend(LocalComboBox, Ext.form.ComboBox);
+Ext.reg('local_combo_box', LocalComboBox);
