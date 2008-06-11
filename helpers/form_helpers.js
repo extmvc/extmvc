@@ -35,7 +35,7 @@ function defaultNewForm(config) {
       } catch(e) {}
       
       form.form.submit({
-        url: options.model.collectionUrl(config), 
+        url: options.url, 
         waitMsg: 'Saving Data...',
         failure: function() {
           Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + options.model.human_singular_name + ', please see any fields with red icons');
