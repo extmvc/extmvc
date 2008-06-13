@@ -1,4 +1,6 @@
 /**
+ ************** DEPRECATED - USE BelongsToCombo INSTEAD **************
+ *
  * Generic combo box usable for all belongs_to associations.
  * Example usage - adding a Section combo to a Page model:
  * 
@@ -22,6 +24,8 @@ function sectionCombo(belongs_to_model, config) {
  * new sectionCombo(Page, {fieldLabel: 'Something different'});
 */
 function belongsToCombo(model, belongs_to_model, config) {
+  var config = config || {};
+  
   combo = new Ext.form.ComboBox(
     Ext.applyIf(config, {
       fieldLabel: belongs_to_model.human_singular_name, 
@@ -44,7 +48,36 @@ function belongsToCombo(model, belongs_to_model, config) {
 };
 
 /**
- * LocalComboBox
+ * BelongsToCombo
+ * @extends Ext.form.ComboBox
+ * Description
+ */
+BelongsToCombo = function(config) {
+  var config = config || {};
+  
+  Ext.applyIf(config, {
+    fieldLabel: config.belongs_to_model.human_singular_name, 
+    id: config.belongs_to_model.foreign_key_name,
+    name: config.model.model_name + '[' + config.belongs_to_model.foreign_key_name + ']',
+    anchor: "95%",
+    triggerAction: 'all',
+    store: config.belongs_to_model.collectionStore(),
+    pageSize: 1000,
+    forceSelection: true,
+    displayField: 'title',
+    valueField: 'id',
+    hiddenName: config.model.model_name + '[' + config.belongs_to_model.foreign_key_name + ']'
+  });
+  
+  BelongsToCombo.superclass.constructor.call(this, config);
+  
+  this.store.load({params: {start: 0, limit: 1000}});
+};
+Ext.extend(BelongsToCombo, Ext.form.ComboBox);
+Ext.reg('belongs_to_combo', BelongsToCombo);
+
+/**
+ * LocalCombo
  * @extends Ext.form.ComboBox
  * @cfg {Object} model The model to attach the combo box to
  * @cfg {Int} id The id of the field to attach the combo box to
@@ -52,7 +85,7 @@ function belongsToCombo(model, belongs_to_model, config) {
  *
  * Example Usage:
  * <pre><code>
-new LocalComboBox({
+new LocalCombo({
   model: Page,
   id: 'section_id',
   store: someStore
@@ -69,19 +102,21 @@ new Ext.form.ComboBox({
   valueField: 'class_name',
   fieldLabel: 'section_id',
   forceSelection: true,
-  triggerAction: 'all'
+  triggerAction: 'all',
+  anchor: "95%"
 })
 </code></pre>
 */
-LocalComboBox = function(config) {
+LocalCombo = function(config) {
   var config = config || {};
   
   Ext.applyIf(config, {
-    mode: local,
+    mode: 'local',
     displayField: 'human_name',
     valueField: 'class_name',
     triggerAction: 'all',
-    forceSelection: true
+    forceSelection: true,
+    anchor: "95%"
   });
   
   Ext.applyIf(config, {
@@ -90,7 +125,7 @@ LocalComboBox = function(config) {
     fieldLabel: config.id
   });
   
-  LocalComboBox.superclass.constructor.call(this, config);
+  LocalCombo.superclass.constructor.call(this, config);
 };
-Ext.extend(LocalComboBox, Ext.form.ComboBox);
-Ext.reg('local_combo_box', LocalComboBox);
+Ext.extend(LocalCombo, Ext.form.ComboBox);
+Ext.reg('local_combo_box', LocalCombo);
