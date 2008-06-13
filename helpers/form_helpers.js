@@ -3,7 +3,7 @@ function defaultNewForm(config) {
       
   Ext.apply(options, config, {
     items: null,
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     frame: true,
     labelAlign: 'left',
     autoScroll: true,
@@ -90,7 +90,7 @@ function defaultEditForm(config) {
   
   Ext.apply(options, config, {
     items: null,
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     frame: true,
     iconCls: 'form_edit',
     autoScroll: true,
@@ -195,7 +195,7 @@ function defaultSingletonForm(config) {
     
   Ext.apply(options, config, {
     items: null,
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     frame: true,
     labelAlign: 'left',
     autoScroll: true,

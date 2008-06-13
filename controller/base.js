@@ -1,4 +1,4 @@
-ApplicationController = function(config) {
+Ext.ux.MVC.controller.Base = function(config) {
   
   this.application = application;
 

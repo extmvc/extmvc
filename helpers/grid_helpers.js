@@ -3,7 +3,7 @@ function defaultPagingGrid(config) {
   
   var options = {};
   Ext.apply(options, config, {
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     viewConfig: {forceFit: true},
     tbar: null,
     autoLoadStore: true,
@@ -116,7 +116,7 @@ function defaultPagingGridWithTopToolbar(config) {
   var options = {};
   
   Ext.apply(options, config, {
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     editable: false,
     topToolbarButtonsBefore: [],
     topToolbarButtonsAfter: []

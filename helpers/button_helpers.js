@@ -4,7 +4,7 @@ function defaultButton(options) {
 
 function defaultAddButton(options) {
   Ext.apply(this, options, {
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     iconCls: 'add',
     text: 'Add',
     disabled: false,
@@ -20,7 +20,7 @@ function defaultAddButton(options) {
 
 function defaultEditButton(options) {
   Ext.apply(this, options, {
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     iconCls: 'edit',
     text: 'Edit',
     disabled: true,
@@ -36,7 +36,7 @@ function defaultEditButton(options) {
 
 function defaultDeleteButton(options) {
   Ext.apply(this, options, {
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     iconCls: 'delete',
     text: 'Delete',
     disabled: true,

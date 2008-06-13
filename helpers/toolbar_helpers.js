@@ -4,7 +4,7 @@ function defaultPagingToolbar(store, config) {
   this.options = {};
   Ext.apply(this.options, config, {
     pageSize: 25,
-    model: Model,
+    model: Ext.ux.MVC.model.Base,
     nextText: 'Next Page (shortcut key: n)',
     prevText: 'Previous Page (shortcut key: p)',
     refreshText: 'Refresh (shortcut key: r)',

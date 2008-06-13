@@ -1,4 +1,4 @@
-CrudController = function(config) {
+Ext.ux.MVC.controller.CrudController = function(config) {
   Ext.apply(this, config);
   Ext.applyIf(this, {
     batchDestroyUrl : '/admin/batch_destroy_' + this.model.url_name + '.ext_json',
@@ -21,10 +21,10 @@ CrudController = function(config) {
     }
   });
   
-  CrudController.superclass.constructor.call(this, config);
+  Ext.ux.MVC.controller.CrudController.superclass.constructor.call(this, config);
 };
 
-Ext.extend(CrudController, ApplicationController, {  
+Ext.extend(Ext.ux.MVC.controller.CrudController, Ext.ux.MVC.controller.Base, {  
   viewIndex : function(options) {
     this.showPanel(new this.indexPanel(options));
   },

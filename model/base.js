@@ -1,26 +1,26 @@
-// Ext.namespace('Model');
+Ext.ux.MVC.model.Base = function(model_name, config) {
+  
+  /**
+   * guess at best string names for the variations on the model name.  e.g. for a model with
+   * model_name = 'advert_group':
+   * underscore_name = 'advert_group'
+   * url_name = 'advert_groups'
+   * human_singular_name = 'Advert Group'
+   * human_plural_name = 'Advert Groups'
+   */
+  Ext.apply(this, config, {
+    underscore_name     : model_name,
+    url_name            : this.urlize_name(model_name),
+    human_singular_name : this.singularize_human_name(model_name),
+    human_plural_name   : this.pluralize_human_name(model_name),
+    controller_name     : this.controller_name(model_name),
+    class_name          : this.classify_name(model_name),
+    foreign_key_name    : model_name + "_id"
+  });
+};
 
-var Model = {
-  
-  init : function(config) {
-    
-    // guess at best string names for the variations on the model name.  e.g. for a model with
-    // model_name = 'advert_group':
-    // underscore_name = 'advert_group'
-    // url_name = 'advert_groups'
-    // human_singular_name = 'Advert Group'
-    // human_plural_name = 'Advert Groups'
-    Ext.apply(this, config, {
-      underscore_name     : this.model_name,
-      url_name            : this.urlize_name(this.model_name),
-      human_singular_name : this.singularize_human_name(this.model_name),
-      human_plural_name   : this.pluralize_human_name(this.model_name),
-      controller_name     : this.controller_name(this.model_name),
-      class_name          : this.classify_name(this.model_name),
-      foreign_key_name    : this.model_name + "_id"
-    });
-  },
-  
+Ext.ux.MVC.model.Base.prototype = {
+
   singleUrl : function(record) {
     return '/admin/' + this.url_name + '/' + record.data.id + '.ext_json';
   },

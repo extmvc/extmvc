@@ -1,9 +1,9 @@
-SingletonController = function(config) {
+Ext.ux.MVC.controller.SingletonController = function(config) {
   Ext.apply(this, config);
-  CrudController.superclass.constructor.call(this, config);
+  Ext.ux.MVC.controller.CrudController.superclass.constructor.call(this, config);
 };
 
-Ext.extend(SingletonController, ApplicationController, {
+Ext.extend(Ext.ux.MVC.controller.SingletonController, Ext.ux.MVC.controller.Base, {
   viewIndex : function(options) {
     return this.viewEdit(options);
   },
