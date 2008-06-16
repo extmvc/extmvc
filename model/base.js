@@ -1,3 +1,24 @@
+/**
+ * Ext.ux.MVC.model.Base
+ * Abstract base class providing convenience methods for most types of data models
+ * Aims to emulate much of the functionality of Rails' ActiveRecord
+ * Usage: create a new model type like this:
+ * 
+<pre><code>
+  Page = new Ext.ux.MVC.model.Base('page')
+</code></pre>
+ * Model will try to guess sensible default values for properties such as humanized names, etc
+ * See JSDocs for full reference.  Default properties can be overridden like this:
+<pre><code>
+ AdvertisingCategory = new Ext.ux.MVC.model.Base('advertising_category', {
+    controller_name:   'AdvertisingCategoriesController',
+    human_plural_name: 'Advertising Categories',
+    url_name:          'advertising_categories'
+  });
+</code></pre>
+ *
+ */
+
 Ext.ux.MVC.model.Base = function(model_name, config) {
   
   /**
@@ -9,6 +30,7 @@ Ext.ux.MVC.model.Base = function(model_name, config) {
    * human_plural_name = 'Advert Groups'
    */
   Ext.apply(this, config, {
+    model_name          : model_name,
     underscore_name     : model_name,
     url_name            : this.urlize_name(model_name),
     human_singular_name : this.singularize_human_name(model_name),
@@ -21,22 +43,47 @@ Ext.ux.MVC.model.Base = function(model_name, config) {
 
 Ext.ux.MVC.model.Base.prototype = {
 
+  /**
+   * URL to retrieve a JSON representation of this model from
+   */
   singleUrl : function(record) {
     return '/admin/' + this.url_name + '/' + record.data.id + '.ext_json';
   },
   
+  /**
+   * URL to retrieve a JSON representation of the collectino of this model from
+   * This would typically return the first page of results (see {@link #collectionStore})
+   */
   collectionUrl : function(config) {
     return '/admin/' + this.url_name + '.ext_json';
   },
   
+  /**
+   * URL to retrieve a tree representation of this model from (in JSON format)
+   * This is used when populating most of the trees in Ext.ux.MVC, though
+   * only applies to models which can be representated as trees
+   */
   treeUrl: function(config) {
     return '/admin/' + this.url_name + '/tree.ext_json';
   },
   
+  /**
+   * URL to post details of a drag/drop reorder operation to.  When reordering a tree
+   * for a given model, this url is called immediately after the drag event with the
+   * new configuration
+   * TODO: Provide more info/an example here
+   */
   treeReorderUrl: function(record) {
     return '/admin/' + this.url_name + '/reorder/' + record.data.id + '.ext_json';
   },
   
+  /**
+   * Returns an Ext.data.Store which is configured to load from the {@link #singleUrl} method
+   * Returned Store is also configured with this model's reader
+   * @cfg {Number} id Unique ID of the model - will be used to build the resource URL
+   * @cfg {Object} storeConfig Additional configuration options which are passed to the Store
+   * @return {Ext.data.Store} A store configured to load the record
+   */
   singleStore : function(id, storeConfig) {
     if (storeConfig === undefined) {storeConfig = {};};
     

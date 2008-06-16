@@ -1,51 +1,81 @@
-function defaultButton(options) {
-  return new Ext.Toolbar.Button(options);
-}
-
-function defaultAddButton(options) {
-  Ext.apply(this, options, {
-    model: Ext.ux.MVC.model.Base,
+/**
+ * Ext.ux.MVC.helper.button.DefaultAddButton
+ * Simple set of sensible defaults for an Add button - just sets an iconCls and text
+ * @extends Ext.Toolbar.Button
+ * @cfg {Ext.ux.MVC.model} model The model this button is for (optional - used for tooltip)
+ */
+Ext.ux.MVC.helper.button.DefaultAddButton = function(config) {
+  var config = config || {};
+  
+  Ext.applyIf(config, {
     iconCls: 'add',
-    text: 'Add',
-    disabled: false,
-    handler: function() {alert("If this message appears contact the programmers!");}
+    text:    'Add',
+    handler: function() {alert("This shouldn't ever appear.  It means you haven't passed a handler to your DefaultAddbutton");}
   });
   
-  Ext.applyIf(this, {
-    tooltip: 'Shows new ' + this.model.human_singular_name + ' form (shortcut key: a)'
-  });
+  if (config.model) {
+    Ext.applyIf(config, {
+      tooltip: 'Shows new ' + config.model.human_singular_name + ' form (shortcut key: a)'
+    });
+  };
   
-  return defaultButton(this);
-}
+  Ext.ux.MVC.helper.button.DefaultAddButton.superclass.constructor.call(this, config);
+};
+Ext.extend(Ext.ux.MVC.helper.button.DefaultAddButton, Ext.Toolbar.Button);
+Ext.reg('default_add_button', Ext.ux.MVC.helper.button.DefaultAddButton);
 
-function defaultEditButton(options) {
-  Ext.apply(this, options, {
-    model: Ext.ux.MVC.model.Base,
-    iconCls: 'edit',
-    text: 'Edit',
-    disabled: true,
-    handler: function() {alert("If this message appears contact the programmers!");}
-  });
-  
-  Ext.applyIf(this, {
-    tooltip: 'Edits all selected ' + this.model.human_plural_name + ' (shortcut key: e)'
-  });
-  
-  return defaultButton(this);
-}
 
-function defaultDeleteButton(options) {
-  Ext.apply(this, options, {
-    model: Ext.ux.MVC.model.Base,
-    iconCls: 'delete',
-    text: 'Delete',
+/**
+ * Ext.ux.MVC.helper.button.DefaultEditButton
+ * Simple set of sensible defaults for an Edit Button
+ * @extends Ext.Toolbar.Button
+ * @cfg {Ext.ux.MVC.model} model The model this button is for (optional - used for tooltip)
+ */
+Ext.ux.MVC.helper.button.DefaultEditButton = function(config) {
+  var config = config || {};
+  
+  Ext.applyIf(config, {
+    iconCls:  'edit',
+    text:     'Edit',
     disabled: true,
-    handler: function() {alert("If this message appears contact the programmers!");}
+    handler: function() {alert("This shouldn't ever appear.  It means you haven't passed a handler to your DefaultEditbutton");}
   });
   
-  Ext.applyIf(this, {
-    tooltip: 'Deletes all selected ' + this.model.human_plural_name + ' (shortcut key: Delete)'
+  if (config.model) {
+    Ext.applyIf(config, {
+      tooltip: 'Edits all selected ' + config.model.human_plural_name + ' (shortcut key: e)'
+    });
+  };
+  
+  Ext.ux.MVC.helper.button.DefaultEditButton.superclass.constructor.call(this, config);
+};
+Ext.extend(Ext.ux.MVC.helper.button.DefaultEditButton, Ext.Toolbar.Button);
+Ext.reg('default_edit_button', Ext.ux.MVC.helper.button.DefaultEditButton);
+
+
+/**
+ * Ext.ux.MVC.helper.button.DefaultDeleteButton
+ * Simple set of sensible defaults for a Delete Button
+ * @extends Ext.Toolbar.Button
+ * @cfg {Ext.ux.MVC.model} model The model this button is for (optional - used for tooltip)
+ */
+Ext.ux.MVC.helper.button.DefaultDeleteButton = function(config) {
+  var config = config || {};
+  
+  Ext.applyIf(config, {
+    iconCls:  'delete',
+    text:     'Delete',
+    disabled: true,
+    handler: function() {alert("This shouldn't ever appear.  It means you haven't passed a handler to your DefaultDeletebutton");}
   });
   
-  return defaultButton(this);
-}
+  if (config.model) {
+    Ext.applyIf(config, {
+      tooltip: 'Deletes all selected ' + config.model.human_plural_name + ' (shortcut key: Delete)'
+    });    
+  };
+  
+  Ext.ux.MVC.helper.button.DefaultDeleteButton.superclass.constructor.call(this, config);
+};
+Ext.extend(Ext.ux.MVC.helper.button.DefaultDeleteButton, Ext.Toolbar.Button);
+Ext.reg('default_delete_button', Ext.ux.MVC.helper.button.DefaultDeleteButton);
