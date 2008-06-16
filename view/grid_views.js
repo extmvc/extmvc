@@ -147,7 +147,11 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   Ext.applyIf(config, {
     editable: false,
     topToolbarButtonsBefore: [],
-    topToolbarButtonsAfter: []
+    topToolbarButtonsAfter: [],
+    displayAddButton: true,
+    displayEditButton: true,
+    displayDeleteButton: true,
+    displayToggleEditableButton: true
   });
   
   //add default actions if they are not passed in constructor config
@@ -203,7 +207,18 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   config.searchField = new Ext.app.SearchField({store: this.store, width:220});
   topToolbarButtons = ['Search by Name:', ' ', config.searchField, '-'];
   topToolbarButtons = topToolbarButtons.concat(config.topToolbarButtonsBefore);
-  topToolbarButtons = topToolbarButtons.concat([newButton, '-', editButton, '-', deleteButton, '-', toggleEditableButton]);
+  if (config.displayAddButton) {
+    topToolbarButtons = topToolbarButtons.concat([newButton, '-']);
+  };
+  if (config.displayEditButton) {
+    topToolbarButtons = topToolbarButtons.concat([editButton, '-']);
+  };
+  if (config.displayDeleteButton) {
+    topToolbarButtons = topToolbarButtons.concat([deleteButton, '-']);
+  };
+  if (config.displayToggleEditableButton) {
+    topToolbarButtons = topToolbarButtons.concat([toggleEditableButton]);
+  };
   topToolbarButtons = topToolbarButtons.concat(config.topToolbarButtonsAfter);
   config.tbar = new Ext.Toolbar({ items: topToolbarButtons });
   
