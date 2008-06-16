@@ -22,7 +22,7 @@ Ext.ux.MVC.view.DefaultNewForm = function(config) {
   });
   
   Ext.ux.MVC.view.DefaultNewForm.superclass.constructor.call(this, config);
-  
+    
   //set some more sensible defaults, and what to do on save and cancel
   Ext.applyIf(config, {
     cancelAction: function() {
