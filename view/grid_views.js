@@ -148,6 +148,7 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
     editable: false,
     topToolbarButtonsBefore: [],
     topToolbarButtonsAfter: [],
+    displaySearchByName: true,
     displayAddButton: true,
     displayEditButton: true,
     displayDeleteButton: true,
@@ -204,8 +205,12 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   toggleEditableButton.on('click', function() { config.toggleEditableAction(config);});
   
   //set up the top toolbar
-  config.searchField = new Ext.app.SearchField({store: this.store, width:220});
-  topToolbarButtons = ['Search by Name:', ' ', config.searchField, '-'];
+  topToolbarButtons = [];
+  if (config.displaySearchByName) {
+    config.searchField = new Ext.app.SearchField({store: this.store, width:220});
+    topToolbarButtons = topToolbarButtons.concat(['Search by Name:', ' ', config.searchField, '-']);
+  };
+
   topToolbarButtons = topToolbarButtons.concat(config.topToolbarButtonsBefore);
   if (config.displayAddButton) {
     topToolbarButtons = topToolbarButtons.concat([newButton, '-']);
@@ -226,7 +231,9 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   
   //this.store is only instantiated after calling the constructor, so need to give it a reference here
   //TODO: This smells, there is probably a better way
-  config.searchField.store = this.store;
+  if (config.displaySearchByName) {
+    config.searchField.store = this.store;
+  };
   
   if (!config.editable) {
     this.getSelectionModel().on('selectionchange', function(selModel){
