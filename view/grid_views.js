@@ -270,7 +270,7 @@ Ext.ux.MVC.view.HabtmGrid = function(config) {
   if (!config.model)       {alert("You didn't provide a model to your HABTM Grid class"); return false; };
   if (!config.habtm_model) {alert("You didn't provide a habtm_model to your HABTM Grid class"); return false; };
   
-  var selectionModel = new Ext.grid.CheckboxSelectionModel();
+  this.selectionModel = new Ext.grid.CheckboxSelectionModel();
   
   Ext.applyIf(config, {
     store: config.habtm_model.collectionStore(),
@@ -278,10 +278,10 @@ Ext.ux.MVC.view.HabtmGrid = function(config) {
     height: 400,
     loadMask: true,
     viewConfig: {forceFit: true},
-    sm: selectionModel,
-    columns: [selectionModel].concat(config.headings),
+    sm: this.selectionModel,
+    columns: [this.selectionModel].concat(config.headings),
     autoLoadStore: false,
-    id: config.model.human_singular_name + '_habtm_' + config.habtm_model.human_plural_name + '_grid'
+    id: config.model.model_name + '_habtm_' + config.habtm_model.model_name + '_grid'
   });
   
   Ext.ux.MVC.view.HabtmGrid.superclass.constructor.call(this, config);
@@ -300,8 +300,8 @@ Ext.ux.MVC.view.HabtmGrid = function(config) {
     Ext.getCmp(config.form_field_id).setRawValue(ids.join(","));
   };
   
-  selectionModel.on('rowselect', updateFormField);
-  selectionModel.on('rowdeselect', updateFormField);
+  this.selectionModel.on('rowselect', updateFormField);
+  this.selectionModel.on('rowdeselect', updateFormField);
   
   //callback to tick the relevant boxes after a set of data is loaded
   config.store.on('load', function(store) {
@@ -311,7 +311,7 @@ Ext.ux.MVC.view.HabtmGrid = function(config) {
     selected_records = new Array();
     
     //must suspend events to stop this automatically updating the hidden field
-    selectionModel.suspendEvents();
+    this.selectionModel.suspendEvents();
     
     //TODO: this is pretty gruesome
     // find an array of all records in the grid which should be ticked
@@ -324,9 +324,11 @@ Ext.ux.MVC.view.HabtmGrid = function(config) {
     };
     
     // tick the boxes of the related categories
-    selectionModel.selectRecords(selected_records);
-    selectionModel.resumeEvents();
-  });
+    try {
+      this.selectionModel.selectRecords(selected_records);
+      this.selectionModel.resumeEvents();
+    } catch(e) {}
+  }, this);
   
   if (config.autoLoadStore) {
     config.store.load({params: {start: 0, limit: 1000}});
