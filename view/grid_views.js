@@ -208,21 +208,21 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   topToolbarButtons = [];
   if (config.displaySearchByName) {
     config.searchField = new Ext.app.SearchField({store: this.store, width:220});
-    topToolbarButtons = topToolbarButtons.concat(['Search by Name:', ' ', config.searchField, '-']);
+    topToolbarButtons = topToolbarButtons.concat(['Search by Name:', ' ', config.searchField]);
   };
 
   topToolbarButtons = topToolbarButtons.concat(config.topToolbarButtonsBefore);
   if (config.displayAddButton) {
-    topToolbarButtons = topToolbarButtons.concat([newButton, '-']);
+    topToolbarButtons = topToolbarButtons.concat(['-', newButton]);
   };
   if (config.displayEditButton) {
-    topToolbarButtons = topToolbarButtons.concat([editButton, '-']);
+    topToolbarButtons = topToolbarButtons.concat(['-', editButton]);
   };
   if (config.displayDeleteButton) {
-    topToolbarButtons = topToolbarButtons.concat([deleteButton, '-']);
+    topToolbarButtons = topToolbarButtons.concat(['-', deleteButton]);
   };
   if (config.displayToggleEditableButton) {
-    topToolbarButtons = topToolbarButtons.concat([toggleEditableButton]);
+    topToolbarButtons = topToolbarButtons.concat(['-', toggleEditableButton]);
   };
   topToolbarButtons = topToolbarButtons.concat(config.topToolbarButtonsAfter);
   config.tbar = new Ext.Toolbar({ items: topToolbarButtons });
