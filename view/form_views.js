@@ -112,8 +112,13 @@ Ext.ux.MVC.view.DefaultEditForm = function(config) {
     autoLoadForm: true,
     bodyStyle: 'position: relative', //fixes an IE bug where scrolling forms go nuts
     labelAlign: 'top',
-    addDefaultButtons: true
+    addDefaultButtons: true,
+    addPutMethodField: true //automatically adds a field called '_method' with value 'PUT'
   });
+  
+  if (config.addPutMethodField) {
+    config.items = [{ xtype: 'hidden', name: '_method', value: 'put'}].concat(config.items);
+  };
   
   //set what to do on Save or Cancel
   Ext.applyIf(config, {
