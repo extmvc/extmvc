@@ -90,9 +90,36 @@ Ext.ux.MVC.model.Base.prototype = {
     return new Ext.data.Store(
       Ext.applyIf(storeConfig, {
         url: this.singleUrl(id),
-        reader: this.readerName()
+        reader: this.getReader()
       })
     );
+  },
+  
+  /**
+   * Returns an Ext.data.Record for this model
+   * This is just created from this.fields and cached to this.record.
+   * You can override the default by just setting this.record = YourRecord
+   * @return {Ext.data.Record} A record set up with this.fields
+   */
+  getRecord: function() {
+    if (!this.record) {
+      this.record = Ext.data.Record.create(this.fields);
+    };
+    return this.record;
+  },
+  
+  /**
+   * Returns an Ext.data.Reader for this model
+   * This is generated from the fields config passed in when creating the model
+   * Reader is generated once then cached in this.reader.  You can override the default
+   * reader by setting this.reader = YourReader
+   * @return {Ext.data.Reader} A reader based on this.fields passed when defining the model
+   */
+  getReader : function() {
+    if (!this.reader) {
+      this.reader = new Ext.data.JsonReader({root: this.url_name, totalProperty: 'results'}, this.getRecord());
+    };
+    return this.reader;
   },
   
   collectionStore : function(config) {
@@ -102,7 +129,7 @@ Ext.ux.MVC.model.Base.prototype = {
         method: 'get',
         params: {start: 0, limit: 25}
       }),
-      reader: this.readerName(),
+      reader: this.getReader(),
       remoteSort: true
     });
     
@@ -141,7 +168,7 @@ Ext.ux.MVC.model.Base.prototype = {
         method: 'get',
         params: {start: 0, limit: 25}
       }),
-      reader: this.readerName(),
+      reader: this.getReader(),
       remoteSort: true
     });
     
@@ -215,11 +242,7 @@ Ext.ux.MVC.model.Base.prototype = {
   newRecord: function() {
     return eval("new " + this.class_name + "Record");
   },
-  
-  readerName : function() {
-    return eval(this.class_name + 'Reader');
-  },
-  
+    
   singularize_human_name : function(name) {
     return name.replace(/_/g, " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
   },
