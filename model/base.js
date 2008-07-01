@@ -37,25 +37,35 @@ Ext.ux.MVC.model.Base = function(model_name, config) {
     human_plural_name   : this.pluralize_human_name(model_name),
     controller_name     : this.controller_name(model_name),
     class_name          : this.classify_name(model_name),
-    foreign_key_name    : model_name + "_id"
+    foreign_key_name    : model_name + "_id",
+    url_namespace       : '/admin',
+    url_extension       : '.ext_json'
   });
 };
 
 Ext.ux.MVC.model.Base.prototype = {
+  
+  /**
+   * Returns the passed url wrapped in the model's namespace and url extension
+   * @return {String} Passed url string wrapped in model's namespace and url extension
+   */
+  namespacedUrl : function(url) {
+    return(String.format("{0}/{1}{2}", this.url_namespace, url, this.url_extension));
+  },
 
   /**
    * URL to retrieve a JSON representation of this model from
    */
   singleUrl : function(record) {
-    return '/admin/' + this.url_name + '/' + record.data.id + '.ext_json';
+    return this.namespacedUrl(String.format("{0}/{1}", this.url_name, record.data.id));
   },
   
   /**
-   * URL to retrieve a JSON representation of the collectino of this model from
+   * URL to retrieve a JSON representation of the collection of this model from
    * This would typically return the first page of results (see {@link #collectionStore})
    */
   collectionUrl : function(config) {
-    return '/admin/' + this.url_name + '.ext_json';
+    return this.namespacedUrl(this.url_name);
   },
   
   /**
@@ -64,7 +74,7 @@ Ext.ux.MVC.model.Base.prototype = {
    * only applies to models which can be representated as trees
    */
   treeUrl: function(config) {
-    return '/admin/' + this.url_name + '/tree.ext_json';
+    return this.namespacedUrl(String.format("{0}/tree", this.url_name));
   },
   
   /**
@@ -74,7 +84,7 @@ Ext.ux.MVC.model.Base.prototype = {
    * TODO: Provide more info/an example here
    */
   treeReorderUrl: function(record) {
-    return '/admin/' + this.url_name + '/reorder/' + record.data.id + '.ext_json';
+    return this.namespacedUrl(String.format("{0}/reorder/{1}", this.url_name, record.data.id));
   },
   
   /**
