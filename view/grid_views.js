@@ -187,9 +187,9 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   
   //set up the buttons for the grid
   var bh = Ext.ux.MVC.helper.button; //local button helpers reference to avoid RSI...
-  newButton    = new bh.DefaultAddButton({   model: config.model, handler: config.newAction});
-  editButton   = new bh.DefaultEditButton({  model: config.model, handler: config.editAction,   scope: this});
-  deleteButton = new bh.DefaultDeleteButton({model: config.model, handler: config.deleteAction, scope: this});
+  this.addButton    = new bh.DefaultAddButton({   model: config.model, handler: config.newAction});
+  this.editButton   = new bh.DefaultEditButton({  model: config.model, handler: config.editAction,   scope: this});
+  this.deleteButton = new bh.DefaultDeleteButton({model: config.model, handler: config.deleteAction, scope: this});
   
   toggleEditableButton = new Ext.Toolbar.Button({
     text: 'Quick Edit Mode',
@@ -213,13 +213,13 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
 
   topToolbarButtons = topToolbarButtons.concat(config.topToolbarButtonsBefore);
   if (config.displayAddButton) {
-    topToolbarButtons = topToolbarButtons.concat(['-', newButton]);
+    topToolbarButtons = topToolbarButtons.concat(['-', this.addButton]);
   };
   if (config.displayEditButton) {
-    topToolbarButtons = topToolbarButtons.concat(['-', editButton]);
+    topToolbarButtons = topToolbarButtons.concat(['-', this.editButton]);
   };
   if (config.displayDeleteButton) {
-    topToolbarButtons = topToolbarButtons.concat(['-', deleteButton]);
+    topToolbarButtons = topToolbarButtons.concat(['-', this.deleteButton]);
   };
   if (config.displayToggleEditableButton) {
     topToolbarButtons = topToolbarButtons.concat(['-', toggleEditableButton]);
@@ -238,13 +238,13 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   if (!config.editable) {
     this.getSelectionModel().on('selectionchange', function(selModel){
       if (selModel.selections.length == 0) {
-        editButton.disable();
-        deleteButton.disable();
+        this.editButton.disable();
+        this.deleteButton.disable();
       } else {
-        editButton.enable();
-        deleteButton.enable();
+        this.editButton.enable();
+        this.deleteButton.enable();
       }
-    }); 
+    }, this); 
   };
   
   this.on('rowdblclick', config.editAction);

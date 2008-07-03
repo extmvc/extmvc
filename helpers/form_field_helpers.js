@@ -79,7 +79,7 @@ Ext.reg('belongs_to_combo', BelongsToCombo);
 /**
  * LocalCombo
  * @extends Ext.form.ComboBox
- * @cfg {Object} model The model to attach the combo box to
+ * @cfg {Ext.ux.MVC.model.Base} model The model to attach the combo box to
  * @cfg {Int} id The id of the field to attach the combo box to
  * @cfg {Ext.data.Store} The store to take combobox values from
  *
