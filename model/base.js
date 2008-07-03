@@ -37,25 +37,35 @@ Ext.ux.MVC.model.Base = function(model_name, config) {
     human_plural_name   : this.pluralize_human_name(model_name),
     controller_name     : this.controller_name(model_name),
     class_name          : this.classify_name(model_name),
-    foreign_key_name    : model_name + "_id"
+    foreign_key_name    : model_name + "_id",
+    url_namespace       : '/admin',
+    url_extension       : '.ext_json'
   });
 };
 
 Ext.ux.MVC.model.Base.prototype = {
+  
+  /**
+   * Returns the passed url wrapped in the model's namespace and url extension
+   * @return {String} Passed url string wrapped in model's namespace and url extension
+   */
+  namespacedUrl : function(url) {
+    return(String.format("{0}/{1}{2}", this.url_namespace, url, this.url_extension));
+  },
 
   /**
    * URL to retrieve a JSON representation of this model from
    */
   singleUrl : function(record) {
-    return '/admin/' + this.url_name + '/' + record.data.id + '.ext_json';
+    return this.namespacedUrl(String.format("{0}/{1}", this.url_name, record.data.id));
   },
   
   /**
-   * URL to retrieve a JSON representation of the collectino of this model from
+   * URL to retrieve a JSON representation of the collection of this model from
    * This would typically return the first page of results (see {@link #collectionStore})
    */
   collectionUrl : function(config) {
-    return '/admin/' + this.url_name + '.ext_json';
+    return this.namespacedUrl(this.url_name);
   },
   
   /**
@@ -64,7 +74,7 @@ Ext.ux.MVC.model.Base.prototype = {
    * only applies to models which can be representated as trees
    */
   treeUrl: function(config) {
-    return '/admin/' + this.url_name + '/tree.ext_json';
+    return this.namespacedUrl(String.format("{0}/tree", this.url_name));
   },
   
   /**
@@ -74,7 +84,7 @@ Ext.ux.MVC.model.Base.prototype = {
    * TODO: Provide more info/an example here
    */
   treeReorderUrl: function(record) {
-    return '/admin/' + this.url_name + '/reorder/' + record.data.id + '.ext_json';
+    return this.namespacedUrl(String.format("{0}/reorder/{1}", this.url_name, record.data.id));
   },
   
   /**
@@ -90,9 +100,36 @@ Ext.ux.MVC.model.Base.prototype = {
     return new Ext.data.Store(
       Ext.applyIf(storeConfig, {
         url: this.singleUrl(id),
-        reader: this.readerName()
+        reader: this.getReader()
       })
     );
+  },
+  
+  /**
+   * Returns an Ext.data.Record for this model
+   * This is just created from this.fields and cached to this.record.
+   * You can override the default by just setting this.record = YourRecord
+   * @return {Ext.data.Record} A record set up with this.fields
+   */
+  getRecord: function() {
+    if (!this.record) {
+      this.record = Ext.data.Record.create(this.fields);
+    };
+    return this.record;
+  },
+  
+  /**
+   * Returns an Ext.data.Reader for this model
+   * This is generated from the fields config passed in when creating the model
+   * Reader is generated once then cached in this.reader.  You can override the default
+   * reader by setting this.reader = YourReader
+   * @return {Ext.data.Reader} A reader based on this.fields passed when defining the model
+   */
+  getReader : function() {
+    if (!this.reader) {
+      this.reader = new Ext.data.JsonReader({root: this.url_name, totalProperty: 'results'}, this.getRecord());
+    };
+    return this.reader;
   },
   
   collectionStore : function(config) {
@@ -102,7 +139,7 @@ Ext.ux.MVC.model.Base.prototype = {
         method: 'get',
         params: {start: 0, limit: 25}
       }),
-      reader: this.readerName(),
+      reader: this.getReader(),
       remoteSort: true
     });
     
@@ -141,7 +178,7 @@ Ext.ux.MVC.model.Base.prototype = {
         method: 'get',
         params: {start: 0, limit: 25}
       }),
-      reader: this.readerName(),
+      reader: this.getReader(),
       remoteSort: true
     });
     
@@ -215,11 +252,7 @@ Ext.ux.MVC.model.Base.prototype = {
   newRecord: function() {
     return eval("new " + this.class_name + "Record");
   },
-  
-  readerName : function() {
-    return eval(this.class_name + 'Reader');
-  },
-  
+    
   singularize_human_name : function(name) {
     return name.replace(/_/g, " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
   },

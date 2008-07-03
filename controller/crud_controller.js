@@ -21,6 +21,16 @@ Ext.ux.MVC.controller.CrudController = function(config) {
     }
   });
   
+  //TODO: a small taste of eval laziness to avoid naming default views each time
+  if (this.namespace) {
+    Ext.applyIf(this, {
+      indexPanel: eval(this.namespace + ".views." + this.model.underscore_name + ".Index"),
+      newPanel:   eval(this.namespace + ".views." + this.model.underscore_name + ".New"),
+      editPanel:  eval(this.namespace + ".views." + this.model.underscore_name + ".Edit")
+    });
+  };
+  
+  
   Ext.ux.MVC.controller.CrudController.superclass.constructor.call(this, config);
 };
 
