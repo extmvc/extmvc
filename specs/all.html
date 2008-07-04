@@ -13,14 +13,14 @@
   <script src="../model/base.js" type="text/javascript" charset="utf-8"></script>
   <script src="../controller/base.js" type="text/javascript" charset="utf-8"></script>
   <script src="../controller/crud_controller.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../lib/router.js" type="text/javascript" charset="utf-8"></script>
   
-  
+  <script src="router.js" type="text/javascript" charset="utf-8"></script>
   <script type="text/javascript">// <![CDATA[
   // Define a new model and test that the various methods work correctly
-  var AgentPageTemplateRecord = Ext.data.Record.create([{ name: 'id', type: 'int'}]);  
-  var AgentPageTemplateReader = new Ext.data.JsonReader({root: 'agent_page_templates', totalProperty: 'results'}, AgentPageTemplateRecord);
-  
-  AgentPageTemplate = new Ext.ux.MVC.model.Base('agent_page_template');
+  AgentPageTemplate = new Ext.ux.MVC.model.Base('agent_page_template', {
+    fields: [{name: 'id', type: 'int'}]
+  });
   
   // mock some views
   AgentPageTemplateIndexPanel = {};
@@ -48,7 +48,7 @@
     }
   });
   
-  controller = new AgentPageTemplatesController();
+  var controller = new AgentPageTemplatesController();
 
   // ]]></script>
   
