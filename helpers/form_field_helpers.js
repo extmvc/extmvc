@@ -194,3 +194,128 @@ Ext.ux.MVC.helper.LiveSearchComboBox = function(config) {
 };
 Ext.extend(Ext.ux.MVC.helper.LiveSearchComboBox, Ext.form.ComboBox);
 Ext.reg('live_search_combo_box', Ext.ux.MVC.helper.LiveSearchComboBox);
+
+
+/**
+ * Ext.ux.MVC.helper.FlaggedTextField
+ * @extends Ext.form.TextField
+ * Provides a button next to each form field to flag as inappropriate
+ */
+Ext.ux.MVC.helper.FlaggedTextField = function(config) {
+  var config = config || {};
+  var panel_config = {};
+  var textfield_config = {};
+  Ext.apply(textfield_config, {xtype: 'textfield'}, config);
+  
+  if (!this.flagForm) {
+    this.flagForm = new Ext.form.FormPanel({
+      bodyStyle: 'background-color: #dfe8f6; padding: 15px',
+      labelAlign: 'top',
+      items: [
+        {
+          xtype: 'label',
+          text: 'Field to flag: ' + textfield_config.fieldLabel
+        },
+        {
+          xtype: 'textarea',
+          fieldLabel: 'Reason',
+          anchor: "100% 80%",
+          id: textfield_config.id + "_flag_message"
+        }
+      ],
+      buttons: [
+        {
+          text: 'Mark as OK',
+          iconCls: 'flag_green',
+          scope: this,
+          handler: function() {
+            //all flagged fields are stored here before form submission
+            f = ILF.flaggedFields;
+            
+            //unset the flag on this field
+            f[textfield_config.id] = null;
+            
+            //notify the user that they need to save the record
+            flash("The field has been unflagged, don't forget to save the form for changes to take effect", "Flag unset");
+            this.window.hide();
+          }
+        },
+        {
+          text: 'Mark as Flagged',
+          iconCls: 'flag_red',
+          scope: this,
+          handler: function() {
+            //all flagged fields are stored here before form submission
+            f = ILF.flaggedFields;
+            
+            //set the flagged field for this field's ID to the message in the box above
+            f[textfield_config.id] = Ext.getCmp(textfield_config.id + '_flag_message').getValue();
+            
+            //notify the user that they need to save the record
+            flash("The field has been marked as flagged, don't forget to save the form for changes to take effect", "Flag set");
+            
+            //close the window
+            this.window.hide();
+          }
+        }
+      ]
+    });
+  };
+  
+  if (!this.window) {
+    this.window = new Ext.Window({
+      title: 'Flag as inappropriate',
+      closeAction: 'hide',
+      layout: 'fit',
+      minHeight: 300,
+      minWidth: 400,
+      height: 300,
+      width: 400,
+      items: [
+        this.flagForm
+      ],
+      modal: true
+    });
+  };
+  
+  this.flagButton = new Ext.Button({
+    iconCls: 'flag_red',
+    style: 'padding-top: 18px;',
+    tooltip: "Click to flag this field as inappropriate",
+    scope: this,
+    handler: function() {
+      this.window.show();
+    }
+  });
+  
+  this.textField = new Ext.form.TextField(textfield_config);
+  
+  Ext.apply(panel_config, {
+    layout: 'form',
+    items: [
+      {
+        layout: 'column',
+        items: [
+          {
+            columnWidth: .85,
+            layout: 'form',
+            items: [
+              this.textField
+            ]
+          },
+          {
+            columnWidth: .15,
+            layout: 'form',
+            items: [
+              this.flagButton
+            ]
+          }
+        ]
+      }
+    ]
+  });
+  
+  Ext.ux.MVC.helper.FlaggedTextField.superclass.constructor.call(this, panel_config);
+};
+Ext.extend(Ext.ux.MVC.helper.FlaggedTextField, Ext.Panel);
+Ext.reg('flagged_textfield', Ext.ux.MVC.helper.FlaggedTextField);

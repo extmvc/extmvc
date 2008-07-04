@@ -123,7 +123,8 @@ Ext.ux.MVC.view.DefaultEditForm = function(config) {
   //set what to do on Save or Cancel
   Ext.applyIf(config, {
     cancelAction: function() {config.editNext(config.records);},
-    saveAction: function() {      
+    saveAction: function() {
+      //TODO: this should NOT be here
       //trigger any Tiny MCE instances to save first
       try {
         tinymce.EditorManager.triggerSave();
