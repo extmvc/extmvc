@@ -119,7 +119,8 @@ Ext.ux.MVC.helper.FlaggedTextFieldWindow = function(config) {
           //all flagged fields are stored here before form submission
           f = ILF.flaggedFields;
           
-          //unset the flag on this field
+          //unset the flag on this field.  Need to create a new object here
+          //as setting to null still keeps a track of the flag instead of removing it
           newObject = {};
           for (field in f) {
             if (field != config.field_id) {
