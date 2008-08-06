@@ -1,0 +1,6 @@
+Change Log
+==========
+
+06/08/2008
+Started Changelog... :)
+Added History management using Ext.History.  This is likely to break things currently!
