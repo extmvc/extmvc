@@ -30,16 +30,17 @@ Ext.ux.MVC.model.Base = function(model_name, config) {
    * human_plural_name = 'Advert Groups'
    */
   Ext.apply(this, config, {
-    model_name          : model_name,
-    underscore_name     : model_name,
-    url_name            : this.urlize_name(model_name),
-    human_singular_name : this.singularize_human_name(model_name),
-    human_plural_name   : this.pluralize_human_name(model_name),
-    controller_name     : this.controller_name(model_name),
-    class_name          : this.classify_name(model_name),
-    foreign_key_name    : model_name + "_id",
-    url_namespace       : '/admin',
-    url_extension       : '.ext_json'
+    model_name                   : model_name,
+    underscore_name              : model_name,
+    url_name                     : this.urlize_name(model_name),
+    human_singular_name          : this.singularize_human_name(model_name),
+    human_plural_name            : this.pluralize_human_name(model_name),
+    controller_name              : this.controller_name(model_name),
+    class_name                   : this.classify_name(model_name),
+    foreign_key_name             : model_name + "_id",
+    parametized_foreign_key_name : ":" + model_name + "_id",
+    url_namespace                : '/admin',
+    url_extension                : '.ext_json'
   });
 };
 
@@ -55,17 +56,50 @@ Ext.ux.MVC.model.Base.prototype = {
 
   /**
    * URL to retrieve a JSON representation of this model from
+   * Can pass it either a number or a Record, so long as the record looks something like
+   * {data: {id: 1}}
    */
-  singleUrl : function(record) {
-    return this.namespacedUrl(String.format("{0}/{1}", this.url_name, record.data.id));
+  singleDataUrl : function(record_or_id) {
+    if (record_or_id.data && record_or_id.data.id) {
+      record_or_id = record_or_id.data.id;
+    };
+    return this.namespacedUrl(String.format("{0}/{1}", this.url_name, record_or_id));
   },
   
   /**
    * URL to retrieve a JSON representation of the collection of this model from
    * This would typically return the first page of results (see {@link #collectionStore})
    */
-  collectionUrl : function(config) {
+  collectionDataUrl : function(config) {
     return this.namespacedUrl(this.url_name);
+  },
+  
+  /**
+   * Local url (after the # in the address bar) which identifies the show URL for this model
+   */
+  showUrl : function(record_or_id) {
+    return this.editUrl(record_or_id);
+  },
+  
+  /**
+   * Local url to display the new record form
+   */
+  newUrl : function() {
+    return this.url_name + "/New";
+  },
+  
+  /**
+   * Local url (after the # in the address bar) which identifies the edit URL for this model
+   */
+  editUrl : function(record_or_id) {
+    if (record_or_id.data && record_or_id.data.id) {
+      record_or_id = record_or_id.data.id;
+    };
+    return this.url_name + "/Edit/" + record_or_id;
+  },
+  
+  collectionUrl : function(config) {
+    return this.url_name + "/Index";
   },
   
   /**
@@ -88,7 +122,7 @@ Ext.ux.MVC.model.Base.prototype = {
   },
   
   /**
-   * Returns an Ext.data.Store which is configured to load from the {@link #singleUrl} method
+   * Returns an Ext.data.Store which is configured to load from the {@link #singleDataUrl} method
    * Returned Store is also configured with this model's reader
    * @cfg {Number} id Unique ID of the model - will be used to build the resource URL
    * @cfg {Object} storeConfig Additional configuration options which are passed to the Store
@@ -99,7 +133,7 @@ Ext.ux.MVC.model.Base.prototype = {
     
     return new Ext.data.Store(
       Ext.applyIf(storeConfig, {
-        url: this.singleUrl(id),
+        url: this.singleDataUrl(id),
         reader: this.getReader()
       })
     );
@@ -135,7 +169,7 @@ Ext.ux.MVC.model.Base.prototype = {
   collectionStore : function(config) {
     options = Ext.apply({}, config, {
       proxy: new Ext.data.HttpProxy({
-        url: this.collectionUrl(config),
+        url: this.collectionDataUrl(config),
         method: 'get',
         params: {start: 0, limit: 25}
       }),
@@ -174,7 +208,7 @@ Ext.ux.MVC.model.Base.prototype = {
   collectionGroupStore : function(config) {
     options = Ext.apply({}, config, {
       proxy: new Ext.data.HttpProxy({
-        url: this.collectionUrl(config),
+        url: this.collectionDataUrl(config),
         method: 'get',
         params: {start: 0, limit: 25}
       }),
@@ -254,11 +288,11 @@ Ext.ux.MVC.model.Base.prototype = {
   },
     
   singularize_human_name : function(name) {
-    return name.replace(/_/g, " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+    return String.titleize(name.replace(/_/g, " "));
   },
   
   pluralize_human_name : function(name) {
-    return (name + 's').replace(/_/g, " ").replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+    return String.titleize((name + 's').replace(/_/g, " "));
   },
   
   urlize_name : function(name) {

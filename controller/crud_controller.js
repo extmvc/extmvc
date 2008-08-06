@@ -44,8 +44,9 @@ Ext.extend(Ext.ux.MVC.controller.CrudController, Ext.ux.MVC.controller.Base, {
   },
   
   viewEdit : function(records, config) {
-    if (records.length == 0) {return false;};
-    this.showPanel(new this.editPanel({records: records}));
+    ids = Ext.ux.MVC.params[":id"].split(",");
+    if (ids.length == 0) {return false;};
+    this.showPanel(new this.editPanel({ids: ids}));
   },
   
   nextPage : function(store) {

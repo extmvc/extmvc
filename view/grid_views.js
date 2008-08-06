@@ -29,7 +29,7 @@ Ext.ux.MVC.view.DefaultPagingGrid = function(config) {
       value = event.value;
       
       Ext.Ajax.request({
-        url: '/admin/' + config.model.url_name + '/' + record.data.id + '.ext_json',
+        url: config.model.singleDataUrl(record),
         method: 'post',
         params: "_method=put&" + config.model.underscore_name + "[" + field + "]=" + value,
         success: function() {
@@ -164,19 +164,17 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
     },
     
     newAction : function() {
-      controller = application.getControllerByName(config.model.controller_name);
-      controller.viewNew();
+      Ext.History.add(this.model.newUrl());
     },
     
     editAction : function() {
-      var records = new Array();
+      var ids = new Array();
       selections = this.getSelectionModel().getSelections();
       for (var i=0; i < selections.length; i++) {
-        records.push(selections[i]);
+        ids.push(selections[i].data.id);
       };
       
-      controller = application.getControllerByName(config.model.controller_name);
-      controller.viewEdit(records);
+      Ext.History.add(config.model.editUrl(ids.join(",")));
     },
     
     deleteAction : function() {
