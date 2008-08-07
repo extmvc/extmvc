@@ -10,6 +10,7 @@ Ext.ux.MVC.view.DefaultPagingGrid = function(config) {
   //set a few default properties
   Ext.applyIf(config, {
     viewConfig: {forceFit: true},
+    changeDocumentTitle: true,
     tbar: null,
     autoLoadStore: true,
     headings: [],
@@ -112,6 +113,10 @@ Ext.ux.MVC.view.DefaultPagingGrid = function(config) {
   };
   
   Ext.ux.MVC.view.DefaultPagingGrid.superclass.constructor.call(this, config);
+  
+  if (config.changeDocumentTitle) {
+    document.title = "View " + config.model.human_plural_name;
+  };
   
   //attempt to retrieve state to keep on the same page we were on last time
   //TODO: refactor this out of here, should be an initializer like the paging toolbar one
