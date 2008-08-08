@@ -1,9 +1,9 @@
 /**
- * Ext.ux.MVC.helper.FlaggedTextField
- * @extends Ext.form.TextField
+ * Ext.ux.MVC.view.FlaggedTextField
+ * @extends Ext.view.TextField
  * Provides a button next to each form field to flag as inappropriate
  */
-Ext.ux.MVC.helper.FlaggedTextField = function(config) {
+Ext.ux.MVC.view.FlaggedTextField = function(config) {
   var config = config || {};
   var panel_config = {};
   var textfield_config = {};
@@ -20,7 +20,7 @@ Ext.ux.MVC.helper.FlaggedTextField = function(config) {
         fieldLabel: textfield_config.fieldLabel,
         flaggedTextField: this
       };
-      this.win = new Ext.ux.MVC.helper.FlaggedTextFieldWindow(window_config);
+      this.win = new Ext.ux.MVC.FlaggedTextFieldWindow(window_config);
       this.win.show();
     }
   });
@@ -77,18 +77,18 @@ Ext.ux.MVC.helper.FlaggedTextField = function(config) {
     this.flagButton.setIconClass('flag_' + colour);
   };
   
-  Ext.ux.MVC.helper.FlaggedTextField.superclass.constructor.call(this, panel_config);
+  Ext.ux.MVC.view.FlaggedTextField.superclass.constructor.call(this, panel_config);
 };
-Ext.extend(Ext.ux.MVC.helper.FlaggedTextField, Ext.Panel);
-Ext.reg('flagged_textfield', Ext.ux.MVC.helper.FlaggedTextField);
+Ext.extend(Ext.ux.MVC.view.FlaggedTextField, Ext.Panel);
+Ext.reg('flagged_textfield', Ext.ux.MVC.view.FlaggedTextField);
 
 
 /**
- * Ext.ux.MVC.helper.FlaggedTextFieldWindow
+ * Ext.ux.MVC.FlaggedTextFieldWindow
  * @extends Ext.Window
- * Popup window used to gather flagging information.  Intended for use with a Ext.ux.MVC.helper.FlaggedTextField
+ * Popup window used to gather flagging information.  Intended for use with a Ext.ux.MVC.FlaggedTextField
  */
-Ext.ux.MVC.helper.FlaggedTextFieldWindow = function(config) {
+Ext.ux.MVC.FlaggedTextFieldWindow = function(config) {
   var config = config || {};
   
   //find the current flag text if it exists
@@ -175,8 +175,8 @@ Ext.ux.MVC.helper.FlaggedTextFieldWindow = function(config) {
     modal: true
   });
   
-  Ext.ux.MVC.helper.FlaggedTextFieldWindow.superclass.constructor.call(this, config);
+  Ext.ux.MVC.FlaggedTextFieldWindow.superclass.constructor.call(this, config);
   
   this.window = this;
 };
-Ext.extend(Ext.ux.MVC.helper.FlaggedTextFieldWindow, Ext.Window);
+Ext.extend(Ext.ux.MVC.FlaggedTextFieldWindow, Ext.Window);
