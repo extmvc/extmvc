@@ -13,6 +13,7 @@ Ext.ux.MVC.view.DefaultNewForm = function(config) {
   //set some sensible defaults
   Ext.applyIf(config, {
     frame: true,
+    changeDocumentTitle: true,
     labelAlign: 'top',
     autoScroll: true,
     bodyStyle: 'position: relative;', //fixes an IE bug where scrolling forms go nuts
@@ -22,6 +23,10 @@ Ext.ux.MVC.view.DefaultNewForm = function(config) {
   });
   
   Ext.ux.MVC.view.DefaultNewForm.superclass.constructor.call(this, config);
+  
+  if (config.changeDocumentTitle) {
+    document.title = "New " + config.model.human_singular_name;
+  };
     
   //set some more sensible defaults, and what to do on save and cancel
   Ext.applyIf(config, {
@@ -48,7 +53,7 @@ Ext.ux.MVC.view.DefaultNewForm = function(config) {
           Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + singular + ', please see any fields with red icons');
         },
         success: function(formElement, action) {
-          flash('The ' + singular + ' was created successfully', singular + ' Created');
+          Ext.ux.MVC.Flash.flash('The ' + singular + ' was created successfully', singular + ' Created');
           if (config.afterSave) {
             config.afterSave.call(this, action.result, form);
           } else {
@@ -106,6 +111,7 @@ Ext.ux.MVC.view.DefaultEditForm = function(config) {
   Ext.applyIf(config, {
     frame: true,
     iconCls: 'form_edit',
+    changeDocumentTitle: true,
     title: 'Edit ' + config.model.human_singular_name,
     autoScroll: true,
     autoLoadForm: true,
@@ -117,6 +123,10 @@ Ext.ux.MVC.view.DefaultEditForm = function(config) {
   
   if (config.addPutMethodField) {
     config.items = [{ xtype: 'hidden', name: '_method', value: 'put'}].concat(config.items);
+  };
+  
+  if (config.changeDocumentTitle) {
+    document.title = "Edit " + config.model.human_singular_name;
   };
   
   //set what to do on Save or Cancel
@@ -141,7 +151,7 @@ Ext.ux.MVC.view.DefaultEditForm = function(config) {
           if (config.success) {
             config.success.call(this, action.result, form);
           };
-          flash("Your changes have been saved", config.model.human_singular_name + ' successfully updated');
+          Ext.ux.MVC.Flash.flash("Your changes have been saved", config.model.human_singular_name + ' successfully updated');
           config.editNext();
         }
       });
@@ -229,6 +239,7 @@ Ext.ux.MVC.view.DefaultSingletonForm = function(config) {
   Ext.applyIf(config, {
     items: null,
     frame: true,
+    changeDocumentTitle: true,
     labelAlign: 'left',
     autoScroll: true,
     autoLoadForm: true,
@@ -243,6 +254,11 @@ Ext.ux.MVC.view.DefaultSingletonForm = function(config) {
   
   Ext.ux.MVC.view.DefaultSingletonForm.superclass.constructor.call(this, config);
   
+  
+  if (config.changeDocumentTitle) {
+    document.title = "Edit the " + config.model.human_singular_name;
+  };
+  
   Ext.applyIf(config, {
     saveAction: function() {
       this.form.submit({
@@ -252,7 +268,7 @@ Ext.ux.MVC.view.DefaultSingletonForm = function(config) {
           Ext.Msg.alert('Operation Failed', 'There were errors saving the ' + config.model.human_singular_name + ', please see any fields with red icons');
         },
         success: function(formElement, action) {
-          flash('The ' + config.model.human_singular_name + ' was updated successfully', config.model.human_singular_name + ' Updated');
+          Ext.ux.MVC.Flash.flash('The ' + config.model.human_singular_name + ' was updated successfully', config.model.human_singular_name + ' Updated');
           if (config.success) {
             config.success.call(this, action.result, form);
           };

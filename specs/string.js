@@ -10,5 +10,13 @@ describe('String methods', {
   'should titleize a sentence': function() {
     sentence = "this is a sentence";
     value_of(String.titleize(sentence)).should_be("This Is A Sentence");
+  },
+  'should camelize a simple string': function() {
+    underscored_string = 'classname';
+    value_of(String.camelize(underscored_string)).should_be('Classname');
+  },
+  'should camelize a long string': function() {
+    underscored_string = 'long_class_name';
+    value_of(String.camelize(underscored_string)).should_be('LongClassName');
   }
 });
