@@ -11,7 +11,7 @@ Ext.ux.MVC = {
    */
   createNamespaces: function(namespace, views) {
     //First, set up top level namespaces
-    Ext.namespace(namespace, namespace + ".controllers", namespace + ".models", namespace + ".views");
+    Ext.namespace(namespace, namespace + ".controllers", namespace + ".models", namespace + ".views", namespace + ".helpers");
     
     for (var i = views.length - 1; i >= 0; i--){
       Ext.namespace(namespace + ".views." + views[i]);
