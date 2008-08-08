@@ -53,7 +53,7 @@ Ext.ux.MVC.view.DefaultNewForm = function(config) {
           Ext.Msg.alert('Operation Failed', 'There were errors saving this ' + singular + ', please see any fields with red icons');
         },
         success: function(formElement, action) {
-          flash('The ' + singular + ' was created successfully', singular + ' Created');
+          Ext.ux.MVC.Flash.flash('The ' + singular + ' was created successfully', singular + ' Created');
           if (config.afterSave) {
             config.afterSave.call(this, action.result, form);
           } else {
@@ -151,7 +151,7 @@ Ext.ux.MVC.view.DefaultEditForm = function(config) {
           if (config.success) {
             config.success.call(this, action.result, form);
           };
-          flash("Your changes have been saved", config.model.human_singular_name + ' successfully updated');
+          Ext.ux.MVC.Flash.flash("Your changes have been saved", config.model.human_singular_name + ' successfully updated');
           config.editNext();
         }
       });
@@ -268,7 +268,7 @@ Ext.ux.MVC.view.DefaultSingletonForm = function(config) {
           Ext.Msg.alert('Operation Failed', 'There were errors saving the ' + config.model.human_singular_name + ', please see any fields with red icons');
         },
         success: function(formElement, action) {
-          flash('The ' + config.model.human_singular_name + ' was updated successfully', config.model.human_singular_name + ' Updated');
+          Ext.ux.MVC.Flash.flash('The ' + config.model.human_singular_name + ' was updated successfully', config.model.human_singular_name + ' Updated');
           if (config.success) {
             config.success.call(this, action.result, form);
           };

@@ -1,6 +1,5 @@
 Ext.namespace("Ext.ux.MVC");
 
-//version 0.4
 Ext.ux.MVC = {
   version: "0.4",
   
@@ -17,6 +16,17 @@ Ext.ux.MVC = {
     for (var i = views.length - 1; i >= 0; i--){
       Ext.namespace(namespace + ".views." + views[i]);
     };
+  },
+  
+  /**
+   * Creates global aliases to make Ext MVC feel more like rails.
+   * Specifically, provide aliases for:
+   * Ext.ux.MVC.params => params
+   * Ext.ux.MVC.Flash.flash => flash
+   */
+  behaveLikeRails: function() {
+    params = Ext.ux.MVC.params;
+    flash  = Ext.ux.MVC.Flash.flash;
   }
 };
 

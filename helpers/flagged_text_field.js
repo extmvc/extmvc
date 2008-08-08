@@ -133,7 +133,7 @@ Ext.ux.MVC.helper.FlaggedTextFieldWindow = function(config) {
           config.flaggedTextField.setFlagColour('green');
           
           //notify the user that they need to save the record
-          flash("The field has been unflagged, don't forget to save the form for changes to take effect", "Flag unset");
+          Ext.ux.MVC.Flash.flash("The field has been unflagged, don't forget to save the form for changes to take effect", "Flag unset");
           this.window.close();
         }
       },
@@ -152,7 +152,7 @@ Ext.ux.MVC.helper.FlaggedTextFieldWindow = function(config) {
           config.flaggedTextField.setFlagColour('red');
           
           //notify the user that they need to save the record
-          flash("The field has been marked as flagged, don't forget to save the form for changes to take effect", "Flag set");
+          Ext.ux.MVC.Flash.flash("The field has been marked as flagged, don't forget to save the form for changes to take effect", "Flag set");
           
           //close the window
           this.window.close();

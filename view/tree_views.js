@@ -71,7 +71,7 @@ function treeWithForm(config) {
               method: 'post',
               params: '_method=delete',
               success: function() {
-                flash('The ' + human_name + ' has been successfully deleted', human_name + ' deleted');
+                Ext.ux.MVC.Flash.flash('The ' + human_name + ' has been successfully deleted', human_name + ' deleted');
                 updateTree();
                 
                 options.afterDelete();
@@ -113,7 +113,7 @@ function treeWithForm(config) {
                 if (options.success) {
                   options.success.call(this, action.result, form);
                 };
-                flash("Your changes have been saved", human_name + ' successfully updated');
+                Ext.ux.MVC.Flash.flash("Your changes have been saved", human_name + ' successfully updated');
                 updateTree();
               }
             });
@@ -131,7 +131,7 @@ function treeWithForm(config) {
                 if (options.success) {
                   options.success.call(this, action.result, form);
                 };
-                flash("Your changes have been saved", human_name + ' successfully updated');
+                Ext.ux.MVC.Flash.flash("Your changes have been saved", human_name + ' successfully updated');
               }
             });
           };
@@ -210,7 +210,7 @@ function treeWithForm(config) {
             url: options.model.singleUrl({data: {id: id}}),
             params: "_method=put&" + options.model.model_name + "[" + options.treeEditableField + "]=" + value,
             success: function() {
-              flash('The ' + human_name + ' ' + options.treeEditableField + ' was successfully updated', human_name + ' ' + options.treeEditableField + ' updated');
+              Ext.ux.MVC.Flash.flash('The ' + human_name + ' ' + options.treeEditableField + ' was successfully updated', human_name + ' ' + options.treeEditableField + ' updated');
             },
             failure: function() {
               Ext.Msg.alert(human_name + ' ' + options.treeEditableField + ' NOT updated', 'The ' + options.treeEditableField + ' of this ' + human_name + ' could not be updated - please try again');
@@ -227,7 +227,7 @@ function treeWithForm(config) {
       url: options.model.treeReorderUrl({data: {id: node.id}}),
       params: "parent=" + newParent.id + "&index=" + index,
       success: function() {
-        flash('The ' + human_name + ' was moved successfully', human_name + ' moved');
+        Ext.ux.MVC.Flash.flash('The ' + human_name + ' was moved successfully', human_name + ' moved');
       },
       failure: function() {
         Ext.Msg.alert('Error moving ' + human_name, 'Something went wrong while moving this ' + human_name + ', please try again');
