@@ -1,4 +1,4 @@
-describe('Ext.ux.MVC, when running behaveLikeRails()', {
+describe('Ext.ux.MVC.behaveLikeRails()', {
   before_each: function() {
     params_mock = {key: 'value'};
     Ext.ux.MVC.params = params_mock;
