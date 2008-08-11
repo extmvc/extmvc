@@ -49,5 +49,5 @@ Ext.ux.MVC.view.LocalComboBox = function(config) {
   
   Ext.ux.MVC.view.LocalComboBox.superclass.constructor.call(this, config);
 };
-Ext.extend(Ext.ux.MVC.view.LocalComboBox, Ext.view.ComboBox);
+Ext.extend(Ext.ux.MVC.view.LocalComboBox, Ext.form.ComboBox);
 Ext.reg('local_combo_box', Ext.ux.MVC.view.LocalComboBox);
