@@ -5,7 +5,7 @@ Ext.ux.MVC = {
   
   /**
    * Method to set up namespaces for views, controllers, models, views and each view directory.  Calling:
-   * Ext.ux.MVC.namespaceViews('MyNamespace', ['users', 'products']);
+   * Ext.ux.MVC.createNamespaces('MyNamespace', ['users', 'products']);
    * is equivalent to:
    * Ext.namespace("MyNamespace.views.users", "MyNamespace.views.products");
    */
@@ -30,7 +30,7 @@ Ext.ux.MVC = {
   }
 };
 
-Ext.namespace("Ext.ux.MVC.controller", "Ext.ux.MVC.model", "Ext.ux.MVC.view", "Ext.ux.MVC.helper");
+Ext.namespace("Ext.ux.MVC.controller", "Ext.ux.MVC.model", "Ext.ux.MVC.view", "Ext.ux.MVC.helper", "Ext.ux.MVC.Plugin");
 
 //additional helper namespaces
 Ext.namespace("Ext.ux.MVC.helper.button", "Ext.ux.MVC.helper.grid", "Ext.ux.MVC.helper.form");
