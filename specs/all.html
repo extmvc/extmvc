@@ -14,12 +14,14 @@
   <script src="../controller/base.js" type="text/javascript" charset="utf-8"></script>
   <script src="../controller/crud_controller.js" type="text/javascript" charset="utf-8"></script>
   <script src="../lib/router.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../lib/route.js" type="text/javascript" charset="utf-8"></script>
   <script src="../lib/flash.js" type="text/javascript" charset="utf-8"></script>
   <script src="../lib/string_methods.js" type="text/javascript" charset="utf-8"></script>
   <script src="../lib/request_exception_handler.js" type="text/javascript" charset="utf-8"></script>
   
   <script src="base.js" type="text/javascript" charset="utf-8"></script>
   <script src="router.js" type="text/javascript" charset="utf-8"></script>
+  <script src="route.js" type="text/javascript" charset="utf-8"></script>
   <script type="text/javascript">// <![CDATA[
   // Define a new model and test that the various methods work correctly
   AgentPageTemplate = new Ext.ux.MVC.model.Base('agent_page_template', {
@@ -32,8 +34,8 @@
   AgentPageTemplateNewPanel   = {};
   
   // stub out a layout manager
-  LeftMenuLayoutManager = function() {
-    this.initializeMenu = function() {
+  Ext.ux.MVC.LayoutManager.LeftMenuLayoutManager = function() {
+    this.initialize = function() {
       return true;
     }
   };
