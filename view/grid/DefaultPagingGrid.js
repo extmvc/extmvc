@@ -9,21 +9,25 @@ Ext.ux.MVC.view.DefaultPagingGrid = function(config) {
   
   //set a few default properties
   Ext.applyIf(config, {
-    viewConfig: {forceFit: true},
+    viewConfig: {
+      forceFit: true
+    },
+    
+    tbar:                null,
     changeDocumentTitle: true,
-    tbar: null,
-    autoLoadStore: true,
-    headings: [],
-    clicksToEdit: 1,
-    loadMask: true
+    autoLoadStore:       true,
+    loadMask:            true,
+    headings:            [],
+    clicksToEdit:        1
   });
   
   //set default actions if they are not supplied
   Ext.applyIf(config, {
-    title: config.model.human_plural_name,
     iconCls: 'grid_list',
-    id: config.model.url_name + '_index',
-    store: config.model.collectionStore(),
+    title:   config.model.human_plural_name,
+    id:      config.model.url_name + '_index',
+    store:   config.model.collectionStore(),
+    
     saveEditAction: function(event) {
       var record = event.record;
       var field  = event.field;
@@ -53,9 +57,9 @@ Ext.ux.MVC.view.DefaultPagingGrid = function(config) {
   this.columnModel.defaultWidth = 160;
 
   config.filters = new Ext.ux.grid.GridFilters({filters: config.headings});
-  config.bbar = new Ext.ux.MVC.DefaultPagingToolbar({store: config.store, model: config.model});
+  config.bbar    = new Ext.ux.MVC.DefaultPagingToolbar({store: config.store, model: config.model});
   config.plugins = [config.bbar, config.filters];
-  config.cm = this.columnModel;
+  config.cm      = this.columnModel;
 
   config.controller = application.getControllerByName(config.model.controller_name);
   
@@ -139,12 +143,13 @@ Ext.ux.MVC.view.DefaultPagingGridWithTopToolbar = function(config) {
   Ext.applyIf(config, {
     editable: false,
     topToolbarButtonsBefore: [],
-    topToolbarButtonsAfter: [],
-    displaySearchByName: true,
-    displayAddButton: true,
-    displayEditButton: true,
-    displayDeleteButton: true,
-    displayCSVExportButton: true
+    topToolbarButtonsAfter:  [],
+    
+    displaySearchByName:     true,
+    displayAddButton:        true,
+    displayEditButton:       true,
+    displayDeleteButton:     true,
+    displayCSVExportButton:  false
   });
   
   //add default actions if they are not passed in constructor config

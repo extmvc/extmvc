@@ -85,7 +85,7 @@ Ext.ux.MVC.model.Base.prototype = {
    * Local url to display the new record form
    */
   newUrl : function() {
-    return this.url_name + "/New";
+    return this.controller_name.replace("Controller", "") + "/New";
   },
   
   /**
@@ -95,11 +95,11 @@ Ext.ux.MVC.model.Base.prototype = {
     if (record_or_id.data && record_or_id.data.id) {
       record_or_id = record_or_id.data.id;
     };
-    return this.url_name + "/Edit/" + record_or_id;
+    return this.controller_name.replace("Controller", "") + "/Edit/" + record_or_id;
   },
   
   collectionUrl : function(config) {
-    return this.url_name + "/Index";
+    return this.controller_name.replace("Controller", "") + "/Index";
   },
   
   /**
