@@ -157,7 +157,9 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
       
     //view has not been registered, attempt to create one
     } else if (this.resourceModel) {
-      v = new (this.scaffoldViewName(viewName))(this.resourceModel);
+      try {
+        v = new (this.scaffoldViewName(viewName))(this.resourceModel);
+      } catch(e) {};
     }
     
     if (!v || typeof(v) == 'undefined') {return;}
@@ -172,21 +174,35 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
         throw new Error('The view ID ' + v.id + ' has already been taken.  Each view instance must have a unique ID');        
       };
     } else {
-      v.on('close',   function()     {this.destroyView(v.id); },            this);
-      v.on('destroy', function(view) {delete this.runningViews[view.id]; }, this);
-      this.runningViews[v.id] = v;
-      
-      if (this.renderMethod == 'render' && renderConfig.renderNow) {
-        v.render(renderConfig.renderTo, renderConfig.renderPosition);
-        return v;
-      } else {
-        if (this.addTo && renderConfig.renderNow) {
-          this.addTo.add(v).show();
-          this.addTo.doLayout();
-        };
-      };
+      return this.launchView(v);
     };
 
+  },
+  
+  /**
+   * Launches a view instance by either rendering it to the renderTo element or adding it to this.addTo
+   * @param {Ext.Component} v Any Component which can be added to a container or rendered to an element
+   * @param {Object} renderConfig A config object with instructions on how to render this view.  Relevant options are:
+   *                              renderNow: true to render the view right away (defaults to true)
+   *                              renderTo: The element to render this view to (unless using the addTo method)
+   */
+  launchView: function(v, renderConfig) {
+    var renderConfig = renderConfig || {};
+    Ext.applyIf(renderConfig, { renderNow: true });
+    
+    v.on('close',   function()     {this.destroyView(v.id); },            this);
+    v.on('destroy', function(view) {delete this.runningViews[view.id]; }, this);
+    this.runningViews[v.id] = v;
+    
+    if (this.renderMethod == 'render' && renderConfig.renderNow) {
+      v.render(renderConfig.renderTo, renderConfig.renderPosition);
+      return v;
+    } else {
+      if (this.addTo && renderConfig.renderNow) {
+        this.addTo.add(v).show();
+        this.addTo.doLayout();
+      };
+    };
   },
   
   /**
