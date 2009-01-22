@@ -42,6 +42,16 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * @return {Array} An array of auto-generated form items
    */
   buildItems: function(model) {
+    //check to see if FormFields have been created for this model
+    //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.FormFields
+    var formFields;
+    
+    //FIXME: Again, we're pluralising in a very bad way here :(
+    if (formFields = eval(String.format("{0}.views.{1}s.FormFields", model.namespace, model.modelName))) {
+      return formFields;
+    };
+    
+    //no user defined form fields, generate them automatically
     var items = [];
     
     for (var i=0; i < model.fields.length; i++) {
