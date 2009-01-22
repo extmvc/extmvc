@@ -20,7 +20,7 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
           var obj = this.getSelectionModel().getSelected();
           
           //FIXME: no, can't decide controller name like this
-          Blog.OS.router.redirectTo({controller: model.modelName + 's', action: 'edit', id: obj.data.id});
+          Ext.ux.MVC.OS.getOS().router.redirectTo({controller: model.modelName + 's', action: 'edit', id: obj.data.id});
         }
       }
     }

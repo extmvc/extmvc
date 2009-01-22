@@ -8,7 +8,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   /**
    * Sets up the FormPanel, adds default configuration and items
    */
-  constructor: function(config, model) {
+  constructor: function(model, config) {
     var config = config || {};
     
     Ext.applyIf(config, {
@@ -51,7 +51,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
       if (this.ignoreFields.indexOf(f.name) == -1) {
         items.push(Ext.applyIf({
           name:       f.name,
-          fieldLabel: String.capitalize(f.name.replace("_", " "))
+          fieldLabel: String.capitalize(f.name.replace(/_/g, " "))
         }, this.formItemConfig));
       };
     };

@@ -3,8 +3,10 @@
  * @extends Ext.ux.MVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic edit form for a given model
  */
-Ext.ux.MVC.view.scaffold.Edit = function(model) {
-  var config = {
+Ext.ux.MVC.view.scaffold.Edit = function(model, config) {
+  var config = config || {};
+  
+  Ext.applyIf(config, {
     title:    'Edit ' + String.capitalize(model.prototype.modelName),
     buttons: [
       {
@@ -17,9 +19,9 @@ Ext.ux.MVC.view.scaffold.Edit = function(model) {
       //FIXME: no, can't decide controller name like this
       Ext.ux.MVC.OS.getOS().router.linkTo({controller: model.modelName + 's', action: 'index'}, {text: 'Cancel'})
     ]
-  };
+  });
  
-  Ext.ux.MVC.view.scaffold.Edit.superclass.constructor.call(this, config, model);
+  Ext.ux.MVC.view.scaffold.Edit.superclass.constructor.call(this, model, config);
   Ext.ux.MVC.OS.getOS().setsTitle(this);
 };
 
