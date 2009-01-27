@@ -5,7 +5,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
   
   A.REST = {
     initialize: function(model) {
-      console.log('initialising REST adapter');
+      // console.log('initialising REST adapter');
       
       A.Abstract.initialize(model);
     },
@@ -196,7 +196,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
         };
         
         //set a _method param to fake a PUT request (used by Rails)
-        var params = options.params || Ext.ux.MVC.Model.namespaceFields(this.data, this.modelName);
+        var params = options.params || this.namespaceFields();
         if (!this.newRecord) { params["_method"] = 'put'; }
         delete options.params;
         
@@ -231,6 +231,43 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
             params: "_method=delete"
           })
         );
+      },
+      
+      /**
+       * Namespaces fields within the modelName string, taking into account mappings.  For example, a model like:
+       * 
+       * modelName: 'user',
+       * field: [
+       *   {name: 'first_name', type: 'string'},
+       *   {name: 'last_name',  type: 'string', mapping: 'last'}
+       * ]
+       * 
+       * Will be decoded to an object like:
+       * 
+       * {
+       *   'user[first_name]': //whatever is in this.data.first_name
+       *   'user[last]':       //whatever is in this.data.last_name
+       * }
+       *
+       * Note especially that the mapping is used in the key where present.  This is to ensure that mappings work both
+       * ways, so in the example above the server is sending a key called last, which we convert into last_name.  When we
+       * send data back to the server, we convert last_name back to last.
+       */
+      namespaceFields: function() {
+        var fields    = this.fields;
+        var namespace = this.modelName;
+        
+        var nsfields = {};
+        
+        for (var i=0; i < fields.length; i++) {
+          nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), fields[i].mapping || fields[i].name)] = this.data[fields[i].name];
+        };
+        
+        for (f in fields) {
+          nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), this.data[f.name])] = fields[f];
+        }
+        
+        return nsfields;
       }
     }
   };

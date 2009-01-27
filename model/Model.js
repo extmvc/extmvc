@@ -4,7 +4,7 @@
  * Base model class
  */
 Ext.ux.MVC.Model = function(fields, config) {
-  console.log('made new model');
+  // console.log('made new model');
   Ext.applyIf(this, {
     /**
      * @property newRecord
@@ -97,6 +97,37 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
   eval(modelNameWithNamespace + " = Ext.extend(Ext.ux.MVC.Model, config)");
   var className = eval(modelNameWithNamespace);
   
+  /**
+   * If we are extending another model, copy its fields, class methods and instance methods
+   * into this model
+   */
+  if (className.prototype.extend) {
+    var extendsModel = eval(className.prototype.extend);
+    var parentFields = extendsModel.fields;
+    
+    //add parent model fields to the front of the child model fields array
+    for (var i = parentFields.length - 1; i >= 0; i--){
+      var childFields    = className.prototype.fields;
+      var alreadyDefined = false;
+      
+      //check that this field is not redefined in the child model
+      for (var j=0; j < childFields.length; j++) {
+        if (childFields[j].name == parentFields[i].name) {
+          alreadyDefined = true;
+          break; //no need to finish the loop as we've already made the match
+        }
+      };
+      
+      //only add if not redefined in child model
+      if (!alreadyDefined) {
+        className.prototype.fields.unshift(parentFields[i]);
+      };
+    };
+    
+    //add any class methods
+    Ext.applyIf(className, extendsModel.prototype);
+  };
+  
   //add fields, modelName, className and adapter as class-level items
   Ext.apply(className, {
     fields:    config.fields,
@@ -110,7 +141,7 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
   });
   
   //add model class functions such as findById
-  eval("Ext.ux.MVC.Model.addClassMethodsToModel(" + modelNameWithNamespace + ", config)");
+  Ext.ux.MVC.Model.addClassMethodsToModel(className, config);
 };
 
 
@@ -212,25 +243,7 @@ Ext.apply(Ext.ux.MVC.Model, {
     
     return record;
   },
-  
-  /**
-   * Namespaces fields within a given namespace string.  For example:
-   * namespaceFields({'type': 'a', 'name': 'b'}, 'my_model') returns:
-   * {'my_model[type]': 'a', 'my_model[name]': 'b'}
-   * @param {Object} fields The fields to namespace
-   * @param {String} namespace The namespace to apply to each field
-   * @return {Object} The namespaced field
-   */
-  namespaceFields: function(fields, namespace) {
-    var nsfields = {};
     
-    for (f in fields) {
-      nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), f)] = fields[f];
-    }
-    
-    return nsfields;
-  },
-  
   /**
    * String methods:
    */
@@ -277,7 +290,7 @@ Ext.apply(Ext.ux.MVC.Model, {
     if (adapter && adapter.classMethods) {
       Ext.apply(modelClass, adapter.classMethods);
     };
-    
+        
     //add other class methods    
     Ext.apply(modelClass, {      
       /**
@@ -295,36 +308,5 @@ Ext.apply(Ext.ux.MVC.Model, {
         return modelClass.reader;
       }
     }, additionalFunctions);
-    
-    /**
-     * If we are extending another model, copy its fields, class methods and instance methods
-     * into this model
-     */
-    if (modelClass.prototype.extend) {
-      var extendsModel = eval(modelClass.prototype.extend);
-      var parentFields = extendsModel.fields;
-      
-      //add parent model fields to the front of the child model fields array
-      for (var i = parentFields.length - 1; i >= 0; i--){
-        var childFields    = modelClass.prototype.fields;
-        var alreadyDefined = false;
-        
-        //check that this field is not redefined in the child model
-        for (var j=0; j < childFields.length; j++) {
-          if (childFields[j].name == parentFields[i].name) {
-            alreadyDefined = true;
-            break; //no need to finish the loop as we've already made the match
-          }
-        };
-        
-        //only add if not redefined in child model
-        if (!alreadyDefined) {
-          modelClass.prototype.fields.unshift(parentFields[i]);
-        };
-      };
-      
-      //add any class methods
-      Ext.applyIf(modelClass.prototype, extendsModel.prototype);
-    };
   }
 });
