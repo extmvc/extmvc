@@ -1,5 +1,37 @@
 Ext.ns('Ext.ux.MVC.Model.Adapter');
 
+Ext.ux.MVC.Model.Adapter.Abstract = {
+  initialize: function(model) {
+    
+  },
+  
+  classMethods: {
+    find: function(options) {
+      
+    },
+    
+    findById: function(id, options) {
+      return this.findByField('id', id, options);
+    },
+    
+    findByField: function(fieldName, matcher, options) {
+      
+    },
+    
+    findAll: function(options) {
+      
+    }
+  },
+  
+  instanceMethods: {
+    save:    Ext.emptyFn,
+    
+    reload:  Ext.emptyFn,
+    
+    destroy: Ext.emptyFn
+  }
+};
+
 /**
  * Methods adding url data mapping
  */
@@ -85,4 +117,4 @@ Ext.ux.MVC.Model.AbstractAdapter = {
   }
 };
 
-Ext.ux.MVC.Model.registerAdapter('REST', Ext.ux.MVC.Model.AbstractAdapter);
+// Ext.ux.MVC.Model.registerAdapter('REST', Ext.ux.MVC.Model.AbstractAdapter);

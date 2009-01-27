@@ -126,7 +126,7 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
    * @return {Function} A reference to the view class to instantiate to render this scaffold view
    */
   scaffoldViewName: function(viewName) {
-    return eval("Ext.ux.MVC.view.scaffold." + String.titleize(viewName));
+    return Ext.ux.MVC.view.scaffold[viewName.titleize()];
   },
   
   /**

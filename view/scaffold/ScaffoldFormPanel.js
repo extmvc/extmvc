@@ -61,7 +61,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
       if (this.ignoreFields.indexOf(f.name) == -1) {
         items.push(Ext.applyIf({
           name:       f.name,
-          fieldLabel: String.capitalize(f.name.replace(/_/g, " "))
+          fieldLabel: (f.name.replace(/_/g, " ")).capitalize()
         }, this.formItemConfig));
       };
     };

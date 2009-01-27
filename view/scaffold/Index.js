@@ -5,12 +5,12 @@
  */
 Ext.ux.MVC.view.scaffold.Index = function(model) {
   var config = {
-    title:      'Showing ' + String.capitalize(model.prototype.modelName) + 's',
+    title:      'Showing ' + (model.prototype.modelName + 's').capitalize(),
     viewConfig: { forceFit: true },
     closable:   true,
     id:         model.prototype.modelName + 's_index',
     
-    store:      model.findAll({autoLoad: false}),
+    store:      model.findAll(),
     columns:    this.buildColumns(model),
     
     listeners: {
@@ -73,7 +73,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
     for (var i=0; i < model.fields.length; i++) {
       var f = model.fields[i];
       if (this.preferredColumns.indexOf(f.name) > -1) {
-        columns.push({id: f.name, header: String.titleize(f.name.replace("_", " ")), sortable: true});
+        columns.push(this.buildColumn(f.name));
       }
     };
     
@@ -82,7 +82,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       var f = model.fields[i];
       //if this field is not in the prefer or ignore list, add it to the columns array
       if (this.preferredColumns.indexOf(f.name) == -1 && this.ignoreColumns.indexOf(f.name) == -1) {
-        columns.push({id: f.name, header: String.titleize(f.name.replace("_", " "))});
+        columns.push(this.buildColumn(f.name));
       };
       
       //if it's been declared as a wide column, add it to the wideColumns array
@@ -109,6 +109,23 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
     };
     
     return columns;
+  },
+  
+  /**
+   * Build a single column object based on a name, adds default properties
+   * @param {Object/String} cfg Column config object (can just include a 'name' property).  Also accepts a string, which is translated into the name property
+   * @return {Object} A fully-formed column config with default properties set
+   */
+  buildColumn: function(cfg) {
+    var cfg = cfg || {};
+    if (typeof(cfg) == 'string') {cfg = {name: cfg};}
+        
+    return Ext.applyIf(cfg, {
+      id:        cfg.name,
+      header:    cfg.name.replace("_", " ").titleize(),
+      sortable:  true,
+      dataIndex: cfg.name
+    });
   }
 });
 

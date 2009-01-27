@@ -126,6 +126,14 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
   },
   
   /**
+   * @property params
+   * @type Object
+   * An object containing the most current parameters (usually decoded from a url using this.router)
+   * e.g. {controller: 'index', action: 'welcome', id: 10}
+   */
+  params: {},
+  
+  /**
    * Dispatches a request to a registered controller. 
    * @param {Object} dispatchConfig A config object which should look something like this:
    * {controller: 'MyController', action: 'index'}, where 'MyController' is the key for a controller
@@ -138,6 +146,8 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
     Ext.applyIf(dispatchConfig, {
       action: 'index'
     });
+    
+    this.params = dispatchConfig;
     
     var c;
     if (c = this.getController(dispatchConfig.controller)) {

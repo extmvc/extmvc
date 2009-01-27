@@ -1,11 +1,20 @@
+/**
+ * A simple manager for registering and retrieving named ViewportBuilders
+ * @class Ext.ux.MVC.ViewportBuilderManager
+ */
 Ext.ux.MVC.ViewportBuilderManager = {
+  
+  /**
+   * @property viewportBuilders
+   * @type Object
+   * Key/value pairs for registered viewport builders.  Private
+   */
   viewportBuilders: {},
   
   /**
-   * Function description
+   * Registers a ViewportBuilder with the manager
    * @param {String} name String name for this ViewportBuilder (e.g. 'desktop')
    * @param {Function} constructor A reference to the constructor of the ViewportBuilder
-   * @return {String} Return value description
    */
   register: function(name, constructor) {
     this.viewportBuilders[name] = constructor;

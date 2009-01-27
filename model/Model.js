@@ -4,6 +4,7 @@
  * Base model class
  */
 Ext.ux.MVC.Model = function(fields, config) {
+  console.log('made new model');
   Ext.applyIf(this, {
     /**
      * @property newRecord
@@ -14,7 +15,7 @@ Ext.ux.MVC.Model = function(fields, config) {
   });
   
   //create a new Record object and then decorate it with RecordExtensions
-  var record = Ext.ux.MVC.Model.recordFor(this.modelName);
+  var record = Ext.ux.MVC.Model.recordFor(this.modelName, fields);
   var rec = new record(fields || {});
   rec.init(this);
   
@@ -88,6 +89,7 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
   Ext.applyIf(config, {
     namespace: namespace.split(".")[0],
     modelName: modelName,
+    className: modelName,
     adapter:   'REST'
   });
   
@@ -140,10 +142,10 @@ Ext.ux.MVC.Model.RecordExtensions = {
     });
     
     //add the data adapter, initialize it
-    var adapter = Ext.ux.MVC.Model.getAdapter(config.adapter);
+    var adapter = Ext.ux.MVC.Model.AdapterManager.find(config.adapter || Ext.ux.MVC.Model.prototype.adapter);
     if (adapter) {
       Ext.apply(config, adapter.instanceMethods);
-      adapter.initAdapter.call(this);
+      adapter.initialize(this);
     }
     
     //mix in validations package
@@ -186,7 +188,6 @@ Ext.ux.MVC.Model.ValidationExtensions = {
 
 
 Ext.ux.MVC.Model.models   = [];
-Ext.ux.MVC.Model.adapters = [];
 
 /**
  * Utility methods which don't need to be declared per model
@@ -231,23 +232,6 @@ Ext.apply(Ext.ux.MVC.Model, {
   },
   
   /**
-   * Registers a module implementing a Ext.ux.MVC.Model adapter interface
-   * @param {String} adapterName The string to key this adapter to
-   * @param {Object} adapterObject An object implementing a model adapter
-   */
-  registerAdapter: function(adapterName, adapterObject) {
-    this.adapters[adapterName] = adapterObject;
-  },
-  
-  /**
-   * Returns a registered data adapter
-   * @return {Object} The data adapter if found, else null
-   */
-  getAdapter: function(adapterName) {
-    return this.adapters[adapterName];
-  },
-  
-  /**
    * String methods:
    */
    
@@ -289,7 +273,7 @@ Ext.apply(Ext.ux.MVC.Model, {
     });
     
     //add any class methods from the adapter
-    var adapter = this.getAdapter(modelClass.adapter);
+    var adapter = Ext.ux.MVC.Model.AdapterManager.find(modelClass.adapter || Ext.ux.MVC.Model.prototype.adapter);
     if (adapter && adapter.classMethods) {
       Ext.apply(modelClass, adapter.classMethods);
     };
@@ -302,9 +286,9 @@ Ext.apply(Ext.ux.MVC.Model, {
        */
       getReader: function() {
         if (!modelClass.reader) {
-          modelClass.reader = new Ext.data.XmlReader({
-            record: modelClass.xmlName || modelClass.prototype.modelName.toLowerCase()
-          }, modelClass.prototype.fields);
+          modelClass.reader = new Ext.data.JsonReader({
+            root: modelClass.jsonName || modelClass.prototype.modelName.toLowerCase()
+          }, Ext.ux.MVC.Model.recordFor(modelClass.prototype.className));
           
         };
         

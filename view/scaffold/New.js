@@ -5,24 +5,33 @@
  */
 Ext.ux.MVC.view.scaffold.New = function(model, config) {
   var config = config || {};
+  var os     = Ext.ux.MVC.OS.getOS();
   
   Ext.applyIf(config, {
-    title:    'New ' + String.capitalize(model.prototype.modelName),
+    title:    'New ' + model.prototype.modelName.capitalize(),
     buttons: [
       {
         text:  'Save',
         scope: this,
         handler: function() {
-          console.log('saving');
+          var m = new model(this.getForm().getValues());
+          m.save({
+            success: function() {
+              os.router.redirectTo(Ext.apply(os.params, { action: 'index' }));
+            },
+            failure: function() {
+              
+            }
+          });
         }
       },
       //FIXME: no, can't decide controller name like this
-      Ext.ux.MVC.OS.getOS().router.linkTo({controller: model.modelName + 's', action: 'index'}, {text: 'Cancel'})
+      os.router.linkTo({controller: model.modelName + 's', action: 'index'}, {text: 'Cancel'})
     ]
   });
  
   Ext.ux.MVC.view.scaffold.New.superclass.constructor.call(this, model, config);
-  Ext.ux.MVC.OS.getOS().setsTitle(this);
+  os.setsTitle(this);
 };
 
 Ext.extend(Ext.ux.MVC.view.scaffold.New, Ext.ux.MVC.view.scaffold.ScaffoldFormPanel);
