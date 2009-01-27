@@ -295,5 +295,36 @@ Ext.apply(Ext.ux.MVC.Model, {
         return modelClass.reader;
       }
     }, additionalFunctions);
+    
+    /**
+     * If we are extending another model, copy its fields, class methods and instance methods
+     * into this model
+     */
+    if (modelClass.prototype.extend) {
+      var extendsModel = eval(modelClass.prototype.extend);
+      var parentFields = extendsModel.fields;
+      
+      //add parent model fields to the front of the child model fields array
+      for (var i = parentFields.length - 1; i >= 0; i--){
+        var childFields    = modelClass.prototype.fields;
+        var alreadyDefined = false;
+        
+        //check that this field is not redefined in the child model
+        for (var j=0; j < childFields.length; j++) {
+          if (childFields[j].name == parentFields[i].name) {
+            alreadyDefined = true;
+            break; //no need to finish the loop as we've already made the match
+          }
+        };
+        
+        //only add if not redefined in child model
+        if (!alreadyDefined) {
+          modelClass.prototype.fields.unshift(parentFields[i]);
+        };
+      };
+      
+      //add any class methods
+      Ext.applyIf(modelClass.prototype, extendsModel.prototype);
+    };
   }
 });
