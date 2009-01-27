@@ -46,7 +46,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * @type Array
    * An array of columns not to show in the grid (defaults to empty)
    */
-  ignoreColumns: [],
+  ignoreColumns: ['password', 'password_confirmation'],
   
   /**
    * @property narrowColumns
