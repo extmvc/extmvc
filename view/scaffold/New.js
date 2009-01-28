@@ -38,11 +38,6 @@ Ext.ux.MVC.view.scaffold.New = function(model, config) {
   os.setsTitle(this);
 };
 
-Ext.extend(Ext.ux.MVC.view.scaffold.New, Ext.ux.MVC.view.scaffold.ScaffoldFormPanel, {
-  
-  errorReader: new Ext.data.JsonReader({
-    root: 'errors'
-  }, ['id', 'message'])
-});
+Ext.extend(Ext.ux.MVC.view.scaffold.New, Ext.ux.MVC.view.scaffold.ScaffoldFormPanel);
 
 Ext.reg('scaffold_new', Ext.ux.MVC.view.scaffold.New);
