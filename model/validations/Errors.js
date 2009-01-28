@@ -2,16 +2,16 @@
  * @class Ext.ux.MVC.Model.ValidationErrors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-Ext.ux.MVC.Model.ValidationErrors = function(modelObject) {
+Ext.ux.MVC.Model.Validation.Errors = function(modelObject) {
   this.modelObject = modelObject;
 };
 
-Ext.ux.MVC.Model.ValidationErrors.prototype = {
+Ext.ux.MVC.Model.Validation.Errors.prototype = {
   
   /**
    * @property errors
    * @type Array
-   * Raw array of all errors attached to this model
+   * Raw array of all errors attached to this model.  This is READ ONLY - do not interact with directly
    */
   errors: [],
   
@@ -47,17 +47,19 @@ Ext.ux.MVC.Model.ValidationErrors.prototype = {
    */
   joinErrors: function(errors) {
     var errors   = errors || [];
-    var sentence = errors[0];
+    var sentence = "";
+    if (errors.length <= 1) { 
+      sentence =  errors[0];
+    } else {
+      //we'll join all but the last error with commas
+      var firstErrors = errors.slice(0, errors.length - 1);
+      
+      //add the last error, with the connector string
+      sentence = String.format("{0} {1} {2}", firstErrors.join(", "), this.multipleErrorConnector, errors[errors.length - 1]);
+    }
     
-    if (errors.length <= 1) { return sentence; }
-    
-    //process all errors but the last
-    for (var i=1; i < errors.length - 1; i++) {
-      sentence = String.format("{0}, {1}", sentence, errors[i]);
-    };
-    
-    //add the last error, with the connector string
-    return String.format("{0} {1} {2}", sentence, this.multipleErrorConnector, errors[errors.length - 1]);
+    ///add a full stop; sometimes one already present in which case remove final one
+    return (/\.$/.test(sentence) ? sentence : sentence + ".").capitalize();
   },
   
   /**
@@ -93,12 +95,19 @@ Ext.ux.MVC.Model.ValidationErrors.prototype = {
   
   /**
    * Parses server response to a failed save, adding each error message to the appropriate field.  Override to provide
-   * an implementation for your own server responses
+   * an implementation for your own server responses.  The default implementation accepts a response like this:
+   * {errors: [['some_field', 'some error regarding some_field'], ['another_field', 'another error']]}
    * @param {Object/String} serverErrors A errors object returned by server-side validations.  If this is a string it will
+   * @param {Boolean} preserveErrors False to clear all errors before adding errors from server (defaults to false)
    * automatically be turned into an object via Ext.decode
    */
-  readServerErrors: function(serverErrors) {
+  readServerErrors: function(serverErrors, preserveErrors) {
     var serverErrors = serverErrors || {};
+    
+    //remove any existing errors unless instructed to preserve them
+    if (preserveErrors !== true) {this.clearErrors();}
+    
+    //make sure we're dealing with an object
     if (typeof(serverErrors) == 'string') {
       serverErrors = Ext.decode(serverErrors);
     };

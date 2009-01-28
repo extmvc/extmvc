@@ -224,7 +224,7 @@ Ext.ux.MVC.Model.ValidationExtensions = {
    */
   initializeValidationExtensions: function() {
     this.validations = this.validations || [];
-    this.errors      = new Ext.ux.MVC.Model.ValidationErrors(this);
+    this.errors      = new Ext.ux.MVC.Model.Validation.Errors(this);
   },
   
   isValid: function() {

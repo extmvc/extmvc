@@ -23,6 +23,7 @@ Ext.ux.MVC.view.scaffold.New = function(model, config) {
             failure: function(response) {
               m.readErrors(response.responseText);
               
+              this.getForm().clearInvalid();
               this.getForm().markInvalid(m.errors.forForm());
             }
           });
