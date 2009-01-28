@@ -4,6 +4,11 @@
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
 Ext.ux.MVC.view.scaffold.Index = function(model) {
+  this.model = model;
+  this.os    = Ext.ux.MVC.OS.getOS();
+  
+  var tbarConfig = this.hasTopToolbar ? this.buildTopToolbar() : null;
+  
   var config = {
     title:      'Showing ' + (model.prototype.modelName + 's').capitalize(),
     viewConfig: { forceFit: true },
@@ -13,14 +18,18 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
     store:      model.findAll(),
     columns:    this.buildColumns(model),
     
+    tbar: tbarConfig,
+    
     listeners: {
       'dblclick': {
         scope: this,
         fn: function(e) {
           var obj = this.getSelectionModel().getSelected();
           
-          //FIXME: no, can't decide controller name like this
-          Ext.ux.MVC.OS.getOS().router.redirectTo({controller: model.modelName + 's', action: 'edit', id: obj.data.id});
+          if (obj) {
+            //FIXME: no, can't decide controller name like this
+            this.os.router.redirectTo({controller: model.modelName + 's', action: 'edit', id: obj.data.id});
+          };
         }
       }
     }
@@ -61,6 +70,13 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * An array of columns to render at double the average width
    */
   wideColumns:   ['message', 'content', 'description', 'bio'],
+  
+  /**
+   * @property hasTopToolbar
+   * @type Boolean
+   * True to automatically include a default top toolbar (defaults to true)
+   */
+  hasTopToolbar: true,
     
   /**
    * Takes a model definition and returns a column array to use for a columnModel
@@ -126,6 +142,72 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       sortable:  true,
       dataIndex: cfg.name
     });
+  },
+  
+  /**
+   * Creates Add, Edit and Delete buttons for the top toolbar and sets up listeners to
+   * activate/deactivate them as appropriate
+   * @return {Array} An array of buttons 
+   */
+  buildTopToolbar: function() {
+    this.addButton = new Ext.Button({
+      text:    'New ' + this.model.modelName.titleize(),
+      scope:   this,
+      iconCls: 'add',
+      handler: function() {
+        console.log('add');
+        this.os.router.redirectTo({controller: this.model.modelName + 's', action: 'new'});
+      }
+    });
+    
+    this.editButton = new Ext.Button({
+      text:     'Edit selected',
+      scope:    this,
+      iconCls:  'edit',
+      disabled: true,
+      handler: function() {
+        var selected = this.getSelectionModel().getSelected();
+        if (selected) {
+          this.os.router.redirectTo({controller: this.model.modelName + 's', action: 'edit', id: selected.data.id});
+        }
+      }
+    });
+    
+    this.deleteButton = new Ext.Button({
+      text:     'Delete selected',
+      disabled: true,
+      scope:    this,
+      iconCls:  'delete',
+      handler:  function() {
+        Ext.Msg.confirm(
+          'Are you sure?',
+          String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.modelName.titleize()),
+          function(btn) {
+            if (btn == 'yes') {
+              var selected = this.getSelectionModel().getSelected();
+              if (selected) {
+                this.os.dispatch({controller: this.model.modelName + 's', action: 'destroy', id: selected.data.id});
+              };
+            };
+          },
+          this
+        );
+      }
+    });
+    
+   this.getSelectionModel().on('selectionchange', function(selModel) {
+     if (selModel.getCount() > 0) {
+       this.deleteButton.enable();  this.editButton.enable();
+     } else {
+       this.deleteButton.disable(); this.editButton.disable();
+     };
+   }, this);
+    
+    return [
+      this.addButton,  '-',
+      this.editButton, '-',
+      this.deleteButton
+    ];
   }
 });
 

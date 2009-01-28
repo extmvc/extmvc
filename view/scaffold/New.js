@@ -16,11 +16,14 @@ Ext.ux.MVC.view.scaffold.New = function(model, config) {
         handler: function() {
           var m = new model(this.getForm().getValues());
           m.save({
+            scope:   this,
             success: function() {
               os.router.redirectTo(Ext.apply(os.params, { action: 'index' }));
             },
-            failure: function() {
+            failure: function(response) {
+              m.readErrors(response.responseText);
               
+              this.getForm().markInvalid(m.errors.forForm());
             }
           });
         }
@@ -34,6 +37,11 @@ Ext.ux.MVC.view.scaffold.New = function(model, config) {
   os.setsTitle(this);
 };
 
-Ext.extend(Ext.ux.MVC.view.scaffold.New, Ext.ux.MVC.view.scaffold.ScaffoldFormPanel);
+Ext.extend(Ext.ux.MVC.view.scaffold.New, Ext.ux.MVC.view.scaffold.ScaffoldFormPanel, {
+  
+  errorReader: new Ext.data.JsonReader({
+    root: 'errors'
+  }, ['id', 'message'])
+});
 
 Ext.reg('scaffold_new', Ext.ux.MVC.view.scaffold.New);

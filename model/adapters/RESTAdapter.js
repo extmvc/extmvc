@@ -203,9 +203,12 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
         //keep a reference to this record for use in the success interceptor below
         var record = this;
         
+        //do this here as the scope in the block below is not always going to be 'this'
+        var url = this.url();
+        
         Ext.Ajax.request(
           Ext.applyIf(options, {
-            url:    this.url(),
+            url:    url,
             method: 'post',
             params:  params,
             
@@ -222,7 +225,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
       },
       
       destroy: function(options) {
-        console.log('destroying');
+        var options = options || {};
         
         Ext.Ajax.request(
           Ext.applyIf(options, {

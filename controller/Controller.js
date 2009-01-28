@@ -12,6 +12,17 @@ Ext.ux.MVC.Controller = function(config) {
   Ext.ux.MVC.Controller.superclass.constructor.call(this, config);
   
   /**
+   * @property os
+   * @type Ext.ux.MVC.OS
+   * Maintains a reference to the current OS
+   */
+  //we need to wrap this in try/catch because OS also inherits from Controller, so can't call getOS()
+  //get.  Hmm
+  try {
+    this.os = Ext.ux.MVC.OS.getOS();
+  } catch(e) {};
+  
+  /**
    * @property views
    * @type Object
    * Hash of all views registered for use with this Controller.

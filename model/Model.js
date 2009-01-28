@@ -197,6 +197,21 @@ Ext.ux.MVC.Model.RecordExtensions = {
     } else {
       return Ext.ux.MVC.UrlBuilder.urlFor(el);
     };
+  },
+  
+  /**
+   * @property errorReader
+   * @type Function
+   * Property description
+   */
+  errorReader: new Ext.data.ArrayReader({}, ['id', 'msg']),
+  
+  /**
+   * Reads errors from a generic object and adds them to this model's internal errors object.
+   * Intended to be used mainly to process server responses
+   */
+  readErrors: function(errorsObject) {
+    this.errors.readServerErrors(errorsObject);
   }
 };
 
@@ -209,11 +224,11 @@ Ext.ux.MVC.Model.ValidationExtensions = {
    */
   initializeValidationExtensions: function() {
     this.validations = this.validations || [];
-    this.errors = [];
+    this.errors      = new Ext.ux.MVC.Model.ValidationErrors(this);
   },
   
   isValid: function() {
-    return false;
+    return this.errors.isValid();
   }
 };
 
@@ -310,3 +325,5 @@ Ext.apply(Ext.ux.MVC.Model, {
     }, additionalFunctions);
   }
 });
+
+Ext.ns('Ext.ux.MVC.Model.Adapter', 'Ext.ux.MVC.Model.Validation');

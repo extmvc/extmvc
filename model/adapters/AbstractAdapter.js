@@ -1,5 +1,3 @@
-Ext.ns('Ext.ux.MVC.Model.Adapter');
-
 Ext.ux.MVC.Model.Adapter.Abstract = {
   initialize: function(model) {
     
