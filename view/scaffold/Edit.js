@@ -12,30 +12,25 @@ Ext.ux.MVC.view.scaffold.Edit = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldForm
   modelObj: null,
   
   /**
-   * Sets up the Edit form with references to required objects
-   * @param {Function} model The model definition to create an Edit form for (e.g. MyApp.models.MyModel)
-   * @param {Object} config Any configuration to pass up the constructor chain
+   * Sets the panel's title, if not already set
    */
-  constructor: function(model, config) {
-    Ext.ux.MVC.view.scaffold.Edit.superclass.constructor.call(this, model, config || {});
+  initComponent: function() {
+    Ext.applyIf(this, {title: 'Edit ' + this.model.prototype.modelName.capitalize()});
+    
+    Ext.ux.MVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+    
+    this.loadForm();
+  },
   
-    //load the model into the form
+  /**
+   * Loads the form using the model's adapter and finding the ID from os.params
+   */
+  loadForm: function() {
     this.model.findById(this.os.params.id, {
       scope:   this,
       success: this.onFindSuccess,
       failure: this.onFindFailure
     });
-  },
-  
-  /**
-   * Sets the panel's title, if not already set
-   */
-  initComponent: function() {
-    Ext.applyIf(this, {
-      title:    'Edit ' + this.model.prototype.modelName.capitalize()
-    });
-    
-    Ext.ux.MVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
   },
   
   /**
@@ -48,13 +43,17 @@ Ext.ux.MVC.view.scaffold.Edit = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldForm
   },
   
   /**
-   * Called when the model could not be loaded.  By default just shows an Ext.MSG alert message
+   * Called when the model could not be loaded.  By default this displays a messagebox offering the user
+   * to try again or go back
    */
-  onFindFailure: function(paramName) {
-    Ext.Msg.alert(
-      'Load Failed',
-      'The item could not be loaded'
-    );
+  onFindFailure: function() {
+    Ext.Msg.show({
+      title:   'Load Failed',
+      msg:     'The item could not be loaded',
+      buttons: {yes: 'Try again', no: 'Back'},
+      scope:   this,
+      fn:      function(btn) { btn == 'yes' ? this.loadForm() : Ext.History.back(); }
+    });
   }
 });
 

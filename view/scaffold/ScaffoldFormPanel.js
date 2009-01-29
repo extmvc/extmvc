@@ -79,6 +79,9 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * then call save() on the model object.  Override onSaveSuccess and onSaveFailure to update success and failure callbacks
    */
   onSave: function() {
+    //create a new model if we don't already have one
+    this.modelObj = this.modelObj || new this.model({});
+    
     this.modelObj.setValues(this.getForm().getValues());
     this.modelObj.save({
       scope:   this,
