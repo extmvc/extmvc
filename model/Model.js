@@ -200,11 +200,18 @@ Ext.ux.MVC.Model.RecordExtensions = {
   },
   
   /**
-   * @property errorReader
-   * @type Function
-   * Property description
+   * Mass-assigns field values.  Operation is wrapped in beginEdit and endEdit
+   * e.g. setValues({first_name: 'Ed', last_name: 'Spencer'})
+   * is the same as set('first_name', 'Ed'); set('last_name': 'Spencer')
+   * @param {Object} values An object containing key: value pairs for fields on this object
    */
-  errorReader: new Ext.data.ArrayReader({}, ['id', 'msg']),
+  setValues: function(values) {
+    this.beginEdit();
+    for (key in values) {
+      this.set(key, values[key]);
+    }
+    this.endEdit();
+  },
   
   /**
    * Reads errors from a generic object and adds them to this model's internal errors object.

@@ -7,6 +7,9 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
   this.model = model;
   this.os    = Ext.ux.MVC.OS.getOS();
   
+  //FIXME: no, can't decide controller name like this
+  this.controllerName =  model.modelName + 's';
+  
   var tbarConfig = this.hasTopToolbar ? this.buildTopToolbar() : null;
   
   var config = {
@@ -27,12 +30,41 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
           var obj = this.getSelectionModel().getSelected();
           
           if (obj) {
-            //FIXME: no, can't decide controller name like this
-            this.os.router.redirectTo({controller: model.modelName + 's', action: 'edit', id: obj.data.id});
+            this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: obj.data.id});
           };
         }
       }
-    }
+    },
+    
+    keys: [
+      {
+        key: 'a',
+        scope: this,
+        handler: function() {
+          this.os.router.redirectTo({controller: this.controllerName, action: 'add'});
+        }
+      },
+      {
+        key: 'e',
+        scope: this,
+        handler: function() {
+          var selected = this.getSelectionModel().getSelected();
+          if (selected) {
+            this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: selected.data.id});
+          };
+        }
+      },
+      {
+        key: Ext.EventObject.DELETE,
+        scope: this,
+        handler: function() {
+          var selected = this.getSelectionModel().getSelected();
+          if (selected) {
+            this.os.dispatch({controller: this.controllerName, action: 'destroy', id: selected.data.id});
+          }
+        }
+      }
+    ]
 
   };
  
