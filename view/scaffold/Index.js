@@ -21,6 +21,8 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
     store:      model.findAll(),
     columns:    this.buildColumns(model),
     
+    loadMask: true,
+    
     tbar: tbarConfig,
     
     listeners: {
