@@ -3,7 +3,9 @@
  * @extends Ext.grid.GridPanel
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
-Ext.ux.MVC.view.scaffold.Index = function(model) {
+Ext.ux.MVC.view.scaffold.Index = function(model, config) {
+  var config = config || {};
+  
   this.model = model;
   this.os    = Ext.ux.MVC.OS.getOS();
   
@@ -12,14 +14,15 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
   
   var tbarConfig = this.hasTopToolbar ? this.buildTopToolbar() : null;
   
-  var config = {
+  //we can't put these in applyIf block below as the functions are executed immediately
+  config.columns = config.columns || this.buildColumns(model);
+  config.store   = config.store   || model.findAll();
+  
+  Ext.applyIf(config, {
     title:      'Showing ' + (model.prototype.modelName + 's').capitalize(),
     viewConfig: { forceFit: true },
     closable:   true,
     id:         model.prototype.modelName + 's_index',
-    
-    store:      model.findAll(),
-    columns:    this.buildColumns(model),
     
     loadMask: true,
     
@@ -68,7 +71,7 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
       }
     ]
 
-  };
+  });
  
   Ext.ux.MVC.view.scaffold.Index.superclass.constructor.call(this, config);
   Ext.ux.MVC.OS.getOS().setsTitle(this);

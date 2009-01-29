@@ -68,7 +68,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
         return new Ext.data.Store(
           Ext.applyIf(options, {
             autoLoad:   true,
-            remoteSort: true,
+            remoteSort: false,
             method:     'get',
             url:        this.collectionDataUrl(),
             reader:     this.getReader()
