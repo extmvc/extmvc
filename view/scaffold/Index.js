@@ -38,15 +38,15 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
     
     keys: [
       {
-        key: 'a',
-        scope: this,
+        key:     'a',
+        scope:   this,
         handler: function() {
-          this.os.router.redirectTo({controller: this.controllerName, action: 'add'});
+          this.os.router.redirectTo({controller: this.controllerName, action: 'new'});
         }
       },
       {
-        key: 'e',
-        scope: this,
+        key:     'e',
+        scope:   this,
         handler: function() {
           var selected = this.getSelectionModel().getSelected();
           if (selected) {
@@ -55,8 +55,8 @@ Ext.ux.MVC.view.scaffold.Index = function(model) {
         }
       },
       {
-        key: Ext.EventObject.DELETE,
-        scope: this,
+        key:     Ext.EventObject.DELETE,
+        scope:   this,
         handler: function() {
           var selected = this.getSelectionModel().getSelected();
           if (selected) {
