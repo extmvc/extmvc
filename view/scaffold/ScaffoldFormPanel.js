@@ -45,9 +45,10 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
         {
           text:    'Save',
           scope:   this,
+          iconCls: 'save',
           handler: this.onSave.createDelegate(this)
         },
-        this.os.router.linkTo({controller: this.controller, action: 'index'}, {text: 'Cancel'})
+        this.os.router.linkTo({controller: this.controller, action: 'index'}, {text: 'Cancel', iconCls: 'cancel', cls: null})
       ]
     });
     

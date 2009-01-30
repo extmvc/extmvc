@@ -192,7 +192,6 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       scope:   this,
       iconCls: 'add',
       handler: function() {
-        console.log('add');
         this.os.router.redirectTo({controller: this.model.modelName + 's', action: 'new'});
       }
     });
