@@ -271,7 +271,7 @@ Ext.apply(Ext.ux.MVC.Model, {
    */
    
   urlizeName : function(name) {
-    return name.toLowerCase() + 's';
+    return name.toLowerCase().pluralize();
   },
   
   classifyName: function(name) {
@@ -283,7 +283,7 @@ Ext.apply(Ext.ux.MVC.Model, {
   },
   
   pluralizeHumanName: function(name) {
-    return (name + 's').replace(/_/g, " ").titleize();
+    return name.pluralize().replace(/_/g, " ").titleize();
   },
   
   controllerName : function(name) {

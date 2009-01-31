@@ -9,8 +9,7 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
   this.model = model;
   this.os    = Ext.ux.MVC.OS.getOS();
   
-  //FIXME: no, can't decide controller name like this
-  this.controllerName =  model.modelName + 's';
+  this.controllerName =  model.modelName.pluralize();
   
   var tbarConfig = this.hasTopToolbar ? this.buildTopToolbar() : null;
   
@@ -19,7 +18,7 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
   config.store   = config.store   || model.findAll();
   
   Ext.applyIf(config, {
-    title:      'Showing ' + (model.prototype.modelName + 's').capitalize(),
+    title:      'Showing ' + model.prototype.modelName.pluralize().capitalize(),
     viewConfig: { forceFit: true },
     closable:   true,
     id:         model.prototype.modelName + 's_index',
@@ -192,7 +191,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       scope:   this,
       iconCls: 'add',
       handler: function() {
-        this.os.router.redirectTo({controller: this.model.modelName + 's', action: 'new'});
+        this.os.router.redirectTo({controller: this.controllerName, action: 'new'});
       }
     });
     
@@ -204,7 +203,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       handler: function() {
         var selected = this.getSelectionModel().getSelected();
         if (selected) {
-          this.os.router.redirectTo({controller: this.model.modelName + 's', action: 'edit', id: selected.data.id});
+          this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: selected.data.id});
         }
       }
     });
@@ -222,7 +221,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
             if (btn == 'yes') {
               var selected = this.getSelectionModel().getSelected();
               if (selected) {
-                this.os.dispatch({controller: this.model.modelName + 's', action: 'destroy', id: selected.data.id});
+                this.os.dispatch({controller: this.controllerName, action: 'destroy', id: selected.data.id});
               };
             };
           },

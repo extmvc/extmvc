@@ -14,8 +14,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     this.model = model;
     this.os    = Ext.ux.MVC.OS.getOS();
     
-    //FIXME: no, can't decide controller name like this
-    this.controller = this.model.modelName + 's';
+    this.controller = this.model.modelName.pluralize();
     
     Ext.ux.MVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
   },
@@ -124,8 +123,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.FormFields
     var formFields;
     
-    //FIXME: Again, we're pluralising in a very bad way here :(
-    if (formFields = eval(String.format("{0}.views.{1}s.FormFields", model.namespace, model.modelName))) {
+    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace, model.modelName.pluralize()))) {
       return formFields;
     };
     
