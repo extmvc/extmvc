@@ -83,11 +83,15 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     //create a new model if we don't already have one
     this.modelObj = this.modelObj || new this.model({});
     
+    //add a saving mask
+    this.el.mask('Saving...', 'x-mask-loading');
+    
     this.modelObj.setValues(this.getForm().getValues());
     this.modelObj.save({
-      scope:   this,
-      success: this.onSaveSuccess,
-      failure: this.onSaveFailure
+      scope:    this,
+      success:  this.onSaveSuccess,
+      failure:  this.onSaveFailure,
+      callback: function() {this.el.unmask();}
     });
   },
   

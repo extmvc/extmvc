@@ -19,17 +19,20 @@ Ext.ux.MVC.view.scaffold.Edit = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldForm
     
     Ext.ux.MVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
     
-    this.loadForm();
+    this.on('render', this.loadForm, this);
   },
   
   /**
    * Loads the form using the model's adapter and finding the ID from os.params
    */
   loadForm: function() {
+    this.el.mask('Loading...', 'x-mask-loading');
+    
     this.model.findById(this.os.params.id, {
-      scope:   this,
-      success: this.onFindSuccess,
-      failure: this.onFindFailure
+      scope:    this,
+      success:  this.onFindSuccess,
+      failure:  this.onFindFailure,
+      callback: function() {this.el.unmask();}
     });
   },
   
