@@ -89,7 +89,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
         Ext.applyIf(options, {
           scope:   this,
           url:     this.collectionDataUrl(),
-          method:  'get',
+          method:  'GET',
           success: Ext.emptyFn,
           failure: Ext.emptyFn
         });
@@ -123,13 +123,14 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
         var params = options.params || '';
         if (options.conditions && options.conditions[0]) {
           for (var i=0; i < options.conditions.length; i++) {
+            var cond = options.conditions[i];
             params += String.format("{0}{1}{2}", cond['key'], (cond['comparator'] || '='), cond['value']);
           };
           
           delete options.conditions;
         };
         options.params = params;
-        
+
         return Ext.Ajax.request(options);
       },
       
