@@ -189,6 +189,11 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
     },
     
     instanceMethods: {
+      /**
+       * Saves this model instance to the server.
+       * @param {Object} options An object passed through to Ext.Ajax.request.  The success option is a special case,
+       * and is called with the newly instantiated model instead of the usual (response, options) signature
+       */
       save: function(options) {
         var options = options || {};
         
@@ -219,6 +224,19 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
             })
           })
         );
+      },
+      
+      /**
+       * Updates the model instance and saves it.  Use setValues({... new attrs ...}) to change attributes without saving
+       * @param {Object} updatedAttributes An object with any updated attributes to apply to this instance
+       * @param {Object} saveOptions An object with save options, such as url, callback, success, failure etc.  Passed straight through to save()
+       */
+      update: function(updatedAttributes, saveOptions) {
+        updatedAttributes = updatedAttributes || {};
+        saveOptions = saveOptions || {};
+        
+        this.setValues(updatedAttributes);
+        this.save(saveOptions);
       },
       
       reload: function() {

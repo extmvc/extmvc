@@ -9,7 +9,8 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
   this.model = model;
   this.os    = Ext.ux.MVC.OS.getOS();
   
-  this.controllerName =  model.modelName.pluralize();
+  this.controllerName = model.modelName.pluralize();
+  this.controller     = this.os.getController(this.controllerName);
   
   var tbarConfig = this.hasTopToolbar ? this.buildTopToolbar() : null;
   
@@ -44,29 +45,17 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
       {
         key:     'a',
         scope:   this,
-        handler: function() {
-          this.os.router.redirectTo({controller: this.controllerName, action: 'new'});
-        }
+        handler: this.onAdd
       },
       {
         key:     'e',
         scope:   this,
-        handler: function() {
-          var selected = this.getSelectionModel().getSelected();
-          if (selected) {
-            this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: selected.data.id});
-          };
-        }
+        handler: this.onEdit
       },
       {
         key:     Ext.EventObject.DELETE,
         scope:   this,
-        handler: function() {
-          var selected = this.getSelectionModel().getSelected();
-          if (selected) {
-            this.os.dispatch({controller: this.controllerName, action: 'destroy', id: selected.data.id});
-          }
-        }
+        handler: this.onDelete
       }
     ]
 
@@ -190,9 +179,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       text:    'New ' + this.model.modelName.titleize(),
       scope:   this,
       iconCls: 'add',
-      handler: function() {
-        this.os.router.redirectTo({controller: this.controllerName, action: 'new'});
-      }
+      handler: this.onAdd
     });
     
     this.editButton = new Ext.Button({
@@ -200,12 +187,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       scope:    this,
       iconCls:  'edit',
       disabled: true,
-      handler: function() {
-        var selected = this.getSelectionModel().getSelected();
-        if (selected) {
-          this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: selected.data.id});
-        }
-      }
+      handler:  this.onEdit
     });
     
     this.deleteButton = new Ext.Button({
@@ -213,36 +195,62 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       disabled: true,
       scope:    this,
       iconCls:  'delete',
-      handler:  function() {
-        Ext.Msg.confirm(
-          'Are you sure?',
-          String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.modelName.titleize()),
-          function(btn) {
-            if (btn == 'yes') {
-              var selected = this.getSelectionModel().getSelected();
-              if (selected) {
-                this.os.dispatch({controller: this.controllerName, action: 'destroy', id: selected.data.id});
-              };
-            };
-          },
-          this
-        );
-      }
+      handler:  this.onDelete
     });
     
-   this.getSelectionModel().on('selectionchange', function(selModel) {
-     if (selModel.getCount() > 0) {
-       this.deleteButton.enable();  this.editButton.enable();
-     } else {
-       this.deleteButton.disable(); this.editButton.disable();
-     };
-   }, this);
+    this.getSelectionModel().on('selectionchange', function(selModel) {
+      if (selModel.getCount() > 0) {
+         this.deleteButton.enable();  this.editButton.enable();
+      } else {
+        this.deleteButton.disable(); this.editButton.disable();
+      };
+    }, this);
     
     return [
       this.addButton,  '-',
       this.editButton, '-',
       this.deleteButton
     ];
+  },
+  
+  /**
+   * Called when the add button is pressed, or when the 'a' key is pressed.  By default this will redirect to the
+   * 'New' form for this resource
+   */
+  onAdd: function() {
+    this.os.router.redirectTo({controller: this.controllerName, action: 'new'});
+  },
+  
+  /**
+   * Called when the edit button is pressed, or when the 'e' key is pressed.  By default this will look to see if a row
+   * is selected, then redirect to the appropriate Edit form.
+   * If you override this you'll need to provide the row record lookup yourself
+   */
+  onEdit: function() {
+    var selected = this.getSelectionModel().getSelected();
+    if (selected) {
+      this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: selected.data.id});
+    }
+  },
+  
+  /**
+   * Called when the delete button is pressed, or the delete key is pressed.  By default this will ask the user to confirm,
+   * then fire the controller's destroy action with the selected record's data.id and a reference to this grid as arguments.
+   */
+  onDelete: function() {
+    Ext.Msg.confirm(
+      'Are you sure?',
+      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.modelName.titleize()),
+      function(btn) {
+        if (btn == 'yes') {
+          var selected = this.getSelectionModel().getSelected();
+          if (selected) {
+            this.controller.fireAction('destroy', null, [selected.data.id, this.store]);
+          }
+        };
+      },
+      this
+    );
   }
 });
 

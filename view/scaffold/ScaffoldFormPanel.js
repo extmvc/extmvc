@@ -14,7 +14,8 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     this.model = model;
     this.os    = Ext.ux.MVC.OS.getOS();
     
-    this.controller = this.model.modelName.pluralize();
+    this.controllerName = this.model.modelName.pluralize();
+    this.controller     = this.os.getController(this.controllerName);
     
     Ext.ux.MVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
   },
@@ -30,14 +31,14 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
         {
           key:     Ext.EventObject.ESC,
           scope:   this,
-          handler: Ext.History.back.createCallback()
+          handler: this.onCancel
         },
         {
           key:       's',
           ctrl:      true,
           scope:     this,
           stopEvent: true,
-          handler:   this.onSave
+          handler:   this.saveHandler
         }
       ],
       buttons: [
@@ -45,9 +46,14 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
           text:    'Save',
           scope:   this,
           iconCls: 'save',
-          handler: this.onSave.createDelegate(this)
+          handler: this.saveHandler
         },
-        this.os.router.linkTo({controller: this.controller, action: 'index'}, {text: 'Cancel', iconCls: 'cancel', cls: null})
+        {
+          text:    'Cancel',
+          scope:   this,
+          iconCls: 'cancel',
+          handler: this.onCancel
+        }
       ]
     });
     
@@ -75,45 +81,6 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   ignoreFields: ['id', 'created_at', 'updated_at'],
   
   /**
-   * Called when the save button is pressed.  By default this will load the model object with the form values,
-   * then call save() on the model object.  Override onSaveSuccess and onSaveFailure to update success and failure callbacks
-   */
-  onSave: function() {
-    //create a new model if we don't already have one
-    this.modelObj = this.modelObj || new this.model({});
-    
-    //add a saving mask
-    this.el.mask('Saving...', 'x-mask-loading');
-    
-    this.modelObj.setValues(this.getForm().getValues());
-    this.modelObj.save({
-      scope:    this,
-      success:  this.onSaveSuccess,
-      failure:  this.onSaveFailure,
-      callback: function() {this.el.unmask();}
-    });
-  },
-  
-  /**
-   * Called after a successful save.  By default will redirect to the model's index page
-   * @param {Object} response The response object from the server
-   */
-  onSaveSuccess: function(response) {
-    this.os.router.redirectTo(Ext.apply(this.os.params, { action: 'index' }));
-  },
-  
-  /**
-   * Called after save fails.  By default this will parse server errors and display them on the form
-   * @param {Object} response the response object from the server (should be containing errors)
-   */
-  onSaveFailure: function(response) {
-    this.modelObj.readErrors(response.responseText);
-              
-    this.getForm().clearInvalid();
-    this.getForm().markInvalid(this.modelObj.errors.forForm());
-  },
-  
-  /**
    * Builds an array of form items for the given model
    * @param {Ext.ux.MVC.Model} model The model to build form items for
    * @return {Array} An array of auto-generated form items
@@ -136,14 +103,31 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
       //add if it's not a field to be ignored
       if (this.ignoreFields.indexOf(f.name) == -1) {
         items.push(Ext.applyIf({
-          name:       f.name,
+          name:        f.name,
           fieldLabel: (f.name.replace(/_/g, " ")).capitalize()
         }, this.formItemConfig));
       };
     };
     
     return items;
-  }
+  },
+  
+  /**
+   * Called when the save button is clicked or CTRL + s pressed.  By default this simply fires
+   * the associated controller's 'update' action, passing this.getForm() as the sole argument
+   */
+  onCreate: function() {
+    this.controller.fireAction('create', null, [this.getForm()]);
+  },
+  
+  onUpdate: function() {
+    this.controller.fireAction('update', null, [this.getForm()]);
+  },
+  
+  /**
+   * Called when the cancel button is clicked or ESC pressed.  By default this simply calls Ext.History.back
+   */
+  onCancel: Ext.History.back
 });
 
 Ext.reg('scaffold_form_panel', Ext.ux.MVC.view.scaffold.ScaffoldFormPanel);

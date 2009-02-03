@@ -124,12 +124,12 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
   addTo: null,
   
   /**
-   * @property resourceModel
+   * @property model
    * @type Function/Null
    * Defaults to null.  If set to a reference to an Ext.ux.MVC.Model subclass, renderView will attempt to dynamically
    * scaffold any missing views, if the corresponding view is defined in the Ext.ux.MVC.view.scaffold package
    */
-  resourceModel: null,
+  model: null,
   
   /**
    * Returns a reference to the Scaffold view class for a given viewName
@@ -167,9 +167,9 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
       v = new (this.getViewClass(viewName))(viewConfig);
       
     //view has not been registered, attempt to create one
-    } else if (this.resourceModel) {
+    } else if (this.model) {
       try {
-        v = new (this.scaffoldViewName(viewName))(this.resourceModel);
+        v = new (this.scaffoldViewName(viewName))(this.model);
       } catch(e) {};
     }
     
@@ -212,6 +212,7 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
       if (this.addTo && renderConfig.renderNow) {
         this.addTo.add(v).show();
         this.addTo.doLayout();
+        return v;
       };
     };
   },
@@ -283,16 +284,21 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
    * @param {Function} actionFunction The action function to be called with this.fireAction(actionName)
    * @param {Object} options Gives ability to optionally bypass creation of before_ and after_ events
    * (e.g. {before_filter: false, after_filter: true}).  Both default to true
+   * Also takes an overwrite option which will stop this action overwriting a previous action defined with
+   * this action name (defaults to true)
    */
   registerAction: function(actionName, actionFunction, options) {
     var options = options || {};
-    Ext.applyIf(options, { before_filter: true, after_filter: true });
+    Ext.applyIf(options, { before_filter: true, after_filter: true, overwrite: true});
     
     //create the before and after filters
     if (options.before_filter) { this.addEvents('before_' + actionName); }
     if (options.after_filter)  { this.addEvents('after_'  + actionName); }
     
-    this.actions[actionName] = actionFunction;
+    //don't overwrite the existing action if told not to
+    if (!this.getAction(actionName) || options.overwrite == true) {
+      this.actions[actionName] = actionFunction;
+    };
   },
   
   /**
