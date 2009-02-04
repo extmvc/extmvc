@@ -163,7 +163,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
         
     return Ext.applyIf(cfg, {
       id:        cfg.name,
-      header:    cfg.name.replace("_", " ").titleize(),
+      header:    cfg.name.replace(/_/g, " ").titleize(),
       sortable:  true,
       dataIndex: cfg.name
     });

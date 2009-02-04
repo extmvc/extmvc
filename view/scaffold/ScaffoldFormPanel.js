@@ -25,8 +25,8 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      closable: true,
-      items:    this.buildItems(this.model),
+      autoScroll: true,
+      items:      this.buildItems(this.model),
       keys: [
         {
           key:     Ext.EventObject.ESC,
@@ -90,7 +90,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.FormFields
     var formFields;
     
-    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace, model.modelName.pluralize()))) {
+    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace.split(".")[0], model.modelName.pluralize()))) {
       return formFields;
     };
     

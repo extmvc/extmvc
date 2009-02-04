@@ -87,7 +87,7 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
   };
 
   Ext.applyIf(config, {
-    namespace: namespace.split(".")[0],
+    namespace: namespace, //.split(".")[0],
     modelName: modelName,
     className: modelName,
     adapter:   'REST'
