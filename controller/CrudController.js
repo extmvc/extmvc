@@ -33,6 +33,21 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
   c.registerActions = function(model, overrides) {
     Ext.apply(this, overrides, c.defaultFunctions);
     
+    this.addEvents(
+      /**
+       * @event findsuccess
+       * Fires after a successful load has taken place (applies to Edit forms)
+       * @param {Ext.ux.MVC.Model} modelObj The instantiated model object found by the lookup
+       */
+      'findsuccess',
+      
+      /**
+       * @event findfailure
+       * Fires if the model instance could not be found
+       */
+      'findfailure'
+    );
+    
     /**
      * @property model
      * @type Ext.ux.MVC.Model
@@ -146,6 +161,8 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
     onFindSuccess: function(modelObj) {
       this.editModelObj = modelObj;
       this.form.getForm().loadRecord(modelObj);
+      
+      this.fireEvent('findsuccess', modelObj);
     },
     
     /**
@@ -153,6 +170,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
      * By default it offers the user to try again or go back
      */
     onFindFailure: function() {
+      this.fireEvent('findfailure');
       Ext.Msg.show({
         title:   'Load Failed',
         msg:     'The item could not be loaded',
