@@ -104,13 +104,8 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
         options.success = function(response, opts) {
           var m = reader.read(response);
           if (m && m.records[0]) {
-            //FIXME: this is not great... we're instantiating two objects here, and both
-            //basically do the same job.  Would be better to instantiate the model object
-            //directly rather than as the result of the getReader().read method
-            var obj = new constructor(m.records[0].data);
-            obj.newRecord = false;
-            
-            successFn.call(options.scope, obj);
+            m.records[0].newRecord = false;
+            successFn.call(options.scope, m.records[0]);
           } else {
             failureFn.call(options.scope, response);
           };

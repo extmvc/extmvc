@@ -127,16 +127,17 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
     Ext.applyIf(className, extendsModel.prototype);
   };
   
-  var mc = new Ext.util.MixedCollection();
+  /**
+   * Add fields the way Ext.data.Record does it.
+   * TODO: We shouldn't be doing this here, Record should be doing it... not very DRY
+   */
+  className.prototype.fields = new Ext.util.MixedCollection();
   Ext.each(config.fields, function(f) {
-    mc.add(new Ext.data.Field(f));
+    className.prototype.fields.add(new Ext.data.Field(f));
   });
-  
-  className.prototype.fields = mc;
   
   //add fields, modelName, className and adapter as class-level items
   Ext.apply(className, {
-    // fields:    mc,
     adapter:   config.adapter,
     modelName: modelName,
     className: className,
