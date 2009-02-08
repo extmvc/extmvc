@@ -91,7 +91,24 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
     findAll: function(storeOptions) {
       var storeOptions = storeOptions || {};
       Ext.applyIf(storeOptions, {
-        url: this.url()
+        url: this.url(),
+        
+        listeners: {
+          
+          //Once we have fetched all hasMany records, make sure newRecord is false, and set the parent
+          //relationship to point to this ownerObject (The object which hasMany of these records)
+          'load': {
+            scope: this,
+            fn: function(store, records, options) {
+              Ext.each(records, function(record) {
+                record.newRecord = false;
+                if (record.parent && record.parent.set) {
+                  record.parent.set(ownerObject);
+                }
+              }, this);
+            }
+          }
+        }
       });
       
       return callAssociatedObjectClassMethod('findAll', [storeOptions]);

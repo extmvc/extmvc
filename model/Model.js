@@ -4,7 +4,6 @@
  * Base model class
  */
 Ext.ux.MVC.Model = function(fields, config) {
-  // console.log('made new model');
   Ext.applyIf(this, {
     /**
      * @property newRecord
@@ -128,9 +127,16 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
     Ext.applyIf(className, extendsModel.prototype);
   };
   
+  var mc = new Ext.util.MixedCollection();
+  Ext.each(config.fields, function(f) {
+    mc.add(new Ext.data.Field(f));
+  });
+  
+  className.prototype.fields = mc;
+  
   //add fields, modelName, className and adapter as class-level items
   Ext.apply(className, {
-    fields:    config.fields,
+    // fields:    mc,
     adapter:   config.adapter,
     modelName: modelName,
     className: className,
@@ -323,8 +329,7 @@ Ext.apply(Ext.ux.MVC.Model, {
         if (!modelClass.reader) {
           modelClass.reader = new Ext.data.JsonReader({
             root: modelClass.jsonName || modelClass.prototype.modelName.toLowerCase()
-          }, Ext.ux.MVC.Model.recordFor(modelClass.prototype.className));
-          
+          }, modelClass);
         };
         
         return modelClass.reader;

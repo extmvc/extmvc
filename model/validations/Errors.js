@@ -21,7 +21,7 @@ Ext.ux.MVC.Model.Validation.Errors.prototype = {
    */
   forForm: function() {
     var formErrors = {};
-    Ext.each(this.modelObject.fields, function(field) {
+    Ext.each(this.modelObject.fields.items, function(field) {
       var fieldErrors = this.forField(field.name);
       if (fieldErrors.length > 0) {
         formErrors[field.name] = this.joinErrors(fieldErrors);

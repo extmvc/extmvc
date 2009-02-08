@@ -69,7 +69,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
           Ext.applyIf(options, {
             autoLoad:   true,
             remoteSort: false,
-            method:     'get',
+            method:     'GET',
             url:        this.collectionDataUrl(),
             reader:     this.getReader()
           })
@@ -259,7 +259,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
        * Namespaces fields within the modelName string, taking into account mappings.  For example, a model like:
        * 
        * modelName: 'user',
-       * field: [
+       * fields: [
        *   {name: 'first_name', type: 'string'},
        *   {name: 'last_name',  type: 'string', mapping: 'last'}
        * ]
@@ -282,12 +282,18 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
         var nsfields = {};
         
         for (var i=0; i < fields.length; i++) {
-          nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), fields[i].mapping || fields[i].name)] = this.data[fields[i].name];
+          var item = fields.items[i];
+          
+          //don't send virtual fields back to the server
+          if (item.virtual) {continue;}
+          
+          nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), item.mapping || item.name)] = this.data[item.name];
         };
         
-        for (f in fields) {
-          nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), this.data[f.name])] = fields[f];
-        }
+        //not sure why we ever needed this... 
+        // for (f in fields) {
+        //   nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), this.data[f.name])] = fields.items[f];
+        // }
         
         return nsfields;
       }
