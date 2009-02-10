@@ -65,12 +65,17 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
       findAll: function(options) {
         var options = options || {};
         
+        var url = options.url || this.collectionDataUrl();
+        
         return new Ext.data.Store(
           Ext.applyIf(options, {
             autoLoad:   true,
             remoteSort: false,
             method:     'GET',
-            url:        this.collectionDataUrl(),
+            proxy:      new Ext.data.HttpProxy({
+              url:    url,
+              method: "GET"
+            }),
             reader:     this.getReader()
           })
         );

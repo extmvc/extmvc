@@ -12,11 +12,12 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
   this.controllerName = model.modelName.pluralize();
   this.controller     = this.os.getController(this.controllerName);
   
-  var tbarConfig = this.hasTopToolbar ? this.buildTopToolbar() : null;
-  
   //we can't put these in applyIf block below as the functions are executed immediately
   config.columns = config.columns || this.buildColumns(model);
   config.store   = config.store   || model.findAll();
+  
+  var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
+  var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(config.store) : null;
   
   Ext.applyIf(config, {
     title:      'Showing ' + model.prototype.modelName.pluralize().capitalize(),
@@ -27,6 +28,7 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
     loadMask: true,
     
     tbar: tbarConfig,
+    bbar: bbar,
     
     listeners: {
       'dblclick': {
@@ -102,6 +104,13 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * True to automatically include a default top toolbar (defaults to true)
    */
   hasTopToolbar: true,
+  
+  /**
+   * @property hasBottomToolbar
+   * @type Boolean
+   * True to automatically include a paging bottom toolbar (defaults to true)
+   */
+  hasBottomToolbar: true,
     
   /**
    * Takes a model definition and returns a column array to use for a columnModel
@@ -160,7 +169,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
   buildColumn: function(cfg) {
     var cfg = cfg || {};
     if (typeof(cfg) == 'string') {cfg = {name: cfg};}
-        
+    
     return Ext.applyIf(cfg, {
       id:        cfg.name,
       header:    cfg.name.replace(/_/g, " ").titleize(),
@@ -211,6 +220,24 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       this.editButton, '-',
       this.deleteButton
     ];
+  },
+  
+  /**
+   * Creates a paging toolbar to be placed at the bottom of this grid
+   * @param {Ext.data.Store} store The store to bind to this paging toolbar (should be the same as for the main grid)
+   * @return {Ext.PagingToolbar} The Paging Toolbar
+   */
+  buildBottomToolbar: function(store) {
+    //Used for getting human-readable names for this model
+    //TODO: this is overkill, shouldn't need to instantiate an object for this...
+    var modelObj = new this.model({});
+    
+    return new Ext.PagingToolbar({
+      store:       store,
+      displayInfo: true,
+      pageSize:    25,
+      emptyMsg:    String.format("No {0} to display", modelObj.humanPluralName)
+    });
   },
   
   /**

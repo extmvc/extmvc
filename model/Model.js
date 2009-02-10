@@ -329,6 +329,7 @@ Ext.apply(Ext.ux.MVC.Model, {
       getReader: function() {
         if (!modelClass.reader) {
           modelClass.reader = new Ext.data.JsonReader({
+            totalProperty: 'totalCount',
             root: modelClass.jsonName || modelClass.prototype.modelName.toLowerCase()
           }, modelClass);
         };
