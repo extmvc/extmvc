@@ -22,7 +22,6 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
   Ext.applyIf(config, {
     title:      'Showing ' + model.prototype.modelName.pluralize().capitalize(),
     viewConfig: { forceFit: true },
-    closable:   true,
     id:         model.prototype.modelName + 's_index',
     
     loadMask: true,

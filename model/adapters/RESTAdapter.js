@@ -71,7 +71,6 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
           Ext.applyIf(options, {
             autoLoad:   true,
             remoteSort: false,
-            method:     'GET',
             proxy:      new Ext.data.HttpProxy({
               url:    url,
               method: "GET"
