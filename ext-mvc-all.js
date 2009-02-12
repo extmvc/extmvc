@@ -168,11 +168,11 @@ String.prototype.titleize = function() {
  * e.g. long_underscored_string => LongUnderscoredString
  */
 String.prototype.camelize = function() {
-  return this.titleize().replace(/_/g, " ").replace(/ /g, "");
+  return this.replace(/_/g, " ").titleize().replace(/ /g, "");
 };
 
 String.prototype.underscore = function() {
-  return this.toLowerCase().replace(" ", "_");
+  return this.toLowerCase().replace(/ /g, "_");
 };
 
 String.prototype.singularize = function() {
@@ -421,6 +421,8 @@ Ext.ux.MVC.Router.prototype = {
       var match = m.matchesFor(url);
       if (match) { return match; }
     };
+    
+    return false;
   },
   
   /**
@@ -1899,6 +1901,7 @@ Ext.apply(Ext.ux.MVC.Model, {
       getReader: function() {
         if (!modelClass.reader) {
           modelClass.reader = new Ext.data.JsonReader({
+            totalProperty: 'totalCount',
             root: modelClass.jsonName || modelClass.prototype.modelName.toLowerCase()
           }, modelClass);
         };
@@ -2693,12 +2696,16 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
       findAll: function(options) {
         var options = options || {};
         
+        var url = options.url || this.collectionDataUrl();
+        
         return new Ext.data.Store(
           Ext.applyIf(options, {
             autoLoad:   true,
             remoteSort: false,
-            method:     'GET',
-            url:        this.collectionDataUrl(),
+            proxy:      new Ext.data.HttpProxy({
+              url:    url,
+              method: "GET"
+            }),
             reader:     this.getReader()
           })
         );
@@ -3242,21 +3249,22 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
   this.controllerName = model.modelName.pluralize();
   this.controller     = this.os.getController(this.controllerName);
   
-  var tbarConfig = this.hasTopToolbar ? this.buildTopToolbar() : null;
-  
   //we can't put these in applyIf block below as the functions are executed immediately
   config.columns = config.columns || this.buildColumns(model);
   config.store   = config.store   || model.findAll();
   
+  var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
+  var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(config.store) : null;
+  
   Ext.applyIf(config, {
     title:      'Showing ' + model.prototype.modelName.pluralize().capitalize(),
     viewConfig: { forceFit: true },
-    closable:   true,
     id:         model.prototype.modelName + 's_index',
     
     loadMask: true,
     
     tbar: tbarConfig,
+    bbar: bbar,
     
     listeners: {
       'dblclick': {
@@ -3332,6 +3340,13 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * True to automatically include a default top toolbar (defaults to true)
    */
   hasTopToolbar: true,
+  
+  /**
+   * @property hasBottomToolbar
+   * @type Boolean
+   * True to automatically include a paging bottom toolbar (defaults to true)
+   */
+  hasBottomToolbar: true,
     
   /**
    * Takes a model definition and returns a column array to use for a columnModel
@@ -3390,7 +3405,7 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
   buildColumn: function(cfg) {
     var cfg = cfg || {};
     if (typeof(cfg) == 'string') {cfg = {name: cfg};}
-        
+    
     return Ext.applyIf(cfg, {
       id:        cfg.name,
       header:    cfg.name.replace(/_/g, " ").titleize(),
@@ -3441,6 +3456,24 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
       this.editButton, '-',
       this.deleteButton
     ];
+  },
+  
+  /**
+   * Creates a paging toolbar to be placed at the bottom of this grid
+   * @param {Ext.data.Store} store The store to bind to this paging toolbar (should be the same as for the main grid)
+   * @return {Ext.PagingToolbar} The Paging Toolbar
+   */
+  buildBottomToolbar: function(store) {
+    //Used for getting human-readable names for this model
+    //TODO: this is overkill, shouldn't need to instantiate an object for this...
+    var modelObj = new this.model({});
+    
+    return new Ext.PagingToolbar({
+      store:       store,
+      displayInfo: true,
+      pageSize:    25,
+      emptyMsg:    String.format("No {0} to display", modelObj.humanPluralName)
+    });
   },
   
   /**
