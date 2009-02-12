@@ -1582,7 +1582,7 @@ Ext.ux.MVC.Model = function(fields, config) {
      * @type Boolean
      * True if this record is newly created and has not yet been successfully saved
      */
-    newRecord: true
+    newRecord: fields.id ? false : true
   });
   
   //create a new Record object and then decorate it with RecordExtensions
