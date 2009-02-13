@@ -42,7 +42,11 @@ Ext.ux.MVC.Model.define("MVCTest.models.BlogPost", {
     {name: 'user_id', type: 'int'}
   ],
   belongsTo: "User",
-  hasMany:   "Comment"
+  hasMany:   "Comment",
+  
+  instanceMethods: {
+    testInstanceMethod: Ext.emptyFn
+  }
 });
 
 /**
@@ -57,3 +61,27 @@ Ext.ux.MVC.Model.define("MVCTest.models.Comment", {
   ],
   belongsTo: "BlogPost"
 });
+
+MVCTest.OS = new Ext.ux.MVC.OS({
+  name: "MVCTest"
+});
+
+MVCTest.controllers = {};
+
+/**
+ * @class MVCTest.controllers.IndexController
+ * @extends Ext.ux.MVC.Controller
+ * Fake controller for use in OS.spec.js, Controller.spec.js and CrudController.spec.js
+ */
+MVCTest.controllers.IndexController = Ext.extend(Ext.ux.MVC.Controller, {
+  constructor: function() {
+    //super
+    MVCTest.controllers.IndexController.superclass.constructor.call(this, {
+      viewsPackage: MVCTest.views.index
+    });
+    
+    // this.actsAsCrudController(MVCTest.models.User);
+  }
+});
+
+Ext.ns('MVCTest.views.index');

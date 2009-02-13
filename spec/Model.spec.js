@@ -22,6 +22,10 @@ Screw.Unit(function() {
       expect(typeof MVCTest.models.User.testClassMethod).to(equal, "function");
     });
     
+    it("should pass instance methods to each instance", function() {
+      expect(blogPost.testInstanceMethod).to(equal, Ext.emptyFn);
+    });
+    
     describe("When instantiating", function() {
       it("should assign parameters correctly from constructor", function() {
         expect(user.data.id).to(equal, 100);

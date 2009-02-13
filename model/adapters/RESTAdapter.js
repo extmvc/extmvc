@@ -200,29 +200,45 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
           //TODO: tie in validations here
         };
         
+        //keep a reference to this record for use in the success and failure functions below
+        var record = this;
+        
         //set a _method param to fake a PUT request (used by Rails)
         var params = options.params || this.namespaceFields();
         if (!this.newRecord) { params["_method"] = 'put'; }
         delete options.params;
         
-        //keep a reference to this record for use in the success interceptor below
-        var record = this;
+        //if the user passes success and/or failure functions, keep a reference to them to allow us to do some pre-processing
+        var userSuccessFunction = options.success || Ext.emptyFn;
+        var userFailureFunction = options.failure || Ext.emptyFn;
+        delete options.success; delete options.failure;
+        
+        //function to call if Ext.Ajax.request is successful
+        options.success = function(response) {
+          //definitely not a new record any more
+          record.newRecord = false;
+          
+          userSuccessFunction.call(options.scope || record, record, response);
+        };
+        
+        //function to call if Ext.Ajax.request fails
+        options.failure = function(response) {
+          //parse any errors sent back from the server
+          record.readErrors(response.responseText);
+          
+          userFailureFunction.call(options.scope || record, record, response);
+        };
         
         //do this here as the scope in the block below is not always going to be 'this'
         var url = this.url();
         
-        Ext.Ajax.request(
-          Ext.applyIf(options, {
-            url:    url,
-            method: 'post',
-            params:  params,
-            
-            //intercept the callback to mark the record as not new
-            success: (options.success || Ext.emptyFn).createInterceptor(function() {
-              record.newRecord = false;
-            })
-          })
-        );
+        Ext.applyIf(options, {
+          url:     url,
+          method:  'POST',
+          params:  params
+        });
+        
+        Ext.Ajax.request(options);
       },
       
       /**

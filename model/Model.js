@@ -18,6 +18,8 @@ Ext.ux.MVC.Model = function(fields, config) {
   var rec = new record(fields || {});
   rec.init(this);
   
+  Ext.applyIf(this, this.constructor.instanceMethods);
+  
   //add any hasMany associations
   var hm = this.constructor.hasMany;
   if (hm) {

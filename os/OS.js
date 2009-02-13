@@ -74,7 +74,7 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
    */
   launch: function() {
     if (this.fireEvent('beforelaunch', this)) {
-      this.initialiseRouter();
+      this.initializeRouter();
       this.initializeViewport();
       
       if (this.usesHistory) { this.initialiseHistory(); }      
@@ -165,7 +165,7 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
    * Sets up a Router instance.  This is called automatically before onLaunch()
    * Add routes using this.router.connect
    */
-  initialiseRouter: function() {
+  initializeRouter: function() {
     if (this.router) {return;}
     this.router = new Ext.ux.MVC.Router();
     Ext.ux.MVC.Router.defineRoutes(this.router);
@@ -253,7 +253,7 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
    * @param {String} title The string to change the document title to (defaults to view.initialConfig.title)
    */
   setsTitle: function(view, title) {
-    var title = title || view.initialConfig ? view.initialConfig.title : null;
+    var title = title || view.title || view.initialConfig ? view.initialConfig.title : null;
     if (title) {
       view.on('show',     function() {document.title = title;});
       view.on('activate', function() {document.title = title;});

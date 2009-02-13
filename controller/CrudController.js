@@ -246,16 +246,16 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
      * Called after save fails on create.  By default this will parse server errors and display them on the form
      * @param {Object} response the response object from the server (should be containing errors)
      */
-    onCreateFailure: function(response) {
-      this.addErrorMessages(this.newModelObj, response);
+    onCreateFailure: function(modelObj, response) {
+      this.addErrorMessages(modelObj, response);
     },
     
     /**
      * Called after save fails on update.  By default this will parse server errors and display them on the form
      * @param {Object} response the response object from the server (should be containing errors)
      */
-    onUpdateFailure: function(response) {
-      this.addErrorMessages(this.editModelObj, response);
+    onUpdateFailure: function(modelObj, response) {
+      this.addErrorMessages(modelObj, response);
     },
     
     /**
@@ -263,8 +263,6 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
      * @ignore
      */
     addErrorMessages: function(modelObj, response) {
-      modelObj.readErrors(response.responseText);
-                
       this.form.getForm().clearInvalid();
       this.form.getForm().markInvalid(modelObj.errors.forForm());
     },
