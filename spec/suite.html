@@ -1,31 +1,41 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
 <html>
   <head>
-    <!-- Screw Unit -->
-    <script src="../vendor/screw-unit/lib/jquery-1.2.3.js"></script>
-    <script src="../vendor/screw-unit/lib/jquery.fn.js"></script>
-    <script src="../vendor/screw-unit/lib/jquery.print.js"></script>
-    <script src="../vendor/screw-unit/lib/screw.builder.js"></script>
-    <script src="../vendor/screw-unit/lib/screw.matchers.js"></script>
-    <script src="../vendor/screw-unit/lib/screw.events.js"></script>
-    <script src="../vendor/screw-unit/lib/screw.behaviors.js"></script>
-    
-    <!-- Ext JS -->
-    <script type="text/javascript" src="http://extjs.cachefly.net/builds/ext-cdn-8.js"></script>
-    
-    <!-- Ext MVC -->
-    <script src="../ext-mvc-all.js"></script>
-    
-    <!-- Specs -->    
-    <script src="spec_helper.js"></script>
-
-    <script src="OS.spec.js"></script>    
-    <script src="Model.spec.js"></script>
-    <script src="Router.spec.js"></script>
-    <script src="String.spec.js"></script>
-    
-    <link rel="stylesheet" href="../vendor/screw-unit/lib/screw.css">
+    <link type="text/css" rel="stylesheet" href="../vendor/screw-unit/lib/screw.css" />
+    <title>Ext MVC Spec Suite</title>
   </head>
   <body>
     <div id="dom_test" style="position: absolute; left: -9999"></div>
+    
+    <!-- Library code (not directly part of the app) -->
+    <div id="libs">
+      <!-- Screw Unit -->
+      <script type="text/javascript" src="../vendor/screw-unit/lib/jquery-1.2.3.js"></script>
+      <script type="text/javascript" src="../vendor/screw-unit/lib/jquery.fn.js"></script>
+      <script type="text/javascript" src="../vendor/screw-unit/lib/jquery.print.js"></script>
+      <script type="text/javascript" src="../vendor/screw-unit/lib/screw.builder.js"></script>
+      <script type="text/javascript" src="../vendor/screw-unit/lib/screw.matchers.js"></script>
+      <script type="text/javascript" src="../vendor/screw-unit/lib/screw.events.js"></script>
+      <script type="text/javascript" src="../vendor/screw-unit/lib/screw.behaviors.js"></script>
+      
+      <!-- ExtJS -->
+      <script type="text/javascript" src="http://extjs.cachefly.net/builds/ext-cdn-8.js"></script>
+      
+      <!-- Ext MVC -->
+      <script type="text/javascript" src="../ext-mvc-all.js"></script>
+    </div>
+    
+    <!-- Specs -->
+    <div id="specs">
+      <script type="text/javascript" src="SpecHelper.js"></script>
+        
+      <script type="text/javascript" src="OS.spec.js"></script>    
+      <script type="text/javascript" src="Model.spec.js"></script>
+      <script type="text/javascript" src="Router.spec.js"></script>
+      <script type="text/javascript" src="String.spec.js"></script>
+    </div>
+
   </body>
 </html>
