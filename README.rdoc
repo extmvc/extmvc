@@ -1,0 +1,3 @@
+= Ext MVC
+
+EXT MVC is a complete MVC stack on top of Ext JS (http://extjs.com).

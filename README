@@ -1,7 +1,0 @@
-EXT MVC aims to be a complete MVC stack on top of Ext JS (http://extjs.com)
-
-It is being used in several production applications but is still relatively immature so the API *will* break every so often until it's been beaten into a pleasing shape!  Version 0.4 release should be stable, consistent and documented enough for general use.
-
-See http://midlandsweb.lighthouseapp.com/projects/12920-ext-mvc/overview for bugs/feature requests.
-
-Also see http://github.com/edspencer/ext-mvc-rails/tree/master for a related Rails plugin.  This is mostly a bunch of handy generators which need some cleaning up.  http://midlandsweb.lighthouseapp.com/projects/13746-ext-mvc-rails/overview is the Lighthouse URL for ext-mvc-rails.
