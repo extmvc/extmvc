@@ -1,13 +1,13 @@
 /**
- * @class Ext.ux.MVC.view.HasManyEditorGridPanel
+ * @class ExtMVC.view.HasManyEditorGridPanel
  * @extends Ext.grid.EditorGridPanel
  * Provides some sensible defaults for a HasMany editor grid.  For example, given the following models:
- * Ext.ux.MVC.Model.define("MyApp.models.User", {
+ * ExtMVC.Model.define("MyApp.models.User", {
  *   ...
  *   hasMany: "Post"
  * });
  *
- * Ext.ux.MVC.Model.define("MyApp.models.Post", {
+ * ExtMVC.Model.define("MyApp.models.Post", {
  *   ...
  *   belongsTo: "User"
  * });
@@ -27,7 +27,7 @@
  * In the example above, userObj refers to the loaded User instance tied to the edit form.  The HasMany editor grid
  * automatically listens to afteredit events and saves the HasMany model (Post in this case).
  */
-Ext.ux.MVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
+ExtMVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
   
   initComponent: function() {
     Ext.applyIf(this, {
@@ -38,7 +38,7 @@ Ext.ux.MVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
     
     if (this.hasTopToolbar) { this.addTopToolbar(); }
     
-    Ext.ux.MVC.view.HasManyEditorGridPanel.superclass.initComponent.apply(this, arguments);
+    ExtMVC.view.HasManyEditorGridPanel.superclass.initComponent.apply(this, arguments);
     
     /**
      * Set up listening on the afteredit event.  Simply saves the model instance
@@ -208,4 +208,4 @@ Ext.ux.MVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
   }
 });
 
-Ext.reg('hasmany_editorgrid', Ext.ux.MVC.view.HasManyEditorGridPanel);
+Ext.reg('hasmany_editorgrid', ExtMVC.view.HasManyEditorGridPanel);

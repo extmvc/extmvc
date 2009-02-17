@@ -1,4 +1,4 @@
-Ext.ux.MVC.Model.Association = {
+ExtMVC.Model.Association = {
   
   /**
    * Returns the default association name for a given class (e.g. "Post" becomes "posts", "SecretAgent" becomes "secretAgents" etc)
@@ -22,7 +22,7 @@ Ext.ux.MVC.Model.Association = {
 
 
 // //this is not currently used
-// Ext.ux.MVC.Model.Association = function(ownerObject, config) {
+// ExtMVC.Model.Association = function(ownerObject, config) {
 //   var config = config || {};
 //   
 //   //set some sensible default values

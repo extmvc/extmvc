@@ -1,9 +1,9 @@
 /**
- * @class Ext.ux.MVC.view.scaffold.Edit
- * @extends Ext.ux.MVC.view.scaffold.ScaffoldFormPanel
+ * @class ExtMVC.view.scaffold.Edit
+ * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic edit form for a given model
  */
-Ext.ux.MVC.view.scaffold.Edit = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldFormPanel, {
+ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
   
   /**
    * Sets the panel's title, if not already set
@@ -14,8 +14,8 @@ Ext.ux.MVC.view.scaffold.Edit = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldForm
       saveHandler: this.onUpdate
     });
     
-    Ext.ux.MVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+    ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
   }
 });
 
-Ext.reg('scaffold_edit', Ext.ux.MVC.view.scaffold.Edit);
+Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);

@@ -1,7 +1,7 @@
 /**
  * Data adapter to map Kohive models to the various Kohive urls
  */
-Ext.ux.MVC.Model.KohiveAdapter = {
+ExtMVC.Model.KohiveAdapter = {
   
   instanceMethods: {
     /**
@@ -55,7 +55,7 @@ Ext.ux.MVC.Model.KohiveAdapter = {
         Ext.applyIf(options || {}, {
           url:     this.url(),
           method:  'post',
-          params:  Ext.ux.MVC.Model.namespaceFields(this.data, this.modelName)
+          params:  ExtMVC.Model.namespaceFields(this.data, this.modelName)
         })  
       );
     }
@@ -124,7 +124,7 @@ Ext.ux.MVC.Model.KohiveAdapter = {
     },
     
     /**
-     * Finds the model by its ID.  Returns an Ext.ux.MVC.Model subclass instantiation
+     * Finds the model by its ID.  Returns an ExtMVC.Model subclass instantiation
      * @param {Number} id The ID of the model to find
      */
     findById: function(id, options) {
@@ -203,7 +203,7 @@ Ext.ux.MVC.Model.KohiveAdapter = {
 
     /**
      * URL to retrieve a tree representation of this model from (in JSON format)
-     * This is used when populating most of the trees in Ext.ux.MVC, though
+     * This is used when populating most of the trees in ExtMVC, though
      * only applies to models which can be representated as trees
      */
     treeUrl: function() {
@@ -233,4 +233,4 @@ Ext.ux.MVC.Model.KohiveAdapter = {
   initAdapter: Ext.emptyFn
 };
 
-Ext.ux.MVC.Model.registerAdapter('kohive', Ext.ux.MVC.Model.KohiveAdapter);
+ExtMVC.Model.registerAdapter('kohive', ExtMVC.Model.KohiveAdapter);

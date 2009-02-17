@@ -1,13 +1,13 @@
 /**
- * @class Ext.ux.MVC.view.scaffold.Index
+ * @class ExtMVC.view.scaffold.Index
  * @extends Ext.grid.GridPanel
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
-Ext.ux.MVC.view.scaffold.Index = function(model, config) {
+ExtMVC.view.scaffold.Index = function(model, config) {
   var config = config || {};
   
   this.model = model;
-  this.os    = Ext.ux.MVC.OS.getOS();
+  this.os    = ExtMVC.OS.getOS();
   
   this.controllerName = model.modelName.pluralize();
   this.controller     = this.os.getController(this.controllerName);
@@ -62,17 +62,17 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
 
   });
  
-  Ext.ux.MVC.view.scaffold.Index.superclass.constructor.call(this, config);
-  Ext.ux.MVC.OS.getOS().setsTitle(this);
+  ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
+  ExtMVC.OS.getOS().setsTitle(this);
 };
 
-Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
+Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
   
   /**
    * @property preferredColumns
    * @type Array
    * An array of columns to show first in the grid, if they exist
-   * Overwrite Ext.ux.MVC.view.scaffold.Index.preferredColumns if required
+   * Overwrite ExtMVC.view.scaffold.Index.preferredColumns if required
    */
   preferredColumns: ['id', 'title', 'name', 'first_name', 'last_name', 'login', 'username', 'email', 'email_address', 'content', 'message'],
   
@@ -280,4 +280,4 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
   }
 });
 
-Ext.reg('scaffold_index', Ext.ux.MVC.view.scaffold.Index);
+Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);

@@ -3,13 +3,13 @@ Screw.Unit(function() {
     var router;
     
     before(function() {
-      router = new Ext.ux.MVC.Router();
+      router = new ExtMVC.Router();
     });
     
     describe("connect", function() {
       // it("should create a new Route", function() {
       //   var routeCreated = false;
-      //   Ext.ux.MVC.Route = function() {routeCreated = true;};
+      //   ExtMVC.Route = function() {routeCreated = true;};
       //   
       //   router.connect(':controller/:action');
       //   expect(routeCreated).to(equal, true);
@@ -24,7 +24,7 @@ Screw.Unit(function() {
       // it("should create a new Route", function() {
       //   var routeCreated = false;
       //   
-      //   Ext.ux.MVC.Route = Ext.ux.MVC.Route.prototype.constructor.createInterceptor(function() {
+      //   ExtMVC.Route = ExtMVC.Route.prototype.constructor.createInterceptor(function() {
       //     routeCreated = true; 
       //     
       //     return arguments;

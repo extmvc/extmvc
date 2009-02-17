@@ -1,12 +1,12 @@
 /**
- * @class Ext.ux.MVC.UrlBuilder
+ * @class ExtMVC.UrlBuilder
  * Builds URLs...
  */
-Ext.ux.MVC.UrlBuilder = function() {
+ExtMVC.UrlBuilder = function() {
   
 };
 
-Ext.ux.MVC.UrlBuilder.prototype = {
+ExtMVC.UrlBuilder.prototype = {
   
   /**
    * @property baseUrlNamespace
@@ -76,7 +76,7 @@ Ext.ux.MVC.UrlBuilder.prototype = {
   
   /**
    * Returns an array of url segments for a model instance
-   * @param {Ext.ux.MVC.Model} instance A Model instance with at least its primary key value set
+   * @param {ExtMVC.Model} instance A Model instance with at least its primary key value set
    * @return {Array} An array of segments for this url (e.g. ['users', '10'])
    */
   segmentsForInstance: function(instance) {
@@ -97,4 +97,4 @@ Ext.ux.MVC.UrlBuilder.prototype = {
   }
 };
 
-Ext.ux.MVC.UrlBuilder = new Ext.ux.MVC.UrlBuilder();
+ExtMVC.UrlBuilder = new ExtMVC.UrlBuilder();

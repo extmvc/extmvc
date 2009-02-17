@@ -1,25 +1,25 @@
 /**
- * Ext.ux.MVC.OS
- * @extends Ext.ux.MVC.Controller
- * Specialised Ext.ux.MVC.Controller intended to create and manage generic Operating System
+ * ExtMVC.OS
+ * @extends ExtMVC.Controller
+ * Specialised ExtMVC.Controller intended to create and manage generic Operating System
  * components (e.g. not elements specific to a single Application within the OS)
- * When an OS is instantiated, Ext.ux.MVC.OS.getOS() is defined and returns the OS instance
+ * When an OS is instantiated, ExtMVC.OS.getOS() is defined and returns the OS instance
  */
-Ext.ux.MVC.OS = function(config) {
-  Ext.ux.MVC.OS.superclass.constructor.call(this, config);
+ExtMVC.OS = function(config) {
+  ExtMVC.OS.superclass.constructor.call(this, config);
   
   this.addEvents(
     /**
      * @event beforelaunch
      * Fires before this application launches
-     * @param {Ext.ux.MVC.Application} this The application about to be launched
+     * @param {ExtMVC.Application} this The application about to be launched
      */
     'beforelaunch',
     
     /**
      * @event launch
      * Fires after the application has been launched
-     * @param {Ext.ux.MVC.Application} this The application which has been launched
+     * @param {ExtMVC.Application} this The application which has been launched
      */
     'launch'
   );
@@ -27,9 +27,9 @@ Ext.ux.MVC.OS = function(config) {
   this.initialiseNamespaces();
   
   var os = this;
-  Ext.ux.MVC.OS.getOS = function() {return os;};
+  ExtMVC.OS.getOS = function() {return os;};
 };
-Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
+Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
   /**
    * Registers a controller for use with this OS.  The controller is instantiated lazily
    * when needed, through the use of this.getController('MyController')
@@ -104,7 +104,7 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
   /**
    * @property viewportBuilder
    * @type String
-   * The type of viewport to construct (can be any registered with Ext.ux.MVC.ViewportBuilderManager)
+   * The type of viewport to construct (can be any registered with ExtMVC.ViewportBuilderManager)
    */
   viewportBuilder: 'leftmenu',
   
@@ -114,12 +114,12 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
   viewportBuilderConfig: {},
   
   /**
-   * Called just before onLaunch.  Runs the Ext.ux.MVC.ViewportBuilder
+   * Called just before onLaunch.  Runs the ExtMVC.ViewportBuilder
    * specified in this.viewportBuilder.
    * Override this to create your own viewport instead of using a builder
    */
   initializeViewport: function() {
-    var builder = Ext.ux.MVC.ViewportBuilderManager.find(this.viewportBuilder);
+    var builder = ExtMVC.ViewportBuilderManager.find(this.viewportBuilder);
     if (builder) {
       builder.build(this);
     };
@@ -167,8 +167,8 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
    */
   initializeRouter: function() {
     if (this.router) {return;}
-    this.router = new Ext.ux.MVC.Router();
-    Ext.ux.MVC.Router.defineRoutes(this.router);
+    this.router = new ExtMVC.Router();
+    ExtMVC.Router.defineRoutes(this.router);
   },
   
   /**
@@ -261,4 +261,4 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
   }
 });
 
-Ext.reg('os', Ext.ux.MVC.OS);
+Ext.reg('os', ExtMVC.OS);

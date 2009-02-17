@@ -1,8 +1,8 @@
 /**
  * Manages registration and retrieval of MVC Model adapters
- * @class Ext.ux.MVC.Model.AdapterManager
+ * @class ExtMVC.Model.AdapterManager
  */
-Ext.ux.MVC.Model.AdapterManager = {
+ExtMVC.Model.AdapterManager = {
   /**
    * @property adapters
    * @type Object

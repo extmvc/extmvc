@@ -1,14 +1,14 @@
 /**
- * @class Ext.ux.MVC.Model.HasManyAssociation
- * @extends Ext.ux.MVC.Model.Association
+ * @class ExtMVC.Model.HasManyAssociation
+ * @extends ExtMVC.Model.Association
  */
-Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
+ExtMVC.Model.HasManyAssociation = function(ownerObject, config) {
   var config = config || {};
   
   Ext.applyIf(config, {
     offset:          0,
     limit:           25,
-    associationName: Ext.ux.MVC.Model.Association.hasManyAssociationName(config.name)
+    associationName: ExtMVC.Model.Association.hasManyAssociationName(config.name)
   });
 
   //TODO: these should be abstracted to a parent object (as should private vars and funcs below)
@@ -67,7 +67,7 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
         args.push(arguments[i]);
       };
       
-      return Ext.ux.MVC.UrlBuilder.urlFor.apply(Ext.ux.MVC.UrlBuilder, args);
+      return ExtMVC.UrlBuilder.urlFor.apply(ExtMVC.UrlBuilder, args);
     },
     
     /**
@@ -135,7 +135,7 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
       var obj = new associatedObjectClass(fields);
       
       //set up the object's belongsTo association.  This also sets up the foreign key
-      var assocName = Ext.ux.MVC.Model.Association.belongsToAssociationName(ownerObject.className);
+      var assocName = ExtMVC.Model.Association.belongsToAssociationName(ownerObject.className);
       obj[assocName].set(ownerObject);
       
       return obj;
@@ -143,7 +143,7 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
 
     /**
      * Adds an existing (saved) instantiation of the associated model to this model's hasMany collection
-     * @param {Ext.ux.MVC.Model} modelObject The existing, saved model
+     * @param {ExtMVC.Model} modelObject The existing, saved model
      */
     add: function(modelObject) {
       //TODO: implement this
@@ -157,4 +157,4 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
   });
 };
 
-// Ext.extend(Ext.ux.MVC.Model.HasManyAssociation, Ext.ux.MVC.Model.Association);
+// Ext.extend(ExtMVC.Model.HasManyAssociation, ExtMVC.Model.Association);

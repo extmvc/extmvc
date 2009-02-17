@@ -1,25 +1,25 @@
 /**
- * Ext.ux.MVC.Controller
+ * ExtMVC.Controller
  * @extends Ext.util.Observable
  * Controller base class
  */
-Ext.ux.MVC.Controller = function(config) {
+ExtMVC.Controller = function(config) {
   var config = config || {};
   Ext.applyIf(config, {
     autoRegisterViews: true
   });
   
-  Ext.ux.MVC.Controller.superclass.constructor.call(this, config);
+  ExtMVC.Controller.superclass.constructor.call(this, config);
   
   /**
    * @property os
-   * @type Ext.ux.MVC.OS
+   * @type ExtMVC.OS
    * Maintains a reference to the current OS
    */
   //we need to wrap this in try/catch because OS also inherits from Controller, so can't call getOS()
   //get.  Hmm
   try {
-    this.os = Ext.ux.MVC.OS.getOS();
+    this.os = ExtMVC.OS.getOS();
   } catch(e) {};
   
   /**
@@ -49,7 +49,7 @@ Ext.ux.MVC.Controller = function(config) {
     /**
      * @event init
      * Fires when this controller is created.
-     * @param {Ext.ux.MVC.Controller} this The controller instance
+     * @param {ExtMVC.Controller} this The controller instance
      */
     'init',
     
@@ -78,7 +78,7 @@ Ext.ux.MVC.Controller = function(config) {
   this.fireEvent('init', this);
 };
 
-Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
+Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
   
   /**
    * Attaches a view class to this controller - allows the controller to create the view
@@ -126,8 +126,8 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
   /**
    * @property model
    * @type Function/Null
-   * Defaults to null.  If set to a reference to an Ext.ux.MVC.Model subclass, renderView will attempt to dynamically
-   * scaffold any missing views, if the corresponding view is defined in the Ext.ux.MVC.view.scaffold package
+   * Defaults to null.  If set to a reference to an ExtMVC.Model subclass, renderView will attempt to dynamically
+   * scaffold any missing views, if the corresponding view is defined in the ExtMVC.view.scaffold package
    */
   model: null,
   
@@ -137,7 +137,7 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
    * @return {Function} A reference to the view class to instantiate to render this scaffold view
    */
   scaffoldViewName: function(viewName) {
-    return Ext.ux.MVC.view.scaffold[viewName.titleize()];
+    return ExtMVC.view.scaffold[viewName.titleize()];
   },
   
   /**
@@ -358,4 +358,4 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
   }
 });
 
-Ext.reg('controller', Ext.ux.MVC.Controller); 
+Ext.reg('controller', ExtMVC.Controller); 

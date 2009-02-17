@@ -1,9 +1,9 @@
 /**
- * @class Ext.ux.MVC.view.scaffold.ScaffoldFormPanel
+ * @class ExtMVC.view.scaffold.ScaffoldFormPanel
  * @extends Ext.form.FormPanel
  * Base class for any scaffold form panel (e.g. new and edit forms)
  */
-Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
+ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   
   /**
    * Sets up the FormPanel, adds default configuration and items
@@ -12,12 +12,12 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     var config = config || {};
     
     this.model = model;
-    this.os    = Ext.ux.MVC.OS.getOS();
+    this.os    = ExtMVC.OS.getOS();
     
     this.controllerName = this.model.modelName.pluralize();
     this.controller     = this.os.getController(this.controllerName);
     
-    Ext.ux.MVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
+    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
   },
   
   /**
@@ -60,7 +60,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     //sets the document's title to the title of this panel
     this.os.setsTitle(this);
     
-    Ext.ux.MVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
+    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
   },
   
   /**
@@ -82,7 +82,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   
   /**
    * Builds an array of form items for the given model
-   * @param {Ext.ux.MVC.Model} model The model to build form items for
+   * @param {ExtMVC.Model} model The model to build form items for
    * @return {Array} An array of auto-generated form items
    */
   buildItems: function(model) {
@@ -130,4 +130,4 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   onCancel: Ext.History.back
 });
 
-Ext.reg('scaffold_form_panel', Ext.ux.MVC.view.scaffold.ScaffoldFormPanel);
+Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);

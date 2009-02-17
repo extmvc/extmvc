@@ -1,6 +1,6 @@
 (function() {
   //local reference to save my fingers, object lookups (maybe?) and # bytes
-  var V = Ext.ux.MVC.Model.Validation;
+  var V = ExtMVC.Model.Validation;
   
   V.AbstractValidation = function() {
     

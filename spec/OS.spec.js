@@ -1,7 +1,7 @@
 Screw.Unit(function() {
   var os;
   before(function() {
-    os = new Ext.ux.MVC.OS();
+    os = new ExtMVC.OS();
   });
   
   describe("An OS", function() {
@@ -38,7 +38,7 @@ Screw.Unit(function() {
       
       it("should assign a new Router instance to this.router", function() {
         os.initializeRouter();
-        expect(os.router instanceof Ext.ux.MVC.Router).to(equal, true);
+        expect(os.router instanceof ExtMVC.Router).to(equal, true);
       });
     });
     

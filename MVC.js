@@ -1,9 +1,8 @@
 /**
  * Initialise package and set version
  */
-Ext.ns('Ext.ux');
-Ext.ux.MVC = {
+ExtMVC = {
   version: "0.5a0"
 };
 
-Ext.ns('Ext.ux.MVC.Model', 'Ext.ux.MVC.plugin', 'Ext.ux.MVC.view', 'Ext.ux.MVC.view.scaffold');
+Ext.ns('ExtMVC.Model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold');

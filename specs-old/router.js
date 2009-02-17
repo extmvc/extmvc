@@ -1,6 +1,6 @@
 describe('The Router', {
   before_each : function() {
-    map = new Ext.ux.MVC.Router({});
+    map = new ExtMVC.Router({});
   },
   
   'routes actions for :controller/:action' : function() {

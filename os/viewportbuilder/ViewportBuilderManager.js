@@ -1,8 +1,8 @@
 /**
  * A simple manager for registering and retrieving named ViewportBuilders
- * @class Ext.ux.MVC.ViewportBuilderManager
+ * @class ExtMVC.ViewportBuilderManager
  */
-Ext.ux.MVC.ViewportBuilderManager = {
+ExtMVC.ViewportBuilderManager = {
   
   /**
    * @property viewportBuilders

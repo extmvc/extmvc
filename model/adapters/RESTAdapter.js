@@ -1,7 +1,7 @@
-Ext.ns('Ext.ux.MVC.Model.Adapter');
+Ext.ns('ExtMVC.Model.Adapter');
 
 (function() {
-  var A = Ext.ux.MVC.Model.Adapter;
+  var A = ExtMVC.Model.Adapter;
   
   A.REST = {
     initialize: function(model) {
@@ -160,7 +160,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
   
       /**
        * URL to retrieve a tree representation of this model from (in JSON format)
-       * This is used when populating most of the trees in Ext.ux.MVC, though
+       * This is used when populating most of the trees in ExtMVC, though
        * only applies to models which can be representated as trees
        */
       treeUrl: function() {
@@ -316,4 +316,4 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
   };
 })();
 
-Ext.ux.MVC.Model.AdapterManager.register('REST', Ext.ux.MVC.Model.Adapter.REST);
+ExtMVC.Model.AdapterManager.register('REST', ExtMVC.Model.Adapter.REST);

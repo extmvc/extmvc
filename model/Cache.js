@@ -1,25 +1,25 @@
 /**
- * @class Ext.ux.MVC.Model.Cache
+ * @class ExtMVC.Model.Cache
  * @extends Ext.util.Observable
  * Provides an interface for caching model objects which have been fetched from some database/backend
  */
-Ext.ux.MVC.Model.Cache = function(config) {
+ExtMVC.Model.Cache = function(config) {
   var config = config || {};
  
-  Ext.ux.MVC.Model.Cache.superclass.constructor.call(this, config);
+  ExtMVC.Model.Cache.superclass.constructor.call(this, config);
   
   this.addEvents(
     /**
      * @event beforeadd
      * Fires before an item is added to the cache
-     * @param {Ext.ux.MVC.Model} modelObject The model which is about to be added
+     * @param {ExtMVC.Model} modelObject The model which is about to be added
      */
     'beforeadd',
     
     /**
      * @event add
      * Fires after an item is added to the cache
-     * @param {Ext.ux.MVC.Model} modelObject The model which was just added
+     * @param {ExtMVC.Model} modelObject The model which was just added
      */
     'add',
     
@@ -39,7 +39,7 @@ Ext.ux.MVC.Model.Cache = function(config) {
   );
 };
 
-Ext.extend(Ext.ux.MVC.Model.Cache, Ext.util.Observable, {
+Ext.extend(ExtMVC.Model.Cache, Ext.util.Observable, {
   
   /**
    * @property caches
@@ -50,7 +50,7 @@ Ext.extend(Ext.ux.MVC.Model.Cache, Ext.util.Observable, {
   
   /**
    * Adds the given model object to the cache.  Automatically stores the datetime of the add
-   * @param {Ext.ux.MVC.Model} modelObject The model you want to store in the cache
+   * @param {ExtMVC.Model} modelObject The model you want to store in the cache
    */
   add: function(modelObject) {
     if (this.fireEvent('beforeadd', modelObject)) {
@@ -77,7 +77,7 @@ Ext.extend(Ext.ux.MVC.Model.Cache, Ext.util.Observable, {
    * @param {Object} params params object which must contain at least modelName and id.  Optionally 
    * supply staleTime, which is the number of seconds old the cached object is allowed to be to get a hit,
    * or a Date which will restrict hits to anything cached after that date
-   * @return {Ext.ux.MVC.Model/null} The model if found, or null
+   * @return {ExtMVC.Model/null} The model if found, or null
    */
   fetch: function(params) {
     this.caches[params['modelName']] = this.caches[params['modelName']] || {};

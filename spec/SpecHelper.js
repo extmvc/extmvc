@@ -1,8 +1,8 @@
 /**
  * @class MVCTest.models.User
- * @extends Ext.ux.MVC.Model
+ * @extends ExtMVC.Model
  */
-Ext.ux.MVC.Model.define("MVCTest.models.User", {
+ExtMVC.Model.define("MVCTest.models.User", {
   modelName: 'user',
   fields:    [
     {name: 'id',         type: 'int'},
@@ -22,7 +22,7 @@ Ext.ux.MVC.Model.define("MVCTest.models.User", {
  * @extends MVCTest.models.User
  * A subclass of User, defining additional fields
  */
-Ext.ux.MVC.Model.define("MVCTest.models.AdminUser", {
+ExtMVC.Model.define("MVCTest.models.AdminUser", {
   extend: "MVCTest.models.User",
   fields: [
     {name: 'is_admin', type: 'bool'},
@@ -32,9 +32,9 @@ Ext.ux.MVC.Model.define("MVCTest.models.AdminUser", {
 
 /**
  * @class MVCTest.models.BlogPost
- * @extends Ext.ux.MVC.Model
+ * @extends ExtMVC.Model
  */
-Ext.ux.MVC.Model.define("MVCTest.models.BlogPost", {
+ExtMVC.Model.define("MVCTest.models.BlogPost", {
   fields:    [
     {name: 'id',      type: 'int'},
     {name: 'title',   type: 'string'},
@@ -51,9 +51,9 @@ Ext.ux.MVC.Model.define("MVCTest.models.BlogPost", {
 
 /**
  * @class MVCTest.models.Comment
- * @extends Ext.ux.MVC.Model
+ * @extends ExtMVC.Model
  */
-Ext.ux.MVC.Model.define("MVCTest.models.Comment", {
+ExtMVC.Model.define("MVCTest.models.Comment", {
   fields:    [
     {name: 'id',           type: 'int'},
     {name: 'blog_post_id', type: 'int'},
@@ -62,7 +62,7 @@ Ext.ux.MVC.Model.define("MVCTest.models.Comment", {
   belongsTo: "BlogPost"
 });
 
-MVCTest.OS = new Ext.ux.MVC.OS({
+MVCTest.OS = new ExtMVC.OS({
   name: "MVCTest"
 });
 
@@ -70,10 +70,10 @@ MVCTest.controllers = {};
 
 /**
  * @class MVCTest.controllers.IndexController
- * @extends Ext.ux.MVC.Controller
+ * @extends ExtMVC.Controller
  * Fake controller for use in OS.spec.js, Controller.spec.js and CrudController.spec.js
  */
-MVCTest.controllers.IndexController = Ext.extend(Ext.ux.MVC.Controller, {
+MVCTest.controllers.IndexController = Ext.extend(ExtMVC.Controller, {
   constructor: function() {
     //super
     MVCTest.controllers.IndexController.superclass.constructor.call(this, {

@@ -1,18 +1,17 @@
 /**
  * Initialise package and set version
  */
-Ext.ns('Ext.ux');
-Ext.ux.MVC = {
+ExtMVC = {
   version: "0.5a0"
 };
 
-Ext.ns('Ext.ux.MVC.Model', 'Ext.ux.MVC.plugin', 'Ext.ux.MVC.view', 'Ext.ux.MVC.view.scaffold');
+Ext.ns('ExtMVC.Model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold');
 
 /*
  * Adapted from http://snippets.dzone.com/posts/show/3205
  */
 
-Ext.ux.MVC.Inflector = {
+ExtMVC.Inflector = {
   /*
    * The order of all these lists has been reversed from the way 
    * ActiveSupport had them to keep the correct priority.
@@ -96,12 +95,12 @@ Ext.ux.MVC.Inflector = {
   },
   
   pluralize: function(word) {
-    var unusual = Ext.ux.MVC.Inflector.uncountableOrIrregular(word);
+    var unusual = ExtMVC.Inflector.uncountableOrIrregular(word);
     if (unusual) { return unusual; }
     
-    for (var i = 0; i < Ext.ux.MVC.Inflector.Inflections.plural.length; i++) {
-      var regex          = Ext.ux.MVC.Inflector.Inflections.plural[i][0];
-      var replace_string = Ext.ux.MVC.Inflector.Inflections.plural[i][1];
+    for (var i = 0; i < ExtMVC.Inflector.Inflections.plural.length; i++) {
+      var regex          = ExtMVC.Inflector.Inflections.plural[i][0];
+      var replace_string = ExtMVC.Inflector.Inflections.plural[i][1];
       if (regex.test(word)) {
         return word.replace(regex, replace_string);
       }
@@ -112,12 +111,12 @@ Ext.ux.MVC.Inflector = {
   },
   
   singularize: function(word) {
-    var unusual = Ext.ux.MVC.Inflector.uncountableOrIrregular(word);
+    var unusual = ExtMVC.Inflector.uncountableOrIrregular(word);
     if (unusual) { return unusual; }
     
-    for (var i = 0; i < Ext.ux.MVC.Inflector.Inflections.singular.length; i++) {
-      var regex          = Ext.ux.MVC.Inflector.Inflections.singular[i][0];
-      var replace_string = Ext.ux.MVC.Inflector.Inflections.singular[i][1];
+    for (var i = 0; i < ExtMVC.Inflector.Inflections.singular.length; i++) {
+      var regex          = ExtMVC.Inflector.Inflections.singular[i][0];
+      var replace_string = ExtMVC.Inflector.Inflections.singular[i][1];
       
       if (regex.test(word)) {
         return word.replace(regex, replace_string);
@@ -129,15 +128,15 @@ Ext.ux.MVC.Inflector = {
   },
   
   uncountableOrIrregular: function(word) {
-    for (var i = 0; i < Ext.ux.MVC.Inflector.Inflections.uncountable.length; i++) {
-      var uncountable = Ext.ux.MVC.Inflector.Inflections.uncountable[i];
+    for (var i = 0; i < ExtMVC.Inflector.Inflections.uncountable.length; i++) {
+      var uncountable = ExtMVC.Inflector.Inflections.uncountable[i];
       if (word.toLowerCase == uncountable) {
         return uncountable;
       }
     }
-    for (var i = 0; i < Ext.ux.MVC.Inflector.Inflections.irregular.length; i++) {
-      var singular = Ext.ux.MVC.Inflector.Inflections.irregular[i][0];
-      var plural   = Ext.ux.MVC.Inflector.Inflections.irregular[i][1];
+    for (var i = 0; i < ExtMVC.Inflector.Inflections.irregular.length; i++) {
+      var singular = ExtMVC.Inflector.Inflections.irregular[i][0];
+      var plural   = ExtMVC.Inflector.Inflections.irregular[i][1];
       if ((word.toLowerCase == singular) || (word == plural)) {
         return plural;
       }
@@ -176,11 +175,11 @@ String.prototype.underscore = function() {
 };
 
 String.prototype.singularize = function() {
-  return Ext.ux.MVC.Inflector.singularize(this);
+  return ExtMVC.Inflector.singularize(this);
 };
 
 String.prototype.pluralize = function() {
-  return Ext.ux.MVC.Inflector.pluralize(this);
+  return ExtMVC.Inflector.pluralize(this);
 };
 
 String.prototype.escapeHTML = function () {                                       
@@ -245,8 +244,8 @@ String.prototype.toCurrency = function(symbol) {
 //   // class_name_string.split("_").collect(function(e) {return String.capitalize(e)}).join("");
 // };
 
-Ext.ux.MVC.Router = function() {};
-Ext.ux.MVC.Router.prototype = {
+ExtMVC.Router = function() {};
+ExtMVC.Router.prototype = {
   
   /**
    * @property mappings
@@ -266,10 +265,10 @@ Ext.ux.MVC.Router.prototype = {
    * Adds a new route to the collection.  Routes are given priority in the order they are added
    * @param {String} re The regular expression-style string to match (e.g. ":controller/:action/:id")
    * @param {Object} additional_params Any additional options which will be returned along with the match elements if the route matches
-   * @return {Ext.ux.MVC.Route} The newly created route object
+   * @return {ExtMVC.Route} The newly created route object
    */
   connect: function(re, additional_params) {
-    var route = new Ext.ux.MVC.Route(re, additional_params);
+    var route = new ExtMVC.Route(re, additional_params);
     this.mappings.push(route);
     
     return route;
@@ -500,7 +499,7 @@ Ext.ux.MVC.Router.prototype = {
 /**
  * Basic default routes.  Redefine this method inside config/routes.js
  */
-Ext.ux.MVC.Router.defineRoutes = function(map) {
+ExtMVC.Router.defineRoutes = function(map) {
   map.connect(":controller/:action");
   map.connect(":controller/:action/:id");
 };
@@ -509,7 +508,7 @@ Ext.ux.MVC.Router.defineRoutes = function(map) {
  * 
  * 
  */
-Ext.ux.MVC.Route = function(mappingString, options) {
+ExtMVC.Route = function(mappingString, options) {
   this.mappingString = mappingString;
   this.options       = options || {};
   
@@ -542,7 +541,7 @@ Ext.ux.MVC.Route = function(mappingString, options) {
   this.matcherRegex = this.convertToUsableRegex(mappingString);
 };
 
-Ext.ux.MVC.Route.prototype = {
+ExtMVC.Route.prototype = {
   /**
    * @param {url} The url we want to match against this route to see if it matches
    * @return {boolean} Returns true if this route matches the url
@@ -645,27 +644,27 @@ Ext.ux.MVC.Route.prototype = {
 };
 
 /**
- * Ext.ux.MVC.Controller
+ * ExtMVC.Controller
  * @extends Ext.util.Observable
  * Controller base class
  */
-Ext.ux.MVC.Controller = function(config) {
+ExtMVC.Controller = function(config) {
   var config = config || {};
   Ext.applyIf(config, {
     autoRegisterViews: true
   });
   
-  Ext.ux.MVC.Controller.superclass.constructor.call(this, config);
+  ExtMVC.Controller.superclass.constructor.call(this, config);
   
   /**
    * @property os
-   * @type Ext.ux.MVC.OS
+   * @type ExtMVC.OS
    * Maintains a reference to the current OS
    */
   //we need to wrap this in try/catch because OS also inherits from Controller, so can't call getOS()
   //get.  Hmm
   try {
-    this.os = Ext.ux.MVC.OS.getOS();
+    this.os = ExtMVC.OS.getOS();
   } catch(e) {};
   
   /**
@@ -695,7 +694,7 @@ Ext.ux.MVC.Controller = function(config) {
     /**
      * @event init
      * Fires when this controller is created.
-     * @param {Ext.ux.MVC.Controller} this The controller instance
+     * @param {ExtMVC.Controller} this The controller instance
      */
     'init',
     
@@ -724,7 +723,7 @@ Ext.ux.MVC.Controller = function(config) {
   this.fireEvent('init', this);
 };
 
-Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
+Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
   
   /**
    * Attaches a view class to this controller - allows the controller to create the view
@@ -772,8 +771,8 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
   /**
    * @property model
    * @type Function/Null
-   * Defaults to null.  If set to a reference to an Ext.ux.MVC.Model subclass, renderView will attempt to dynamically
-   * scaffold any missing views, if the corresponding view is defined in the Ext.ux.MVC.view.scaffold package
+   * Defaults to null.  If set to a reference to an ExtMVC.Model subclass, renderView will attempt to dynamically
+   * scaffold any missing views, if the corresponding view is defined in the ExtMVC.view.scaffold package
    */
   model: null,
   
@@ -783,7 +782,7 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
    * @return {Function} A reference to the view class to instantiate to render this scaffold view
    */
   scaffoldViewName: function(viewName) {
-    return Ext.ux.MVC.view.scaffold[viewName.titleize()];
+    return ExtMVC.view.scaffold[viewName.titleize()];
   },
   
   /**
@@ -1004,17 +1003,17 @@ Ext.extend(Ext.ux.MVC.Controller, Ext.util.Observable, {
   }
 });
 
-Ext.reg('controller', Ext.ux.MVC.Controller); 
+Ext.reg('controller', ExtMVC.Controller); 
 
 /**
  * This started life as a plugin, moving it here for now as it might be useful on every project (hence oddish definition)
  */
 
 
-Ext.ns('Ext.ux.MVC.plugin.CrudController');
+Ext.ns('ExtMVC.plugin.CrudController');
 
 (function() {
-  var c = Ext.ux.MVC.plugin.CrudController;
+  var c = ExtMVC.plugin.CrudController;
   
   /**
    * Adds default CRUD (Create, Read, Update, Delete) to this controller.
@@ -1035,8 +1034,8 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
    *   onUpdateFailure: function() {... your custom onUpdateFailure behaviour ...}
    * });
    *
-   * @param {Ext.ux.MVC.Model} model The model to provide CRUD support for
-   * @return {Ext.ux.MVC.Controller} The controller, now with addition actions and methods
+   * @param {ExtMVC.Model} model The model to provide CRUD support for
+   * @return {ExtMVC.Controller} The controller, now with addition actions and methods
    */
   c.registerActions = function(model, overrides) {
     Ext.apply(this, overrides, c.defaultFunctions);
@@ -1045,7 +1044,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
       /**
        * @event findsuccess
        * Fires after a successful load has taken place (applies to Edit forms)
-       * @param {Ext.ux.MVC.Model} modelObj The instantiated model object found by the lookup
+       * @param {ExtMVC.Model} modelObj The instantiated model object found by the lookup
        */
       'findsuccess',
       
@@ -1058,7 +1057,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
     
     /**
      * @property model
-     * @type Ext.ux.MVC.Model
+     * @type ExtMVC.Model
      * Holds a reference to the model this controller provides CRUD support for
      */
     this.model = model;
@@ -1127,7 +1126,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
     
     /**
      * @property modelObj
-     * @type Ext.ux.MVC.Model/Null
+     * @type ExtMVC.Model/Null
      * Reference to the model being edited in this form.  Is set once loaded by the adapter
      */
     modelObj: null,
@@ -1164,7 +1163,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
     
     /**
      * Fires after successful find of the model.  Loads data into the form
-     * @param {Ext.ux.MVC.Model} modelObj The found model object
+     * @param {ExtMVC.Model} modelObj The found model object
      */
     onFindSuccess: function(modelObj) {
       this.editModelObj = modelObj;
@@ -1299,32 +1298,32 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
    * Define a method on Controller to enable this.actsAsCrudController(this) within a
    * controller constructor function
    */
-  Ext.ux.MVC.Controller.prototype.actsAsCrudController = c.registerActions;
+  ExtMVC.Controller.prototype.actsAsCrudController = c.registerActions;
   
 })();
 
 /**
- * Ext.ux.MVC.OS
- * @extends Ext.ux.MVC.Controller
- * Specialised Ext.ux.MVC.Controller intended to create and manage generic Operating System
+ * ExtMVC.OS
+ * @extends ExtMVC.Controller
+ * Specialised ExtMVC.Controller intended to create and manage generic Operating System
  * components (e.g. not elements specific to a single Application within the OS)
- * When an OS is instantiated, Ext.ux.MVC.OS.getOS() is defined and returns the OS instance
+ * When an OS is instantiated, ExtMVC.OS.getOS() is defined and returns the OS instance
  */
-Ext.ux.MVC.OS = function(config) {
-  Ext.ux.MVC.OS.superclass.constructor.call(this, config);
+ExtMVC.OS = function(config) {
+  ExtMVC.OS.superclass.constructor.call(this, config);
   
   this.addEvents(
     /**
      * @event beforelaunch
      * Fires before this application launches
-     * @param {Ext.ux.MVC.Application} this The application about to be launched
+     * @param {ExtMVC.Application} this The application about to be launched
      */
     'beforelaunch',
     
     /**
      * @event launch
      * Fires after the application has been launched
-     * @param {Ext.ux.MVC.Application} this The application which has been launched
+     * @param {ExtMVC.Application} this The application which has been launched
      */
     'launch'
   );
@@ -1332,9 +1331,9 @@ Ext.ux.MVC.OS = function(config) {
   this.initialiseNamespaces();
   
   var os = this;
-  Ext.ux.MVC.OS.getOS = function() {return os;};
+  ExtMVC.OS.getOS = function() {return os;};
 };
-Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
+Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
   /**
    * Registers a controller for use with this OS.  The controller is instantiated lazily
    * when needed, through the use of this.getController('MyController')
@@ -1409,7 +1408,7 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
   /**
    * @property viewportBuilder
    * @type String
-   * The type of viewport to construct (can be any registered with Ext.ux.MVC.ViewportBuilderManager)
+   * The type of viewport to construct (can be any registered with ExtMVC.ViewportBuilderManager)
    */
   viewportBuilder: 'leftmenu',
   
@@ -1419,12 +1418,12 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
   viewportBuilderConfig: {},
   
   /**
-   * Called just before onLaunch.  Runs the Ext.ux.MVC.ViewportBuilder
+   * Called just before onLaunch.  Runs the ExtMVC.ViewportBuilder
    * specified in this.viewportBuilder.
    * Override this to create your own viewport instead of using a builder
    */
   initializeViewport: function() {
-    var builder = Ext.ux.MVC.ViewportBuilderManager.find(this.viewportBuilder);
+    var builder = ExtMVC.ViewportBuilderManager.find(this.viewportBuilder);
     if (builder) {
       builder.build(this);
     };
@@ -1472,8 +1471,8 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
    */
   initializeRouter: function() {
     if (this.router) {return;}
-    this.router = new Ext.ux.MVC.Router();
-    Ext.ux.MVC.Router.defineRoutes(this.router);
+    this.router = new ExtMVC.Router();
+    ExtMVC.Router.defineRoutes(this.router);
   },
   
   /**
@@ -1566,14 +1565,14 @@ Ext.extend(Ext.ux.MVC.OS, Ext.ux.MVC.Controller, {
   }
 });
 
-Ext.reg('os', Ext.ux.MVC.OS);
+Ext.reg('os', ExtMVC.OS);
 
 /**
- * Ext.ux.MVC.Model
+ * ExtMVC.Model
  * @extends Ext.util.Observable
  * Base model class
  */
-Ext.ux.MVC.Model = function(fields, config) {
+ExtMVC.Model = function(fields, config) {
   Ext.applyIf(this, {
     /**
      * @property newRecord
@@ -1584,7 +1583,7 @@ Ext.ux.MVC.Model = function(fields, config) {
   });
   
   //create a new Record object and then decorate it with RecordExtensions
-  var record = Ext.ux.MVC.Model.recordFor(this.modelName, fields);
+  var record = ExtMVC.Model.recordFor(this.modelName, fields);
   var rec = new record(fields || {});
   rec.init(this);
   
@@ -1602,7 +1601,7 @@ Ext.ux.MVC.Model = function(fields, config) {
       //association can just be specified via a string, in which case turn it into an object here
       if (typeof hma == 'string') { hma = { name: hma }; };
       
-      hma = new Ext.ux.MVC.Model.HasManyAssociation(this, hma);
+      hma = new ExtMVC.Model.HasManyAssociation(this, hma);
       this[hma.associationName] = hma;
     };
   };
@@ -1619,7 +1618,7 @@ Ext.ux.MVC.Model = function(fields, config) {
       //association can just be specified via a string, in which case turn it into an object here
       if (typeof bta == 'string') { bta = { name: bta }; };
       
-      var btaAssoc = new Ext.ux.MVC.Model.BelongsToAssociation(this, bta);
+      var btaAssoc = new ExtMVC.Model.BelongsToAssociation(this, bta);
       this[btaAssoc.associationName] = btaAssoc;
       
       //see if a parent has been defined, if not set one up now (defaults here to the first belongsTo assoc)
@@ -1644,7 +1643,7 @@ Ext.ux.MVC.Model = function(fields, config) {
  * @cfg {String} xmlName The name of the XML element which contains the model fields.  e.g. for a model called MyModel, this may look
  * like <MyModel>...</MyModel> or <my_model>...</my_model>.  This is where you set that (don't include the angle brackets)
  */
-Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
+ExtMVC.Model.define = function(modelNameWithNamespace, config) {
   var config = config || {};
   
   //split into namespace and model name
@@ -1664,8 +1663,8 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
     adapter:   'REST'
   });
   
-  //extend Ext.ux.MVC.Model for this className
-  eval(modelNameWithNamespace + " = Ext.extend(Ext.ux.MVC.Model, config)");
+  //extend ExtMVC.Model for this className
+  eval(modelNameWithNamespace + " = Ext.extend(ExtMVC.Model, config)");
   var className = eval(modelNameWithNamespace);
   
   /**
@@ -1716,50 +1715,50 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
     namespace: namespace,
     
     //build the underlying Ext.data.Record now (will be used in model's constructor)
-    record:    Ext.ux.MVC.Model.recordFor(modelName, config.fields)
+    record:    ExtMVC.Model.recordFor(modelName, config.fields)
   });
   
   //add model class functions such as findById
-  Ext.ux.MVC.Model.addClassMethodsToModel(className, config);
+  ExtMVC.Model.addClassMethodsToModel(className, config);
 };
 
 
 /**
  * Custom extensions to Ext.data.Record.  These methods are added to new Ext.data.Record objects
- * when you subclass Ext.ux.MVC.Model.
+ * when you subclass ExtMVC.Model.
  * For example
- * model = new Ext.ux.MVC.Spec.FakeUser({
+ * model = new ExtMVC.Spec.FakeUser({
  *   id:   100,
  *   name: 'Ed'
  * });
  * alert(model.namespacedUrl('my_url')); // => '/admin/my_url.ext_json'
  */
-Ext.ux.MVC.Model.RecordExtensions = {
+ExtMVC.Model.RecordExtensions = {
   /**
-   * Adds Ext.ux.App logic on top of Ext.data.Record
+   * Adds logic on top of Ext.data.Record
    */
   init: function(config) {
     Ext.applyIf(config, {
       //set up the various variations on the model name
-      className:         Ext.ux.MVC.Model.classifyName(config.modelName),
-      controllerName:    Ext.ux.MVC.Model.controllerName(config.modelName),
-      foreignKeyName:    Ext.ux.MVC.Model.foreignKeyName(config.modelName),
+      className:         ExtMVC.Model.classifyName(config.modelName),
+      controllerName:    ExtMVC.Model.controllerName(config.modelName),
+      foreignKeyName:    ExtMVC.Model.foreignKeyName(config.modelName),
       
-      humanPluralName:   Ext.ux.MVC.Model.pluralizeHumanName(config.modelName),
-      humanSingularName: Ext.ux.MVC.Model.singularizeHumanName(config.modelName),
+      humanPluralName:   ExtMVC.Model.pluralizeHumanName(config.modelName),
+      humanSingularName: ExtMVC.Model.singularizeHumanName(config.modelName),
       
       underscoreName:    config.modelName
     });
     
     //add the data adapter, initialize it
-    var adapter = Ext.ux.MVC.Model.AdapterManager.find(config.adapter || Ext.ux.MVC.Model.prototype.adapter);
+    var adapter = ExtMVC.Model.AdapterManager.find(config.adapter || ExtMVC.Model.prototype.adapter);
     if (adapter) {
       Ext.apply(config, adapter.instanceMethods);
       adapter.initialize(this);
     }
     
     //mix in validations package
-    Ext.apply(config, Ext.ux.MVC.Model.ValidationExtensions);
+    Ext.apply(config, ExtMVC.Model.ValidationExtensions);
     config.initializeValidationExtensions();
     
     Ext.apply(this, config);
@@ -1772,9 +1771,9 @@ Ext.ux.MVC.Model.RecordExtensions = {
   url: function() {
     var el = this.data.id ? this : this.constructor;
     if (this.parent && this.parent.lastFetched) {
-      return Ext.ux.MVC.UrlBuilder.urlFor(this.parent.get({}, -1), el);
+      return ExtMVC.UrlBuilder.urlFor(this.parent.get({}, -1), el);
     } else {
-      return Ext.ux.MVC.UrlBuilder.urlFor(el);
+      return ExtMVC.UrlBuilder.urlFor(el);
     };
   },
   
@@ -1804,13 +1803,13 @@ Ext.ux.MVC.Model.RecordExtensions = {
 /**
  * Provides a framework for validating the contents of each field
  */
-Ext.ux.MVC.Model.ValidationExtensions = {
+ExtMVC.Model.ValidationExtensions = {
   /**
    * Sets up this record's validation parameters
    */
   initializeValidationExtensions: function() {
     this.validations = this.validations || [];
-    this.errors      = new Ext.ux.MVC.Model.Validation.Errors(this);
+    this.errors      = new ExtMVC.Model.Validation.Errors(this);
   },
   
   isValid: function() {
@@ -1819,27 +1818,27 @@ Ext.ux.MVC.Model.ValidationExtensions = {
 };
 
 
-Ext.ux.MVC.Model.models   = [];
+ExtMVC.Model.models   = [];
 
 /**
  * Utility methods which don't need to be declared per model
  */
-Ext.apply(Ext.ux.MVC.Model, {
+Ext.apply(ExtMVC.Model, {
   
   /**
    * Retrieves or creates an Ext.data.Record for the given model name.  This is then cached
-   * in Ext.ux.MVC.models for later reuse
+   * in ExtMVC.models for later reuse
    * @param {String} modelName The name of the model to create or retrieve a record for
    * @param {Array} fields An array of fields to be passed to the Ext.data.Record.create call
    * @return {Ext.data.Record} An instantiated Record object using Ext.data.Record.create
    */
   recordFor: function(modelName, fields) {
-    var record = Ext.ux.MVC.Model.models[modelName];
+    var record = ExtMVC.Model.models[modelName];
     if (!record) {
       record = Ext.data.Record.create(fields);
 
-      Ext.apply(record.prototype, Ext.ux.MVC.Model.RecordExtensions);
-      Ext.ux.MVC.Model.models[modelName] = record;
+      Ext.apply(record.prototype, ExtMVC.Model.RecordExtensions);
+      ExtMVC.Model.models[modelName] = record;
     }
     
     return record;
@@ -1883,11 +1882,11 @@ Ext.apply(Ext.ux.MVC.Model, {
     
     Ext.applyIf(additionalFunctions, {
       //add a urlName property to the Model subclass
-      urlName: Ext.ux.MVC.Model.urlizeName(modelClass.prototype.modelName)
+      urlName: ExtMVC.Model.urlizeName(modelClass.prototype.modelName)
     });
     
     //add any class methods from the adapter
-    var adapter = Ext.ux.MVC.Model.AdapterManager.find(modelClass.adapter || Ext.ux.MVC.Model.prototype.adapter);
+    var adapter = ExtMVC.Model.AdapterManager.find(modelClass.adapter || ExtMVC.Model.prototype.adapter);
     if (adapter && adapter.classMethods) {
       Ext.apply(modelClass, adapter.classMethods);
     };
@@ -1912,13 +1911,13 @@ Ext.apply(Ext.ux.MVC.Model, {
   }
 });
 
-Ext.ns('Ext.ux.MVC.Model.Adapter', 'Ext.ux.MVC.Model.Validation');
+Ext.ns('ExtMVC.Model.Adapter', 'ExtMVC.Model.Validation');
 
 /**
  * Manages registration and retrieval of MVC Model adapters
- * @class Ext.ux.MVC.Model.AdapterManager
+ * @class ExtMVC.Model.AdapterManager
  */
-Ext.ux.MVC.Model.AdapterManager = {
+ExtMVC.Model.AdapterManager = {
   /**
    * @property adapters
    * @type Object
@@ -1946,27 +1945,27 @@ Ext.ux.MVC.Model.AdapterManager = {
 };
 
 /**
- * @class Ext.ux.MVC.Model.Cache
+ * @class ExtMVC.Model.Cache
  * @extends Ext.util.Observable
  * Provides an interface for caching model objects which have been fetched from some database/backend
  */
-Ext.ux.MVC.Model.Cache = function(config) {
+ExtMVC.Model.Cache = function(config) {
   var config = config || {};
  
-  Ext.ux.MVC.Model.Cache.superclass.constructor.call(this, config);
+  ExtMVC.Model.Cache.superclass.constructor.call(this, config);
   
   this.addEvents(
     /**
      * @event beforeadd
      * Fires before an item is added to the cache
-     * @param {Ext.ux.MVC.Model} modelObject The model which is about to be added
+     * @param {ExtMVC.Model} modelObject The model which is about to be added
      */
     'beforeadd',
     
     /**
      * @event add
      * Fires after an item is added to the cache
-     * @param {Ext.ux.MVC.Model} modelObject The model which was just added
+     * @param {ExtMVC.Model} modelObject The model which was just added
      */
     'add',
     
@@ -1986,7 +1985,7 @@ Ext.ux.MVC.Model.Cache = function(config) {
   );
 };
 
-Ext.extend(Ext.ux.MVC.Model.Cache, Ext.util.Observable, {
+Ext.extend(ExtMVC.Model.Cache, Ext.util.Observable, {
   
   /**
    * @property caches
@@ -1997,7 +1996,7 @@ Ext.extend(Ext.ux.MVC.Model.Cache, Ext.util.Observable, {
   
   /**
    * Adds the given model object to the cache.  Automatically stores the datetime of the add
-   * @param {Ext.ux.MVC.Model} modelObject The model you want to store in the cache
+   * @param {ExtMVC.Model} modelObject The model you want to store in the cache
    */
   add: function(modelObject) {
     if (this.fireEvent('beforeadd', modelObject)) {
@@ -2024,7 +2023,7 @@ Ext.extend(Ext.ux.MVC.Model.Cache, Ext.util.Observable, {
    * @param {Object} params params object which must contain at least modelName and id.  Optionally 
    * supply staleTime, which is the number of seconds old the cached object is allowed to be to get a hit,
    * or a Date which will restrict hits to anything cached after that date
-   * @return {Ext.ux.MVC.Model/null} The model if found, or null
+   * @return {ExtMVC.Model/null} The model if found, or null
    */
   fetch: function(params) {
     this.caches[params['modelName']] = this.caches[params['modelName']] || {};
@@ -2078,14 +2077,14 @@ Ext.extend(Ext.ux.MVC.Model.Cache, Ext.util.Observable, {
 });
 
 /**
- * @class Ext.ux.MVC.UrlBuilder
+ * @class ExtMVC.UrlBuilder
  * Builds URLs...
  */
-Ext.ux.MVC.UrlBuilder = function() {
+ExtMVC.UrlBuilder = function() {
   
 };
 
-Ext.ux.MVC.UrlBuilder.prototype = {
+ExtMVC.UrlBuilder.prototype = {
   
   /**
    * @property baseUrlNamespace
@@ -2155,7 +2154,7 @@ Ext.ux.MVC.UrlBuilder.prototype = {
   
   /**
    * Returns an array of url segments for a model instance
-   * @param {Ext.ux.MVC.Model} instance A Model instance with at least its primary key value set
+   * @param {ExtMVC.Model} instance A Model instance with at least its primary key value set
    * @return {Array} An array of segments for this url (e.g. ['users', '10'])
    */
   segmentsForInstance: function(instance) {
@@ -2176,9 +2175,9 @@ Ext.ux.MVC.UrlBuilder.prototype = {
   }
 };
 
-Ext.ux.MVC.UrlBuilder = new Ext.ux.MVC.UrlBuilder();
+ExtMVC.UrlBuilder = new ExtMVC.UrlBuilder();
 
-Ext.ux.MVC.Model.Association = {
+ExtMVC.Model.Association = {
   
   /**
    * Returns the default association name for a given class (e.g. "Post" becomes "posts", "SecretAgent" becomes "secretAgents" etc)
@@ -2202,7 +2201,7 @@ Ext.ux.MVC.Model.Association = {
 
 
 // //this is not currently used
-// Ext.ux.MVC.Model.Association = function(ownerObject, config) {
+// ExtMVC.Model.Association = function(ownerObject, config) {
 //   var config = config || {};
 //   
 //   //set some sensible default values
@@ -2233,16 +2232,16 @@ Ext.ux.MVC.Model.Association = {
 // };
 
 /**
- * @class Ext.ux.MVC.Model.HasManyAssociation
- * @extends Ext.ux.MVC.Model.Association
+ * @class ExtMVC.Model.HasManyAssociation
+ * @extends ExtMVC.Model.Association
  */
-Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
+ExtMVC.Model.HasManyAssociation = function(ownerObject, config) {
   var config = config || {};
   
   Ext.applyIf(config, {
     offset:          0,
     limit:           25,
-    associationName: Ext.ux.MVC.Model.Association.hasManyAssociationName(config.name)
+    associationName: ExtMVC.Model.Association.hasManyAssociationName(config.name)
   });
 
   //TODO: these should be abstracted to a parent object (as should private vars and funcs below)
@@ -2301,7 +2300,7 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
         args.push(arguments[i]);
       };
       
-      return Ext.ux.MVC.UrlBuilder.urlFor.apply(Ext.ux.MVC.UrlBuilder, args);
+      return ExtMVC.UrlBuilder.urlFor.apply(ExtMVC.UrlBuilder, args);
     },
     
     /**
@@ -2369,7 +2368,7 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
       var obj = new associatedObjectClass(fields);
       
       //set up the object's belongsTo association.  This also sets up the foreign key
-      var assocName = Ext.ux.MVC.Model.Association.belongsToAssociationName(ownerObject.className);
+      var assocName = ExtMVC.Model.Association.belongsToAssociationName(ownerObject.className);
       obj[assocName].set(ownerObject);
       
       return obj;
@@ -2377,7 +2376,7 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
 
     /**
      * Adds an existing (saved) instantiation of the associated model to this model's hasMany collection
-     * @param {Ext.ux.MVC.Model} modelObject The existing, saved model
+     * @param {ExtMVC.Model} modelObject The existing, saved model
      */
     add: function(modelObject) {
       //TODO: implement this
@@ -2391,17 +2390,17 @@ Ext.ux.MVC.Model.HasManyAssociation = function(ownerObject, config) {
   });
 };
 
-// Ext.extend(Ext.ux.MVC.Model.HasManyAssociation, Ext.ux.MVC.Model.Association);
+// Ext.extend(ExtMVC.Model.HasManyAssociation, ExtMVC.Model.Association);
 
 /**
- * @class Ext.ux.MVC.Model.BelongsToAssociation
- * @extends Ext.ux.MVC.Model.Association
+ * @class ExtMVC.Model.BelongsToAssociation
+ * @extends ExtMVC.Model.Association
  */
-Ext.ux.MVC.Model.BelongsToAssociation = function(ownerObject, config) {
+ExtMVC.Model.BelongsToAssociation = function(ownerObject, config) {
   var config = config || {};
   
   Ext.applyIf(config, {
-    associationName: Ext.ux.MVC.Model.Association.belongsToAssociationName(config.name)
+    associationName: ExtMVC.Model.Association.belongsToAssociationName(config.name)
   });
     
   //TODO: these should be abstracted to a parent object (as should private vars and funcs below)
@@ -2441,7 +2440,7 @@ Ext.ux.MVC.Model.BelongsToAssociation = function(ownerObject, config) {
     
     /**
      * @property associationClass
-     * @type Ext.ux.MVC.Model
+     * @type ExtMVC.Model
      * A reference to the association's class (e.g. belongsTo: "Post" would have associationClass of Post)
      */
     associationClass: associatedObjectClass,
@@ -2462,7 +2461,7 @@ Ext.ux.MVC.Model.BelongsToAssociation = function(ownerObject, config) {
     
     /**
      * Sets the associated model for this association to the specified model object
-     * @param {Ext.ux.MVC.Model} modelObject The associated model to set this belongsTo association to
+     * @param {ExtMVC.Model} modelObject The associated model to set this belongsTo association to
      */
     set: function(modelObject) {
       this.lastFetched = new Date();
@@ -2510,7 +2509,7 @@ Ext.ux.MVC.Model.BelongsToAssociation = function(ownerObject, config) {
   };
 };
 
-Ext.ux.MVC.Model.Adapter.Abstract = {
+ExtMVC.Model.Adapter.Abstract = {
   initialize: function(model) {
     
   },
@@ -2545,7 +2544,7 @@ Ext.ux.MVC.Model.Adapter.Abstract = {
 /**
  * Methods adding url data mapping
  */
-Ext.ux.MVC.Model.AbstractAdapter = {
+ExtMVC.Model.AbstractAdapter = {
   /**
    * Set up the model for use with Active Resource.  Add various url-related properties to the model
    */
@@ -2553,7 +2552,7 @@ Ext.ux.MVC.Model.AbstractAdapter = {
     Ext.applyIf(this, {
       urlNamespace: '/admin',
       urlExtension: '.ext_json',
-      urlName:      Ext.ux.MVC.Model.urlizeName(this.modelName)
+      urlName:      ExtMVC.Model.urlizeName(this.modelName)
     });
   },
   
@@ -2600,7 +2599,7 @@ Ext.ux.MVC.Model.AbstractAdapter = {
 
   /**
    * URL to retrieve a tree representation of this model from (in JSON format)
-   * This is used when populating most of the trees in Ext.ux.MVC, though
+   * This is used when populating most of the trees in ExtMVC, though
    * only applies to models which can be representated as trees
    */
   treeUrl: function() {
@@ -2627,12 +2626,12 @@ Ext.ux.MVC.Model.AbstractAdapter = {
   }
 };
 
-// Ext.ux.MVC.Model.registerAdapter('REST', Ext.ux.MVC.Model.AbstractAdapter);
+// ExtMVC.Model.registerAdapter('REST', ExtMVC.Model.AbstractAdapter);
 
-Ext.ns('Ext.ux.MVC.Model.Adapter');
+Ext.ns('ExtMVC.Model.Adapter');
 
 (function() {
-  var A = Ext.ux.MVC.Model.Adapter;
+  var A = ExtMVC.Model.Adapter;
   
   A.REST = {
     initialize: function(model) {
@@ -2791,7 +2790,7 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
   
       /**
        * URL to retrieve a tree representation of this model from (in JSON format)
-       * This is used when populating most of the trees in Ext.ux.MVC, though
+       * This is used when populating most of the trees in ExtMVC, though
        * only applies to models which can be representated as trees
        */
       treeUrl: function() {
@@ -2947,17 +2946,17 @@ Ext.ns('Ext.ux.MVC.Model.Adapter');
   };
 })();
 
-Ext.ux.MVC.Model.AdapterManager.register('REST', Ext.ux.MVC.Model.Adapter.REST);
+ExtMVC.Model.AdapterManager.register('REST', ExtMVC.Model.Adapter.REST);
 
 /**
- * @class Ext.ux.MVC.Model.ValidationErrors
+ * @class ExtMVC.Model.ValidationErrors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-Ext.ux.MVC.Model.Validation.Errors = function(modelObject) {
+ExtMVC.Model.Validation.Errors = function(modelObject) {
   this.modelObject = modelObject;
 };
 
-Ext.ux.MVC.Model.Validation.Errors.prototype = {
+ExtMVC.Model.Validation.Errors.prototype = {
   
   /**
    * @property errors
@@ -3074,9 +3073,9 @@ Ext.ux.MVC.Model.Validation.Errors.prototype = {
 
 /**
  * A simple manager for registering and retrieving named ViewportBuilders
- * @class Ext.ux.MVC.ViewportBuilderManager
+ * @class ExtMVC.ViewportBuilderManager
  */
-Ext.ux.MVC.ViewportBuilderManager = {
+ExtMVC.ViewportBuilderManager = {
   
   /**
    * @property viewportBuilders
@@ -3102,27 +3101,27 @@ Ext.ux.MVC.ViewportBuilderManager = {
   }
 };
 
-Ext.ux.MVC.ViewportBuilder = function(config) {
+ExtMVC.ViewportBuilder = function(config) {
   this.initialConfig = config;
 };
 
-Ext.ux.MVC.ViewportBuilder.prototype = {
+ExtMVC.ViewportBuilder.prototype = {
   
   /**
    * Abstract function which should be overridden by your implementation
-   * @param {Ext.ux.MVC.OS} os A reference to the OS.  Usually a builder would set 
+   * @param {ExtMVC.OS} os A reference to the OS.  Usually a builder would set 
    * os.viewport = new Ext.Viewport({...}) and return the os at the end of the function
-   * @return {Ext.ux.MVC.OS} The operating system as passed in parameters after viewport is built
+   * @return {ExtMVC.OS} The operating system as passed in parameters after viewport is built
    */
   build: Ext.emptyFn
 };
 
 /**
- * @class Ext.ux.MVC.view.scaffold.ScaffoldFormPanel
+ * @class ExtMVC.view.scaffold.ScaffoldFormPanel
  * @extends Ext.form.FormPanel
  * Base class for any scaffold form panel (e.g. new and edit forms)
  */
-Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
+ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   
   /**
    * Sets up the FormPanel, adds default configuration and items
@@ -3131,12 +3130,12 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     var config = config || {};
     
     this.model = model;
-    this.os    = Ext.ux.MVC.OS.getOS();
+    this.os    = ExtMVC.OS.getOS();
     
     this.controllerName = this.model.modelName.pluralize();
     this.controller     = this.os.getController(this.controllerName);
     
-    Ext.ux.MVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
+    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
   },
   
   /**
@@ -3179,7 +3178,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     //sets the document's title to the title of this panel
     this.os.setsTitle(this);
     
-    Ext.ux.MVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
+    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
   },
   
   /**
@@ -3201,7 +3200,7 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   
   /**
    * Builds an array of form items for the given model
-   * @param {Ext.ux.MVC.Model} model The model to build form items for
+   * @param {ExtMVC.Model} model The model to build form items for
    * @return {Array} An array of auto-generated form items
    */
   buildItems: function(model) {
@@ -3249,18 +3248,18 @@ Ext.ux.MVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   onCancel: Ext.History.back
 });
 
-Ext.reg('scaffold_form_panel', Ext.ux.MVC.view.scaffold.ScaffoldFormPanel);
+Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);
 
 /**
- * @class Ext.ux.MVC.view.scaffold.Index
+ * @class ExtMVC.view.scaffold.Index
  * @extends Ext.grid.GridPanel
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
-Ext.ux.MVC.view.scaffold.Index = function(model, config) {
+ExtMVC.view.scaffold.Index = function(model, config) {
   var config = config || {};
   
   this.model = model;
-  this.os    = Ext.ux.MVC.OS.getOS();
+  this.os    = ExtMVC.OS.getOS();
   
   this.controllerName = model.modelName.pluralize();
   this.controller     = this.os.getController(this.controllerName);
@@ -3315,17 +3314,17 @@ Ext.ux.MVC.view.scaffold.Index = function(model, config) {
 
   });
  
-  Ext.ux.MVC.view.scaffold.Index.superclass.constructor.call(this, config);
-  Ext.ux.MVC.OS.getOS().setsTitle(this);
+  ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
+  ExtMVC.OS.getOS().setsTitle(this);
 };
 
-Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
+Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
   
   /**
    * @property preferredColumns
    * @type Array
    * An array of columns to show first in the grid, if they exist
-   * Overwrite Ext.ux.MVC.view.scaffold.Index.preferredColumns if required
+   * Overwrite ExtMVC.view.scaffold.Index.preferredColumns if required
    */
   preferredColumns: ['id', 'title', 'name', 'first_name', 'last_name', 'login', 'username', 'email', 'email_address', 'content', 'message'],
   
@@ -3533,14 +3532,14 @@ Ext.extend(Ext.ux.MVC.view.scaffold.Index, Ext.grid.GridPanel, {
   }
 });
 
-Ext.reg('scaffold_index', Ext.ux.MVC.view.scaffold.Index);
+Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);
 
 /**
- * @class Ext.ux.MVC.view.scaffold.New
- * @extends Ext.ux.MVC.view.scaffold.ScaffoldFormPanel
+ * @class ExtMVC.view.scaffold.New
+ * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic new form for a given model
  */
-Ext.ux.MVC.view.scaffold.New = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldFormPanel, {
+ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
 
   /**
    * Sets this panel's title, if not already set.  Also specifies the save handler to use
@@ -3550,18 +3549,18 @@ Ext.ux.MVC.view.scaffold.New = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldFormP
       title:       'New ' + this.model.prototype.modelName.capitalize(),
       saveHandler: this.onCreate
     });
-    Ext.ux.MVC.view.scaffold.New.superclass.initComponent.apply(this, arguments);
+    ExtMVC.view.scaffold.New.superclass.initComponent.apply(this, arguments);
   }
 });
 
-Ext.reg('scaffold_new', Ext.ux.MVC.view.scaffold.New);
+Ext.reg('scaffold_new', ExtMVC.view.scaffold.New);
 
 /**
- * @class Ext.ux.MVC.view.scaffold.Edit
- * @extends Ext.ux.MVC.view.scaffold.ScaffoldFormPanel
+ * @class ExtMVC.view.scaffold.Edit
+ * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic edit form for a given model
  */
-Ext.ux.MVC.view.scaffold.Edit = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldFormPanel, {
+ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
   
   /**
    * Sets the panel's title, if not already set
@@ -3572,22 +3571,22 @@ Ext.ux.MVC.view.scaffold.Edit = Ext.extend(Ext.ux.MVC.view.scaffold.ScaffoldForm
       saveHandler: this.onUpdate
     });
     
-    Ext.ux.MVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+    ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
   }
 });
 
-Ext.reg('scaffold_edit', Ext.ux.MVC.view.scaffold.Edit);
+Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);
 
 /**
- * @class Ext.ux.MVC.view.HasManyEditorGridPanel
+ * @class ExtMVC.view.HasManyEditorGridPanel
  * @extends Ext.grid.EditorGridPanel
  * Provides some sensible defaults for a HasMany editor grid.  For example, given the following models:
- * Ext.ux.MVC.Model.define("MyApp.models.User", {
+ * ExtMVC.Model.define("MyApp.models.User", {
  *   ...
  *   hasMany: "Post"
  * });
  *
- * Ext.ux.MVC.Model.define("MyApp.models.Post", {
+ * ExtMVC.Model.define("MyApp.models.Post", {
  *   ...
  *   belongsTo: "User"
  * });
@@ -3607,7 +3606,7 @@ Ext.reg('scaffold_edit', Ext.ux.MVC.view.scaffold.Edit);
  * In the example above, userObj refers to the loaded User instance tied to the edit form.  The HasMany editor grid
  * automatically listens to afteredit events and saves the HasMany model (Post in this case).
  */
-Ext.ux.MVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
+ExtMVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
   
   initComponent: function() {
     Ext.applyIf(this, {
@@ -3618,7 +3617,7 @@ Ext.ux.MVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
     
     if (this.hasTopToolbar) { this.addTopToolbar(); }
     
-    Ext.ux.MVC.view.HasManyEditorGridPanel.superclass.initComponent.apply(this, arguments);
+    ExtMVC.view.HasManyEditorGridPanel.superclass.initComponent.apply(this, arguments);
     
     /**
      * Set up listening on the afteredit event.  Simply saves the model instance
@@ -3788,5 +3787,5 @@ Ext.ux.MVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
   }
 });
 
-Ext.reg('hasmany_editorgrid', Ext.ux.MVC.view.HasManyEditorGridPanel);
+Ext.reg('hasmany_editorgrid', ExtMVC.view.HasManyEditorGridPanel);
 

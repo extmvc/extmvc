@@ -24,7 +24,7 @@
   <script src="route.js" type="text/javascript" charset="utf-8"></script>
   <script type="text/javascript">// <![CDATA[
   // Define a new model and test that the various methods work correctly
-  AgentPageTemplate = new Ext.ux.MVC.model.Base('agent_page_template', {
+  AgentPageTemplate = new ExtMVC.model.Base('agent_page_template', {
     fields: [{name: 'id', type: 'int'}]
   });
   
@@ -34,7 +34,7 @@
   AgentPageTemplateNewPanel   = {};
   
   // stub out a layout manager
-  Ext.ux.MVC.LayoutManager.LeftMenuLayoutManager = function() {
+  ExtMVC.LayoutManager.LeftMenuLayoutManager = function() {
     this.initialize = function() {
       return true;
     }
@@ -43,7 +43,7 @@
   application = new Application();
   
   // set up a corresponding controller for the model above
-  AgentPageTemplatesController = Ext.extend(Ext.ux.MVC.controller.CrudController, {
+  AgentPageTemplatesController = Ext.extend(ExtMVC.controller.CrudController, {
     constructor: function(config) {
       AgentPageTemplatesController.superclass.constructor.call(this, {
         model      : AgentPageTemplate, 

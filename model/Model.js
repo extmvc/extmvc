@@ -1,9 +1,9 @@
 /**
- * Ext.ux.MVC.Model
+ * ExtMVC.Model
  * @extends Ext.util.Observable
  * Base model class
  */
-Ext.ux.MVC.Model = function(fields, config) {
+ExtMVC.Model = function(fields, config) {
   Ext.applyIf(this, {
     /**
      * @property newRecord
@@ -14,7 +14,7 @@ Ext.ux.MVC.Model = function(fields, config) {
   });
   
   //create a new Record object and then decorate it with RecordExtensions
-  var record = Ext.ux.MVC.Model.recordFor(this.modelName, fields);
+  var record = ExtMVC.Model.recordFor(this.modelName, fields);
   var rec = new record(fields || {});
   rec.init(this);
   
@@ -32,7 +32,7 @@ Ext.ux.MVC.Model = function(fields, config) {
       //association can just be specified via a string, in which case turn it into an object here
       if (typeof hma == 'string') { hma = { name: hma }; };
       
-      hma = new Ext.ux.MVC.Model.HasManyAssociation(this, hma);
+      hma = new ExtMVC.Model.HasManyAssociation(this, hma);
       this[hma.associationName] = hma;
     };
   };
@@ -49,7 +49,7 @@ Ext.ux.MVC.Model = function(fields, config) {
       //association can just be specified via a string, in which case turn it into an object here
       if (typeof bta == 'string') { bta = { name: bta }; };
       
-      var btaAssoc = new Ext.ux.MVC.Model.BelongsToAssociation(this, bta);
+      var btaAssoc = new ExtMVC.Model.BelongsToAssociation(this, bta);
       this[btaAssoc.associationName] = btaAssoc;
       
       //see if a parent has been defined, if not set one up now (defaults here to the first belongsTo assoc)
@@ -74,7 +74,7 @@ Ext.ux.MVC.Model = function(fields, config) {
  * @cfg {String} xmlName The name of the XML element which contains the model fields.  e.g. for a model called MyModel, this may look
  * like <MyModel>...</MyModel> or <my_model>...</my_model>.  This is where you set that (don't include the angle brackets)
  */
-Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
+ExtMVC.Model.define = function(modelNameWithNamespace, config) {
   var config = config || {};
   
   //split into namespace and model name
@@ -94,8 +94,8 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
     adapter:   'REST'
   });
   
-  //extend Ext.ux.MVC.Model for this className
-  eval(modelNameWithNamespace + " = Ext.extend(Ext.ux.MVC.Model, config)");
+  //extend ExtMVC.Model for this className
+  eval(modelNameWithNamespace + " = Ext.extend(ExtMVC.Model, config)");
   var className = eval(modelNameWithNamespace);
   
   /**
@@ -146,50 +146,50 @@ Ext.ux.MVC.Model.define = function(modelNameWithNamespace, config) {
     namespace: namespace,
     
     //build the underlying Ext.data.Record now (will be used in model's constructor)
-    record:    Ext.ux.MVC.Model.recordFor(modelName, config.fields)
+    record:    ExtMVC.Model.recordFor(modelName, config.fields)
   });
   
   //add model class functions such as findById
-  Ext.ux.MVC.Model.addClassMethodsToModel(className, config);
+  ExtMVC.Model.addClassMethodsToModel(className, config);
 };
 
 
 /**
  * Custom extensions to Ext.data.Record.  These methods are added to new Ext.data.Record objects
- * when you subclass Ext.ux.MVC.Model.
+ * when you subclass ExtMVC.Model.
  * For example
- * model = new Ext.ux.MVC.Spec.FakeUser({
+ * model = new ExtMVC.Spec.FakeUser({
  *   id:   100,
  *   name: 'Ed'
  * });
  * alert(model.namespacedUrl('my_url')); // => '/admin/my_url.ext_json'
  */
-Ext.ux.MVC.Model.RecordExtensions = {
+ExtMVC.Model.RecordExtensions = {
   /**
-   * Adds Ext.ux.App logic on top of Ext.data.Record
+   * Adds logic on top of Ext.data.Record
    */
   init: function(config) {
     Ext.applyIf(config, {
       //set up the various variations on the model name
-      className:         Ext.ux.MVC.Model.classifyName(config.modelName),
-      controllerName:    Ext.ux.MVC.Model.controllerName(config.modelName),
-      foreignKeyName:    Ext.ux.MVC.Model.foreignKeyName(config.modelName),
+      className:         ExtMVC.Model.classifyName(config.modelName),
+      controllerName:    ExtMVC.Model.controllerName(config.modelName),
+      foreignKeyName:    ExtMVC.Model.foreignKeyName(config.modelName),
       
-      humanPluralName:   Ext.ux.MVC.Model.pluralizeHumanName(config.modelName),
-      humanSingularName: Ext.ux.MVC.Model.singularizeHumanName(config.modelName),
+      humanPluralName:   ExtMVC.Model.pluralizeHumanName(config.modelName),
+      humanSingularName: ExtMVC.Model.singularizeHumanName(config.modelName),
       
       underscoreName:    config.modelName
     });
     
     //add the data adapter, initialize it
-    var adapter = Ext.ux.MVC.Model.AdapterManager.find(config.adapter || Ext.ux.MVC.Model.prototype.adapter);
+    var adapter = ExtMVC.Model.AdapterManager.find(config.adapter || ExtMVC.Model.prototype.adapter);
     if (adapter) {
       Ext.apply(config, adapter.instanceMethods);
       adapter.initialize(this);
     }
     
     //mix in validations package
-    Ext.apply(config, Ext.ux.MVC.Model.ValidationExtensions);
+    Ext.apply(config, ExtMVC.Model.ValidationExtensions);
     config.initializeValidationExtensions();
     
     Ext.apply(this, config);
@@ -202,9 +202,9 @@ Ext.ux.MVC.Model.RecordExtensions = {
   url: function() {
     var el = this.data.id ? this : this.constructor;
     if (this.parent && this.parent.lastFetched) {
-      return Ext.ux.MVC.UrlBuilder.urlFor(this.parent.get({}, -1), el);
+      return ExtMVC.UrlBuilder.urlFor(this.parent.get({}, -1), el);
     } else {
-      return Ext.ux.MVC.UrlBuilder.urlFor(el);
+      return ExtMVC.UrlBuilder.urlFor(el);
     };
   },
   
@@ -234,13 +234,13 @@ Ext.ux.MVC.Model.RecordExtensions = {
 /**
  * Provides a framework for validating the contents of each field
  */
-Ext.ux.MVC.Model.ValidationExtensions = {
+ExtMVC.Model.ValidationExtensions = {
   /**
    * Sets up this record's validation parameters
    */
   initializeValidationExtensions: function() {
     this.validations = this.validations || [];
-    this.errors      = new Ext.ux.MVC.Model.Validation.Errors(this);
+    this.errors      = new ExtMVC.Model.Validation.Errors(this);
   },
   
   isValid: function() {
@@ -249,27 +249,27 @@ Ext.ux.MVC.Model.ValidationExtensions = {
 };
 
 
-Ext.ux.MVC.Model.models   = [];
+ExtMVC.Model.models   = [];
 
 /**
  * Utility methods which don't need to be declared per model
  */
-Ext.apply(Ext.ux.MVC.Model, {
+Ext.apply(ExtMVC.Model, {
   
   /**
    * Retrieves or creates an Ext.data.Record for the given model name.  This is then cached
-   * in Ext.ux.MVC.models for later reuse
+   * in ExtMVC.models for later reuse
    * @param {String} modelName The name of the model to create or retrieve a record for
    * @param {Array} fields An array of fields to be passed to the Ext.data.Record.create call
    * @return {Ext.data.Record} An instantiated Record object using Ext.data.Record.create
    */
   recordFor: function(modelName, fields) {
-    var record = Ext.ux.MVC.Model.models[modelName];
+    var record = ExtMVC.Model.models[modelName];
     if (!record) {
       record = Ext.data.Record.create(fields);
 
-      Ext.apply(record.prototype, Ext.ux.MVC.Model.RecordExtensions);
-      Ext.ux.MVC.Model.models[modelName] = record;
+      Ext.apply(record.prototype, ExtMVC.Model.RecordExtensions);
+      ExtMVC.Model.models[modelName] = record;
     }
     
     return record;
@@ -313,11 +313,11 @@ Ext.apply(Ext.ux.MVC.Model, {
     
     Ext.applyIf(additionalFunctions, {
       //add a urlName property to the Model subclass
-      urlName: Ext.ux.MVC.Model.urlizeName(modelClass.prototype.modelName)
+      urlName: ExtMVC.Model.urlizeName(modelClass.prototype.modelName)
     });
     
     //add any class methods from the adapter
-    var adapter = Ext.ux.MVC.Model.AdapterManager.find(modelClass.adapter || Ext.ux.MVC.Model.prototype.adapter);
+    var adapter = ExtMVC.Model.AdapterManager.find(modelClass.adapter || ExtMVC.Model.prototype.adapter);
     if (adapter && adapter.classMethods) {
       Ext.apply(modelClass, adapter.classMethods);
     };
@@ -342,4 +342,4 @@ Ext.apply(Ext.ux.MVC.Model, {
   }
 });
 
-Ext.ns('Ext.ux.MVC.Model.Adapter', 'Ext.ux.MVC.Model.Validation');
+Ext.ns('ExtMVC.Model.Adapter', 'ExtMVC.Model.Validation');

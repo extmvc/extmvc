@@ -19,7 +19,7 @@ Screw.Unit(function() {
     it("should delegate singularize to Inflector", function() {
       //stub
       var singularize_was_called = false;
-      Ext.ux.MVC.Inflector.singularize = function() {
+      ExtMVC.Inflector.singularize = function() {
         singularize_was_called = true;
       };
       
@@ -30,7 +30,7 @@ Screw.Unit(function() {
     it("should delegate pluralize to Inflector", function() {
       //stub
       var pluralize_was_called = false;
-      Ext.ux.MVC.Inflector.pluralize = function() {
+      ExtMVC.Inflector.pluralize = function() {
         pluralize_was_called = true;
       };
       

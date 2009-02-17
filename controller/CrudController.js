@@ -3,10 +3,10 @@
  */
 
 
-Ext.ns('Ext.ux.MVC.plugin.CrudController');
+Ext.ns('ExtMVC.plugin.CrudController');
 
 (function() {
-  var c = Ext.ux.MVC.plugin.CrudController;
+  var c = ExtMVC.plugin.CrudController;
   
   /**
    * Adds default CRUD (Create, Read, Update, Delete) to this controller.
@@ -27,8 +27,8 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
    *   onUpdateFailure: function() {... your custom onUpdateFailure behaviour ...}
    * });
    *
-   * @param {Ext.ux.MVC.Model} model The model to provide CRUD support for
-   * @return {Ext.ux.MVC.Controller} The controller, now with addition actions and methods
+   * @param {ExtMVC.Model} model The model to provide CRUD support for
+   * @return {ExtMVC.Controller} The controller, now with addition actions and methods
    */
   c.registerActions = function(model, overrides) {
     Ext.apply(this, overrides, c.defaultFunctions);
@@ -37,7 +37,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
       /**
        * @event findsuccess
        * Fires after a successful load has taken place (applies to Edit forms)
-       * @param {Ext.ux.MVC.Model} modelObj The instantiated model object found by the lookup
+       * @param {ExtMVC.Model} modelObj The instantiated model object found by the lookup
        */
       'findsuccess',
       
@@ -50,7 +50,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
     
     /**
      * @property model
-     * @type Ext.ux.MVC.Model
+     * @type ExtMVC.Model
      * Holds a reference to the model this controller provides CRUD support for
      */
     this.model = model;
@@ -119,7 +119,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
     
     /**
      * @property modelObj
-     * @type Ext.ux.MVC.Model/Null
+     * @type ExtMVC.Model/Null
      * Reference to the model being edited in this form.  Is set once loaded by the adapter
      */
     modelObj: null,
@@ -156,7 +156,7 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
     
     /**
      * Fires after successful find of the model.  Loads data into the form
-     * @param {Ext.ux.MVC.Model} modelObj The found model object
+     * @param {ExtMVC.Model} modelObj The found model object
      */
     onFindSuccess: function(modelObj) {
       this.editModelObj = modelObj;
@@ -291,6 +291,6 @@ Ext.ns('Ext.ux.MVC.plugin.CrudController');
    * Define a method on Controller to enable this.actsAsCrudController(this) within a
    * controller constructor function
    */
-  Ext.ux.MVC.Controller.prototype.actsAsCrudController = c.registerActions;
+  ExtMVC.Controller.prototype.actsAsCrudController = c.registerActions;
   
 })();

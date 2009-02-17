@@ -1,6 +1,6 @@
 describe('A Route', {
   before_each: function() {
-    r = new Ext.ux.MVC.Route(':controller/:action/:id');
+    r = new ExtMVC.Route(':controller/:action/:id');
   },
   
   'should return whether or not it matches a given URL': function() {
@@ -25,7 +25,7 @@ describe('A Route', {
   },
   
   'return an object with all extra passed params' : function() {
-    r = new Ext.ux.MVC.Route(':controller/:action/:id', {':some_key': 'some value'});
+    r = new ExtMVC.Route(':controller/:action/:id', {':some_key': 'some value'});
     obj = r.matchesFor('c/a/id');
     
     value_of(obj[':some_key']).should_be('some value');

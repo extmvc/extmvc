@@ -1,4 +1,4 @@
-Ext.ux.MVC.Model.Adapter.Abstract = {
+ExtMVC.Model.Adapter.Abstract = {
   initialize: function(model) {
     
   },
@@ -33,7 +33,7 @@ Ext.ux.MVC.Model.Adapter.Abstract = {
 /**
  * Methods adding url data mapping
  */
-Ext.ux.MVC.Model.AbstractAdapter = {
+ExtMVC.Model.AbstractAdapter = {
   /**
    * Set up the model for use with Active Resource.  Add various url-related properties to the model
    */
@@ -41,7 +41,7 @@ Ext.ux.MVC.Model.AbstractAdapter = {
     Ext.applyIf(this, {
       urlNamespace: '/admin',
       urlExtension: '.ext_json',
-      urlName:      Ext.ux.MVC.Model.urlizeName(this.modelName)
+      urlName:      ExtMVC.Model.urlizeName(this.modelName)
     });
   },
   
@@ -88,7 +88,7 @@ Ext.ux.MVC.Model.AbstractAdapter = {
 
   /**
    * URL to retrieve a tree representation of this model from (in JSON format)
-   * This is used when populating most of the trees in Ext.ux.MVC, though
+   * This is used when populating most of the trees in ExtMVC, though
    * only applies to models which can be representated as trees
    */
   treeUrl: function() {
@@ -115,4 +115,4 @@ Ext.ux.MVC.Model.AbstractAdapter = {
   }
 };
 
-// Ext.ux.MVC.Model.registerAdapter('REST', Ext.ux.MVC.Model.AbstractAdapter);
+// ExtMVC.Model.registerAdapter('REST', ExtMVC.Model.AbstractAdapter);
