@@ -1,3 +1,22 @@
 = Ext MVC
 
 EXT MVC is a complete MVC stack on top of Ext JS (http://extjs.com).
+
+== Base App
+
+You are advised to use the base app to get up and running with Ext MVC as it sets everything up for you.
+
+If you're comfortable with git:
+
+1) git clone git://github.com/extmvc/baseapp.git myapp
+2) cd myapp
+3) rm -rf .git/
+4) git init
+
+If not:
+
+1) Download the latest zip file from Github at http://github.com/extmvc/baseapp/zipball/master and unzip.
+
+== Getting started
+
+Read the readme file inside the base app and refer to http://extmvc.com

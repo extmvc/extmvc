@@ -1,0 +1,16 @@
+This directory contains a collection of Ruby scripts and classes which allow automation of common project tasks.
+You can remove this directory if you don't use any of these tasks.
+
+Usage:
+
+From within the MVC application base directory:
+
+ruby script/generate model MyModel MyNamespace field_1:string field_2:int field_3:boolean
+
+ruby script/plugin install MyPluginFolder (where MyPluginFolder is a folder within the vendor/plugins directory)
+ruby script/plugin uninstall MyPluginFolder
+
+ruby script/build all
+ruby script/build js
+ruby script/build css
+
