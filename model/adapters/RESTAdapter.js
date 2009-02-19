@@ -71,10 +71,12 @@ Ext.ns('ExtMVC.Model.Adapter');
           Ext.applyIf(options, {
             autoLoad:   true,
             remoteSort: false,
-            proxy:      new Ext.data.HttpProxy({
-              url:    url,
-              method: "GET"
-            }),
+            proxy:      new this.proxyType(
+              Ext.applyIf(this.proxyConfig, {
+                url:    url,
+                method: "GET"
+              })
+            ),
             reader:     this.getReader()
           })
         );
@@ -134,14 +136,46 @@ Ext.ns('ExtMVC.Model.Adapter');
       },
       
       /**
+       * @property urlExtension
+       * @type String
        * Extension appended to the end of all generated urls (e.g. '.js').  Defaults to blank
        */
       urlExtension: '',
-      
+
       /**
+       * @property urlNamespace
+       * @type String
        * Default url namespace prepended to all generated urls (e.g. '/admin').  Defaults to blank
        */
       urlNamespace: '',
+      
+      /**
+       * @property port
+       * @type Number
+       * The web server port to contact (defaults to 80).  Requires host to be set also
+       */
+      port: 80,
+      
+      /**
+       * @property host
+       * @type String
+       * The hostname of the server to contact (defaults to an empty string)
+       */
+      host: "",
+      
+      /**
+       * @property proxyType
+       * @type Function
+       * A reference to the DataProxy implementation to use for this model (Defaults to Ext.data.HttpProxy)
+       */
+      proxyType: Ext.data.HttpProxy,
+      
+      /**
+       * @property proxyConfig
+       * @type Object
+       * Config to pass to the DataProxy when it is created (e.g. use this to set callbackParam on ScriptTagProxy, or similar)
+       */
+      proxyConfig: {},
       
       /**
        * URL to retrieve a JSON representation of this model from
@@ -183,8 +217,22 @@ Ext.ns('ExtMVC.Model.Adapter');
        * @returns {String} The namespaced URL
        */
       namespacedUrl: function(url) {
-        return(String.format("{0}/{1}{2}", this.urlNamespace, url, this.urlExtension));
-      } 
+        return(String.format("{0}{1}/{2}{3}", this.hostName(), this.urlNamespace, url, this.urlExtension));
+      },
+      
+      /**
+       * Builds the hostname if host and optionally port are set
+       * @return {String} The host name including port, if different from port 80
+       */
+      hostName: function() {
+        var p = this.port == 80 ? '' : this.port.toString();
+        
+        if (this.host == "") {
+          return "";
+        } else {
+          return this.port == 80 ? this.host : String.format("{0}:{1}", this.host, this.port);
+        };
+      }
     },
     
     instanceMethods: {

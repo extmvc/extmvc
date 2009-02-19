@@ -30,7 +30,7 @@ namespace :extmvc do
       minified_filename     = "ext-mvc-all-min.js"
       FileUtils.rm(minified_filename) if File.exists?(minified_filename)
       
-      system("java -jar ../../script/yui-compressor/build/yuicompressor-2.4.jar #{concatenated_filename} -o #{minified_filename}")
+      system("java -jar ../yui-compressor/build/yuicompressor-2.4.jar #{concatenated_filename} -o #{minified_filename}")
     end
   end
 end
