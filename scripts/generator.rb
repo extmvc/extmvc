@@ -67,13 +67,13 @@ module ExtMVC
         @fields = fields
         
         @gsubs['namespace']  = ExtMVC.environment['namespace']
-        @gsubs['name']       = name
-        @gsubs['model_name'] = name.split(".").last
-        @gsubs['inst_name']  = name.split(".").last.downcase
+        @gsubs['name']       = name.capitalize
+        @gsubs['model_name'] = name
+        @gsubs['inst_name']  = name.downcase
         @gsubs['fields']     = fields.collect {|f| field_template(f[0], f[1])}.join(",\n")
         
-        @model_filename = "app/models/#{@gsubs['model_name']}.js"
-        @spec_filename  = "spec/models/#{@gsubs['model_name']}.spec.js"
+        @model_filename = "app/models/#{@gsubs['name']}.js"
+        @spec_filename  = "spec/models/#{@gsubs['name']}.spec.js"
       end
       
       def generate!
