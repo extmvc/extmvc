@@ -6,6 +6,8 @@ Usage:
 From within the MVC application base directory:
 
 ruby script/generate model MyModel MyNamespace field_1:string field_2:int field_3:boolean
+ruby script/generate view viewNamespace viewName
+ruby script/generate controller controllerName viewName1 viewName2 ...
 
 ruby script/plugin install MyPluginFolder (where MyPluginFolder is a folder within the vendor/plugins directory)
 ruby script/plugin uninstall MyPluginFolder
