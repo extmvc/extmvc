@@ -2,7 +2,7 @@
  * Initialise package and set version
  */
 ExtMVC = {
-  version: "0.5a0"
+  version: "0.5b1"
 };
 
 Ext.ns('ExtMVC.Model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold');
@@ -715,7 +715,7 @@ ExtMVC.Controller = function(config) {
    * Automatically register all views in the config.viewsPackage
    */
   if (config.autoRegisterViews && config.viewsPackage) {
-    for (v in config.viewsPackage) {
+    for (var v in config.viewsPackage) {
       this.registerView(v.toLowerCase(), config.viewsPackage[v]);
     }
   };
@@ -740,7 +740,7 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
    * would be the same as this.registerView('index', MyApp.view.Index)
    */
   registerViews: function(viewObject) {
-    for (v in viewObject) {
+    for (var v in viewObject) {
       this.registerView(v, viewObject[v]);
     }
   },
@@ -881,7 +881,7 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
     if (!regex.test) { return []; }
     
     var matches = [];
-    for (v in this.runningViews) {
+    for (var v in this.runningViews) {
       if (regex.test(v)) {
         matches.push(this.runningViews[v]);
       };
@@ -912,7 +912,7 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
     //make sure we have a regex object
     if (!regex.test) { return []; }
     
-    for (v in this.runningViews) {
+    for (var v in this.runningViews) {
       if (regex.test(v)) {
         this.destroyView(v);
       };
@@ -1135,17 +1135,17 @@ Ext.ns('ExtMVC.plugin.CrudController');
      * @property loadUrl
      * @type String/Null
      * If your form needs to load from a non-standard url, override this (should be very rare).
-     * Defaults to undefined, which lets the model choose which url to load from
+     * Defaults to null, which lets the model choose which url to load from
      */
-    loadUrl: undefined,
+    loadUrl: null,
     
     /**
      * @property saveUrl
      * @type String
      * If your form needs to save to a non-standard url, override this (should be very rare).
-     * Defaults to undefined, which lets the model choose which url to save to
+     * Defaults to null, which lets the model choose which url to save to
      */
-    saveUrl: undefined,
+    saveUrl: null,
   
     /**
      * Loads the form with model data
@@ -1567,6 +1567,8 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
 
 Ext.reg('os', ExtMVC.OS);
 
+// ExtMVC.getOS = ExtMVC.OS.getOS();
+
 /**
  * ExtMVC.Model
  * @extends Ext.util.Observable
@@ -1785,7 +1787,7 @@ ExtMVC.Model.RecordExtensions = {
    */
   setValues: function(values) {
     this.beginEdit();
-    for (key in values) {
+    for (var key in values) {
       this.set(key, values[key]);
     }
     this.endEdit();

@@ -262,3 +262,5 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
 });
 
 Ext.reg('os', ExtMVC.OS);
+
+// ExtMVC.getOS = ExtMVC.OS.getOS();

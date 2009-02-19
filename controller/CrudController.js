@@ -128,17 +128,17 @@ Ext.ns('ExtMVC.plugin.CrudController');
      * @property loadUrl
      * @type String/Null
      * If your form needs to load from a non-standard url, override this (should be very rare).
-     * Defaults to undefined, which lets the model choose which url to load from
+     * Defaults to null, which lets the model choose which url to load from
      */
-    loadUrl: undefined,
+    loadUrl: null,
     
     /**
      * @property saveUrl
      * @type String
      * If your form needs to save to a non-standard url, override this (should be very rare).
-     * Defaults to undefined, which lets the model choose which url to save to
+     * Defaults to null, which lets the model choose which url to save to
      */
-    saveUrl: undefined,
+    saveUrl: null,
   
     /**
      * Loads the form with model data

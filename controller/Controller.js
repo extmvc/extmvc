@@ -70,7 +70,7 @@ ExtMVC.Controller = function(config) {
    * Automatically register all views in the config.viewsPackage
    */
   if (config.autoRegisterViews && config.viewsPackage) {
-    for (v in config.viewsPackage) {
+    for (var v in config.viewsPackage) {
       this.registerView(v.toLowerCase(), config.viewsPackage[v]);
     }
   };
@@ -95,7 +95,7 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
    * would be the same as this.registerView('index', MyApp.view.Index)
    */
   registerViews: function(viewObject) {
-    for (v in viewObject) {
+    for (var v in viewObject) {
       this.registerView(v, viewObject[v]);
     }
   },
@@ -236,7 +236,7 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
     if (!regex.test) { return []; }
     
     var matches = [];
-    for (v in this.runningViews) {
+    for (var v in this.runningViews) {
       if (regex.test(v)) {
         matches.push(this.runningViews[v]);
       };
@@ -267,7 +267,7 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
     //make sure we have a regex object
     if (!regex.test) { return []; }
     
-    for (v in this.runningViews) {
+    for (var v in this.runningViews) {
       if (regex.test(v)) {
         this.destroyView(v);
       };

@@ -216,7 +216,7 @@ ExtMVC.Model.RecordExtensions = {
    */
   setValues: function(values) {
     this.beginEdit();
-    for (key in values) {
+    for (var key in values) {
       this.set(key, values[key]);
     }
     this.endEdit();
