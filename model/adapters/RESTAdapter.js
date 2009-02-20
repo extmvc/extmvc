@@ -65,18 +65,19 @@ Ext.ns('ExtMVC.Model.Adapter');
       findAll: function(options) {
         var options = options || {};
         
-        var url = options.url || this.collectionDataUrl();
+        var url = options.url ? this.namespacedUrl(options.url) : this.collectionDataUrl();
+        
+        var proxyOpts = {};
+        Ext.apply(proxyOpts, this.proxyConfig, {
+          url:    url,
+          method: "GET"
+        });
         
         return new Ext.data.Store(
           Ext.applyIf(options, {
             autoLoad:   true,
             remoteSort: false,
-            proxy:      new this.proxyType(
-              Ext.applyIf(this.proxyConfig, {
-                url:    url,
-                method: "GET"
-              })
-            ),
+            proxy:      new this.proxyType(proxyOpts),
             reader:     this.getReader()
           })
         );
@@ -100,21 +101,14 @@ Ext.ns('ExtMVC.Model.Adapter');
           failure: Ext.emptyFn
         });
         
-        //local references to reader and constructor so they can be used within callbacks
-        var reader      = this.getReader();
-        var constructor = this;
-        
         //keep a handle on user-defined callbacks
-        var successFn = options.success;
+        var callbacks = {
+          successFn: options.success,
+          failureFn: options.failure
+        };
         
         options.success = function(response, opts) {
-          var m = reader.read(response);
-          if (m && m.records[0]) {
-            m.records[0].newRecord = false;
-            successFn.call(options.scope, m.records[0]);
-          } else {
-            failureFn.call(options.scope, response);
-          };
+          this.parseSingleLoadResponse(response, opts, callbacks);
         };
         
         /**
@@ -178,6 +172,25 @@ Ext.ns('ExtMVC.Model.Adapter');
       proxyConfig: {},
       
       /**
+       * Called as the 'success' method to any single find operation (e.g. findById).
+       * The default implementation will parse the response into a model instance and then fire your own success of failure
+       * functions as provided to findById.  You can override this if you need to do anything different here, for example
+       * if you are loading via a script tag proxy with a callback containing the response
+       * @param {String} response The raw text of the response
+       * @param {Object} options The options that were passed to the Ext.Ajax.request
+       * @param {Object} callbacks An object containing a success function and a failure function, which should be called as appropriate
+       */
+      parseSingleLoadResponse: function(response, options, callbacks) {
+        var m = this.getReader().read(response);
+        if (m && m.records[0]) {
+          m.records[0].newRecord = false;
+          callbacks.successFn.call(options.scope, m.records[0]);
+        } else {
+          callbacks.failureFn.call(options.scope, response);
+        };
+      },
+      
+      /**
        * URL to retrieve a JSON representation of this model from
        */
       singleDataUrl : function(id) {
@@ -217,6 +230,7 @@ Ext.ns('ExtMVC.Model.Adapter');
        * @returns {String} The namespaced URL
        */
       namespacedUrl: function(url) {
+        url = url.replace(/^\//, ""); //remove any leading slashes
         return(String.format("{0}{1}/{2}{3}", this.hostName(), this.urlNamespace, url, this.urlExtension));
       },
       
