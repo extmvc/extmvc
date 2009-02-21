@@ -40,6 +40,12 @@ ExtMVC.UrlBuilder.prototype = {
     
     //if the last argument is a config object
     if (typeof lastArg == 'object' && !lastArg.className) {
+      //set some default url building options
+      Ext.apply(config, lastArg, {
+        format:       this.baseUrlFormat,
+        urlNamespace: this.baseUrlNamespace
+      });
+      
       //use all but the last argument now
       var arguments = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
     };

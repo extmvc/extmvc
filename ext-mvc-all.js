@@ -2128,7 +2128,13 @@ ExtMVC.UrlBuilder.prototype = {
       
       //use all but the last argument now
       var arguments = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
-    }
+    };
+    
+    //set some default url building options
+    Ext.applyIf(config, {
+      format:       this.baseUrlFormat,
+      urlNamespace: this.baseUrlNamespace
+    });
     
     var segments = [config.urlNamespace];
     
@@ -2667,9 +2673,19 @@ Ext.ns('ExtMVC.Model.Adapter');
       findById: function(id, options) {
         // return this.findByField('id', id, options);
         var options = options || {};
-        Ext.applyIf(options, {
-          url: this.singleDataUrl(id)
-        });
+        
+        // TODO
+        // Old code before below fix
+        // Ext.applyIf(options, {
+        //   url: this.singleDataUrl(id)
+        // });
+        
+        // This needs to be done as url is set as 'null' in
+        // crudcontroller.js line 133.
+        // this is temp n00b hack which teh master can fix. can't use apply either.
+        if (options.url == null) {
+          options.url = this.singleDataUrl(id);
+        };
         
         return this.performFindRequest(options);
       },
@@ -2739,8 +2755,13 @@ Ext.ns('ExtMVC.Model.Adapter');
           failureFn: options.failure
         };
         
+        // FIXME fix scope issue
+        // For some reason the scope isnt correct on this?
+        // cant figure out why. scope is set on the applyIf block so it should work..
+        var scope = this;
+        
         options.success = function(response, opts) {
-          this.parseSingleLoadResponse(response, opts, callbacks);
+          scope.parseSingleLoadResponse(response, opts, callbacks);
         };
         
         /**
