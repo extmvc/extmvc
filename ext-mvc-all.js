@@ -2948,18 +2948,15 @@ Ext.ns('ExtMVC.Model.Adapter');
         var url = this.url();
         
         Ext.applyIf(options, {
-          // url:     url,
+          // url:     url, url == null sometimes so this doesnt work
           method:  'POST',
           params:  params
         });
         
-        console.log(url);
-        
+        //fix for the above
         if (options.url == null) {
           options.url = url;
         };
-        
-        console.log(options);
         
         Ext.Ajax.request(options);
       },
@@ -3419,7 +3416,7 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * An array of columns to show first in the grid, if they exist
    * Overwrite ExtMVC.view.scaffold.Index.preferredColumns if required
    */
-  preferredColumns: ['id', 'title', 'name', 'first_name', 'last_name', 'login', 'username', 'email', 'email_address', 'content', 'message'],
+  preferredColumns: ['id', 'title', 'name', 'first_name', 'last_name', 'login', 'username', 'email', 'email_address', 'content', 'message', 'body'],
   
   /**
    * @property ignoreColumns
@@ -3440,7 +3437,7 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * @type Array
    * An array of columns to render at double the average width
    */
-  wideColumns:   ['message', 'content', 'description', 'bio'],
+  wideColumns:   ['message', 'content', 'description', 'bio', 'body'],
   
   /**
    * @property hasTopToolbar
