@@ -310,10 +310,15 @@ Ext.ns('ExtMVC.Model.Adapter');
         var url = this.url();
         
         Ext.applyIf(options, {
-          url:     url,
+          // url:     url, url == null sometimes so this doesnt work
           method:  'POST',
           params:  params
         });
+        
+        //fix for the above
+        if (options.url == null) {
+          options.url = url;
+        };
         
         Ext.Ajax.request(options);
       },

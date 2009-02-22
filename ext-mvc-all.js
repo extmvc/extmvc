@@ -2948,10 +2948,18 @@ Ext.ns('ExtMVC.Model.Adapter');
         var url = this.url();
         
         Ext.applyIf(options, {
-          url:     url,
+          // url:     url,
           method:  'POST',
           params:  params
         });
+        
+        console.log(url);
+        
+        if (options.url == null) {
+          options.url = url;
+        };
+        
+        console.log(options);
         
         Ext.Ajax.request(options);
       },
