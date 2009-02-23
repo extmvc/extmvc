@@ -214,6 +214,10 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
         this.addTo.doLayout();
         return v;
       };
+      
+      // XXX
+      // TODO there needs to be some kind of exception here if nothing happens
+      return v;
     };
   },
   
