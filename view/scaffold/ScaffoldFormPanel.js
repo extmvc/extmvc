@@ -90,7 +90,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.FormFields
     var formFields;
     
-    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace.split(".")[0], model.modelName.pluralize()))) {
+    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace.split(".")[0], model.modelName.pluralize().toLowerCase()))) {
       return formFields;
     };
     
