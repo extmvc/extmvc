@@ -1,20 +1,18 @@
+require 'ftools'
+
 module ExtMVC
   class Plugin
     attr_reader :name, :type, :directory
     
     def initialize name
-      @name = name
+      @name = @directory = name
       @type = @name =~ /git:\/\// ? 'git' : 'dir'
       
-      @directory        = "vendor/plugins/#{@name}"
-      @public_directory = "vendor/plugins/#{@name}/public"
-      
-      puts "test"
-      puts ARGV.inspect
+      @public_directory = "#{@name}/public"
     end
     
     def install
-      puts "install"
+      install_assets
     end
     
     def install_assets
@@ -31,9 +29,10 @@ module ExtMVC
     #installs all assets from the given directory and subdirs into the main /public folder
     def install_assets_from_directory(directory)
       directory ||= @public_directory
-      
+
       find_assets_in_directory(directory).each do |f|
         new_asset = asset_new_location_name(f)
+        puts new_asset
         if File.directory?(f)
           Dir.mkdir(new_asset) unless File.exists?(new_asset)
           puts "Created directory: " + new_asset
