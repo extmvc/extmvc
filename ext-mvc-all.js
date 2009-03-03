@@ -534,7 +534,7 @@ ExtMVC.Route = function(mappingString, options) {
     this.paramsInStringWithOptions.push(this.paramsInMatchString[i]);
   };
   
-  for (o in options) {
+  for (var o in options) {
     this.paramsInStringWithOptions.push(":" + o);
   }
   
@@ -587,7 +587,7 @@ ExtMVC.Route.prototype = {
   urlFor: function(options) {
     var url = this.mappingString;
     
-    for (o in options) {
+    for (var o in options) {
       //values in options must match this.options - e.g. this.options.action must be the same as options.action
       if (options[o] && this.options[o] && options[o] != this.options[o]) { return false; }
     }
@@ -596,7 +596,7 @@ ExtMVC.Route.prototype = {
     //TODO: Tidy this up.  All of it
 
     var paramsInOptions = [];
-    for (o in options) {
+    for (var o in options) {
       paramsInOptions.push(":" + o);
     }
     
@@ -611,7 +611,7 @@ ExtMVC.Route.prototype = {
       }
     };
     
-    for (o in options) {
+    for (var o in options) {
       url = url.replace(":" + o, options[o]);
     }
     
@@ -844,13 +844,18 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
    */
   launchView: function(v, renderConfig) {
     var renderConfig = renderConfig || {};
-    Ext.applyIf(renderConfig, { renderNow: true });
+    Ext.applyIf(renderConfig, {
+      renderNow: true,
+      renderTo:  Ext.getBody()
+    });
     
     v.on('close',   function()     {this.destroyView(v.id); },            this);
     v.on('destroy', function(view) {delete this.runningViews[view.id]; }, this);
     this.runningViews[v.id] = v;
     
-    if (this.renderMethod == 'render' && renderConfig.renderNow) {
+    console.log('hmm');
+    
+    if (this.renderMethod == 'renderNow' && renderConfig.renderNow) {
       v.render(renderConfig.renderTo, renderConfig.renderPosition);
       return v;
     } else {
@@ -861,8 +866,8 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
       };
       
       // XXX
-      return v;
       // TODO there needs to be some kind of exception here if nothing happens
+      return v;
     };
   },
   
@@ -3302,7 +3307,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.FormFields
     var formFields;
     
-    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace.split(".")[0], model.modelName.pluralize()))) {
+    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace.split(".")[0], model.modelName.pluralize().toLowerCase()))) {
       return formFields;
     };
     

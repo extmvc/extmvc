@@ -199,13 +199,16 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
    */
   launchView: function(v, renderConfig) {
     var renderConfig = renderConfig || {};
-    Ext.applyIf(renderConfig, { renderNow: true });
+    Ext.applyIf(renderConfig, {
+      renderNow: true,
+      renderTo:  Ext.getBody()
+    });
     
     v.on('close',   function()     {this.destroyView(v.id); },            this);
     v.on('destroy', function(view) {delete this.runningViews[view.id]; }, this);
     this.runningViews[v.id] = v;
     
-    if (this.renderMethod == 'render' && renderConfig.renderNow) {
+    if (this.renderMethod == 'renderNow' && renderConfig.renderNow) {
       v.render(renderConfig.renderTo, renderConfig.renderPosition);
       return v;
     } else {
