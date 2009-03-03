@@ -853,8 +853,6 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
     v.on('destroy', function(view) {delete this.runningViews[view.id]; }, this);
     this.runningViews[v.id] = v;
     
-    console.log('hmm');
-    
     if (this.renderMethod == 'renderNow' && renderConfig.renderNow) {
       v.render(renderConfig.renderTo, renderConfig.renderPosition);
       return v;
