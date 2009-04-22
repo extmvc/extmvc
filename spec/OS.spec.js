@@ -56,7 +56,7 @@ Screw.Unit(function() {
       });
       
       it("should attempt to find the correct controller", function() {
-        var conName = "";
+        var controllerName = "";
         
         var correctResponse = os.getController('index');
         os.getController = function(conName) {
@@ -65,7 +65,7 @@ Screw.Unit(function() {
         };
         
         os.dispatch({controller: 'index'});
-        expect(conName).to(equal, "index");
+        expect(controllerName).to(equal, "index");
       });
       
       it("should fire the correct action", function() {

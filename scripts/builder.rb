@@ -41,7 +41,7 @@ module ExtMVC
       
       FileUtils.rm(minified_filename) and puts "Deleted old #{minified_filename}" if File.exists?(minified_filename)
       
-      system("java -jar vendor/mvc/scripts/yui-compressor/build/yuicompressor-2.4.jar #{concatenated_filename} -o #{minified_filename}")
+      system("java -jar vendor/yui-compressor/build/yuicompressor-2.4.jar #{concatenated_filename} -o #{minified_filename}")
       
       puts "Created minified file #{minified_filename}";
     end
