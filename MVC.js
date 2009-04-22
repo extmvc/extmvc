@@ -16,6 +16,11 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
        */
       'environment-changed'
     );
+    
+    /**
+     * Set up aliases
+     */
+    this.getEnvSettings = this.getCurrentEnvironmentSettings;
   },
   
   /**
@@ -49,6 +54,14 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
    */
   getCurrentEnvironment: function() {
     return ExtMVC.currentEnvironment;
+  },
+  
+  /**
+   * Returns settings for the current environment (aliased as getEnvSettings)
+   * @return {Object} The settings for the current environment
+   */
+  getCurrentEnvironmentSettings: function() {
+    return this.getEnvironmentSettings(this.getCurrentEnvironment());
   },
   
   /**

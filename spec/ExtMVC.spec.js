@@ -5,6 +5,10 @@ Screw.Unit(function() {
         expect(ExtMVC.getCurrentEnvironment()).to(equal, 'production');
       });
       
+      it("should return current environment settings", function() {
+        expect(ExtMVC.getCurrentEnvironmentSettings()).to(equal, {});
+      });
+      
       it("should allow retrieval of existing environment settings", function() {
         var prod = ExtMVC.getEnvironmentSettings('production');
         expect(prod).to(equal, {});
