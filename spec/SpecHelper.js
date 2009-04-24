@@ -1,9 +1,12 @@
+Ext.ns('MVCTest', 'MVCTest.models');
+
+ExtMVC.Model.modelNamespace = MVCTest.models;
+
 /**
  * @class MVCTest.models.User
  * @extends ExtMVC.Model
  */
-ExtMVC.Model.define("MVCTest.models.User", {
-  modelName: 'user',
+ExtMVC.Model.define("User", {
   fields:    [
     {name: 'id',         type: 'int'},
     {name: 'first_name', type: 'string'},
@@ -12,8 +15,24 @@ ExtMVC.Model.define("MVCTest.models.User", {
   ],
   hasMany: "BlogPost",
   
-  testClassMethod: function() {
-    return "A Class Method";
+  displayName: function() {
+    return String.format("{0} {1}", this.data.first_name, this.data.last_name);
+  },
+  
+  //this is used to test instance method inheritance in Model.spec.js
+  earlyJoiner: function() {
+    return this.data.id < 100;
+  },
+  
+  classMethods: {
+    testClassMethod: function() {
+      return "A Class Method";
+    },
+    
+    //simple class method to test class method overwrites
+    methodToOverwrite: function() {
+      return true;
+    }
   }
 });
 
@@ -22,8 +41,8 @@ ExtMVC.Model.define("MVCTest.models.User", {
  * @extends MVCTest.models.User
  * A subclass of User, defining additional fields
  */
-ExtMVC.Model.define("MVCTest.models.AdminUser", {
-  extend: "MVCTest.models.User",
+ExtMVC.Model.define("AdminUser", {
+  extend: "User",
   fields: [
     {name: 'is_admin', type: 'bool'},
     {name: 'password', type: 'string'}
@@ -34,7 +53,7 @@ ExtMVC.Model.define("MVCTest.models.AdminUser", {
  * @class MVCTest.models.BlogPost
  * @extends ExtMVC.Model
  */
-ExtMVC.Model.define("MVCTest.models.BlogPost", {
+ExtMVC.Model.define("BlogPost", {
   fields:    [
     {name: 'id',      type: 'int'},
     {name: 'title',   type: 'string'},
@@ -53,7 +72,7 @@ ExtMVC.Model.define("MVCTest.models.BlogPost", {
  * @class MVCTest.models.Comment
  * @extends ExtMVC.Model
  */
-ExtMVC.Model.define("MVCTest.models.Comment", {
+ExtMVC.Model.define("Comment", {
   fields:    [
     {name: 'id',           type: 'int'},
     {name: 'blog_post_id', type: 'int'},
