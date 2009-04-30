@@ -8,14 +8,14 @@ You are advised to use the base app to get up and running with Ext MVC as it set
 
 If you're comfortable with git:
 
-1) git clone git://github.com/extmvc/baseapp.git myapp
-2) cd myapp
-3) rm -rf .git/
-4) git init
+1. git clone git://github.com/extmvc/baseapp.git myapp
+2. cd myapp
+3. rm -rf .git/
+4. git init
 
 If not:
 
-1) Download the latest zip file from Github at http://github.com/extmvc/baseapp/zipball/master and unzip.
+1. Download the latest zip file from Github at http://github.com/extmvc/baseapp/zipball/master and unzip.
 
 == Getting started
 
@@ -38,7 +38,7 @@ and you have java installed, the build process will also minify your application
 
 Building your app also concatenates any CSS includes in index.html into public/application-all.css.
 
-** NOTE **: Building looks at your index.html, NOT public/index.html.  index.html is your development version, 
+*NOTE*: Building looks at your index.html, NOT public/index.html.  index.html is your development version, 
 public/index.html should simply include those concatenated/minified files.
 
 === Autobuild
@@ -53,17 +53,17 @@ This will again look at index.html and will force a rebuild any time any of thos
 
 There are several other build commands, most of which are used by the two above:
 
-ruby script/build css            - only build CSS files, no JS concatenation or minification
-ruby script/build js             - only builds JS files, not CSS
-ruby script/build concatenate_js - concatenates but does not attempt to minify your JS
-ruby script/build minify_js      - minifies an already concatenated public/application-all.js file
+- ruby script/build css            - only build CSS files, no JS concatenation or minification
+- ruby script/build js             - only builds JS files, not CSS
+- ruby script/build concatenate_js - concatenates but does not attempt to minify your JS
+- ruby script/build minify_js      - minifies an already concatenated public/application-all.js file
 
 === Building Ext MVC
 
 If you are changing Ext MVC files and need to build Ext MVC itself, use:
 
-ruby script/build mvc
-ruby script/build mvc_auto
+- ruby script/build mvc
+- ruby script/build mvc_auto
 
 Again run from the app root directory.  Like with ruby script/build auto, mvc_auto automatically rebuilds whenever
 any Ext MVC file is changed.
