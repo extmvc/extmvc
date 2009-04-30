@@ -16,6 +16,10 @@ Screw.Unit(function() {
       expect("A string with whitespaces".underscore()).to(equal, "a_string_with_whitespaces");
     });
     
+    it("should underscore a camelized string", function() {
+      expect("ALongTableName".underscore()).to(equal, "a_long_table_name");
+    });
+    
     it("should delegate singularize to Inflector", function() {
       //stub
       var singularize_was_called = false;

@@ -190,13 +190,13 @@ Screw.Unit(function() {
     });
     
     describe("A Model instance", function() {
+      var newUser = new ns.User({
+        first_name: 'Saul',
+        last_name:  'Tigh',
+        email:      'saul@tigh.net'
+      });
+      
       describe("which has not yet been saved for the first time (has no primary key set yet)", function() {
-        var newUser = new ns.User({
-          first_name: 'Saul',
-          last_name:  'Tigh',
-          email:      'saul@tigh.net'
-        });
-        
         it("should should return true to newRecord()", function() {
           expect(newUser.newRecord()).to(equal, true);
         });
@@ -205,6 +205,29 @@ Screw.Unit(function() {
           expect(newUser.data.first_name).to(equal, 'Saul');
           expect(newUser.data.last_name).to(equal, 'Tigh');
           expect(newUser.data.email).to(equal, 'saul@tigh.net');
+        });
+      });
+      
+      describe("name functions", function() {
+        var lmn;
+        
+        before(function() {
+          ExtMVC.Model.define("LongModelName", {fields: [{}]});
+          lmn = new ns.LongModelName({});
+        });
+        
+        after(function() {
+          delete ns.LongModelName;
+        });
+        
+        it("should keep the modelName as defined", function() {
+          expect(newUser.modelName).to(equal, 'User');
+          expect((new ns.BlogPost()).modelName).to(equal, 'BlogPost');
+        });
+        
+        it("should return a tablename based on the model name", function() {
+          expect(newUser.tableName).to(equal, 'users');
+          expect(lmn.tableName).to(equal, 'long_model_names');
         });
       });
       

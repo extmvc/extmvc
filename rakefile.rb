@@ -8,7 +8,7 @@ namespace :extmvc do
     task :concatenate do
       #ordered list of files to build
       # files = ["MVC.js", "lib/Inflector.js", "lib/String.js", "lib/Router.js", "lib/Route.js", "controller/Controller.js", "controller/CrudController.js", "os/OS.js", "model/Model.js", "model/AdapterManager.js", "model/Cache.js", "model/UrlBuilder.js", "model/Association.js", "model/HasManyAssociation.js", "model/BelongsToAssociation.js", "model/adapters/AbstractAdapter.js", "model/adapters/RESTAdapter.js", "model/validations/Errors.js", "os/viewportbuilder/ViewportBuilderManager.js", "os/viewportbuilder/ViewportBuilder.js", "view/scaffold/ScaffoldFormPanel.js", "view/scaffold/Index.js", "view/scaffold/New.js", "view/scaffold/Edit.js", "view/HasManyEditorGridPanel.js"]
-      files = ["MVC.js", "lib/Inflector.js", "lib/String.js", "lib/Router.js", "lib/Route.js", "controller/Controller.js", "controller/CrudController.js", "os/OS.js", "model/Model.js", "model/Base.js", "os/viewportbuilder/ViewportBuilderManager.js", "os/viewportbuilder/ViewportBuilder.js", "view/scaffold/ScaffoldFormPanel.js", "view/scaffold/Index.js", "view/scaffold/New.js", "view/scaffold/Edit.js", "view/HasManyEditorGridPanel.js"]
+      files = ["MVC.js", "lib/Inflector.js", "lib/String.js", "lib/Router.js", "lib/Route.js", "controller/Controller.js", "controller/CrudController.js", "os/OS.js", "model/Model.js", "model/Base.js", "model/validations/Errors.js", "os/viewportbuilder/ViewportBuilderManager.js", "os/viewportbuilder/ViewportBuilder.js", "view/scaffold/ScaffoldFormPanel.js", "view/scaffold/Index.js", "view/scaffold/New.js", "view/scaffold/Edit.js", "view/HasManyEditorGridPanel.js"]
       
       concatenated_filename = "ext-mvc-all.js"
       

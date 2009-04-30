@@ -82,7 +82,8 @@ ExtMVC.Model = function() {
      * @return {ExtMVC.Model.Base/Null} The newly defined model constructor, or null if the model can't be defined yet
      */
     define: function(modelName, extensions) {
-      var createNow = true;
+      var createNow  = true,
+          extensions = extensions || {};
       
       if (typeof extensions.extend != 'undefined') {
         var superclass = this.modelNamespace[extensions.extend];
@@ -105,6 +106,8 @@ ExtMVC.Model = function() {
      * @param {Object} extensions An object containing field definitions and any extension methods to add to this model
      */
     create: function(modelName, extensions) {
+      extensions = extensions || {};
+      
       //check that this model has not already been defined
       if (this.isAlreadyDefined(modelName)) {
         if (this.strictMode) throw new Error(modelName + ' is already defined');
@@ -125,13 +128,17 @@ ExtMVC.Model = function() {
       delete extensions.classMethods;
       
       //extend our new record firstly with Model.Base, then apply any user extensions
-      Ext.apply(model.prototype, extensions, ExtMVC.Model.Base);
+      Ext.apply(model.prototype, extensions);
       
-      //if we're extending another model, class and instance methods now
+      //if we're extending another model, add class and instance methods now
       if (typeof superclassModel != 'undefined') {
         Ext.applyIf(classMethods, superclassModel);
         Ext.applyIf(model.prototype, superclassModel.prototype);
       };
+      
+      //set up the various string names associated with this model
+      model.prototype.modelName = modelName;
+      this.setupNames(model);
 
       //add any class methods to the class level
       for (methodName in classMethods) {
@@ -194,10 +201,23 @@ ExtMVC.Model = function() {
       };
       
       return fields.items;
+    },
+    
+    /**
+     * Sets up the various names required by this model, such as tableName, humanName etc
+     * @param {Object} model The model to set up names on
+     * @return {Object} The model, decorated with names
+     */
+    setupNames: function(model) {
+      var p = model.prototype,
+          i = ExtMVC.Inflector;
+      
+      Ext.applyIf(model.prototype, {
+        tableName: i.pluralize(p.modelName.underscore())
+      });
     }
   };
 }();
-
 
 // /**
 //  * ExtMVC.Model
