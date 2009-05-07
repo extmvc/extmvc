@@ -1,19 +1,19 @@
 /**
- * @class ExtMVC.Model.ValidationErrors
+ * @class ExtMVC.Model.validation.Errors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-ExtMVC.Model.ValidationErrors = function(modelObject) {
-  this.modelObject = modelObject;
+ExtMVC.Model.validation.Errors = function(modelObject) {
+  // this.modelObject = modelObject;
   
   /**
    * @property errors
-   * @type Array
-   * Raw array of all errors attached to this model.  This is READ ONLY - do not interact with directly
+   * @type Object
+   * Object containing all errors attached to this model.  This is READ ONLY - do not interact with directly
    */
-  this.errors = [];
+  this.all = {};
 };
 
-ExtMVC.Model.ValidationErrors.prototype = {
+ExtMVC.Model.validation.Errors.prototype = {
   
   /**
    * Returns an errors object suitable for applying to a form via BasicForm's markInvalid() method
@@ -21,12 +21,9 @@ ExtMVC.Model.ValidationErrors.prototype = {
    */
   forForm: function() {
     var formErrors = {};
-    Ext.each(this.modelObject.fields.items, function(field) {
-      var fieldErrors = this.forField(field.name);
-      if (fieldErrors.length > 0) {
-        formErrors[field.name] = this.joinErrors(fieldErrors);
-      };
-    }, this);
+    for (key in this.all) {
+      formErrors[key] = this.forField(key, true);
+    }
     
     return formErrors;
   },
@@ -39,43 +36,36 @@ ExtMVC.Model.ValidationErrors.prototype = {
   multipleErrorConnector: 'and',
   
   /**
-   * Joins one or more errors into a human-readable sentence.  For example, there may be two errors on an email field:
-   * ["can't be blank", "must be at least 6 characters", "must contain an @"].  This would return:
-   * "can't be blank, must be at least 6 characters and must contain an @"
-   * @param {Array} errors An array of error messages for a given field
-   * @return {String} A human-readable errors sentence
+   * Clears out all errors
    */
-  joinErrors: function(errors) {
-    var errors   = errors || [];
-    var sentence = "";
-    if (errors.length <= 1) { 
-      sentence =  errors[0];
-    } else {
-      //we'll join all but the last error with commas
-      var firstErrors = errors.slice(0, errors.length - 1);
-      
-      //add the last error, with the connector string
-      sentence = String.format("{0} {1} {2}", firstErrors.join(", "), this.multipleErrorConnector, errors[errors.length - 1]);
-    }
-    
-    ///add a full stop; sometimes one already present in which case remove final one
-    return (/\.$/.test(sentence) ? sentence : sentence + ".").capitalize();
+  clear: function() {
+    this.all = {};
   },
   
   /**
-   * Returns an array of all errors for the given field
-   * @param {String} field The field to find errors for
-   * @return {Array} An array of errors for this field
+   * Adds an error to a particular field
+   * @param {String} field The field to add an error onto
+   * @param {String} error The error message
    */
-  forField: function(field) {
-    var errs = [];
-    
-    for (var i=0; i < this.errors.length; i++) {
-      var error = this.errors[i];
-      if (error[0] == field) { errs.push(error[1]); }
-    };
-    
-    return errs;
+  add: function(field, error) {
+    this.all[field] = this.all[field] || [];
+    this.all[field].push(error);
+  },
+  
+  /**
+   * Returns an array of all errors for the given field.  Pass true as a second argument to
+   * return a human-readable string, e.g.:
+   * forField('title'); // ['must be present', 'is too short']
+   * forField('title', true); // 'must be present and is too short'
+   * @param {String} field The field to find errors for
+   * @param {Boolean} humanize True to turn the errors array into a human-readable string (defaults to false)
+   * @return {Array|String} An array of errors for this field, or a string 
+   */
+  forField: function(field, humanize) {
+    humanize = humanize || false;
+    var errs = this.all[field] || [];
+        
+    return humanize ? errs.toSentence(this.multipleErrorConnector) : errs;
   },
   
   /**
@@ -83,14 +73,9 @@ ExtMVC.Model.ValidationErrors.prototype = {
    * @return {Boolean} True if this model is currently valid
    */
   isValid: function(paramName) {
-    return this.errors.length == 0;
-  },
-  
-  /**
-   * Removes all current validation errors
-   */
-  clearErrors: function() {
-    this.errors = [];
+    for (key in this.all) {return false;}
+    
+    return true;
   },
   
   /**
@@ -115,7 +100,7 @@ ExtMVC.Model.ValidationErrors.prototype = {
     var rawErrors = serverErrors.errors;
     if (rawErrors) {
       for (var i=0; i < rawErrors.length; i++) {
-        this.errors.push(rawErrors[i]);
+        this.all.push(rawErrors[i]);
       };
     };
   }

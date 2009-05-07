@@ -22,11 +22,21 @@ Ext.ns('ExtMVC.Model.validation');
 
   V.AbstractValidation.prototype = {
     /**
+     * Returns the current value of the field to which this validation applies
+     * @return {Mixed} The current value of the field
+     */
+    getValue: function() {
+      return this.modelObject.get(this.field);
+    },
+    
+    /**
      * Empty function which must be overridden by a validation subclass. Make your function return
      * true if the validation passes, false otherwise
      * @return {Boolean} True if this validation passes
      */
-    isValid: function() {return true;}
+    isValid: function() {
+      return true;
+    }
   };
   
   /**
@@ -88,7 +98,7 @@ Ext.ns('ExtMVC.Model.validation');
      * @return {Boolean} True if the conditions are met
      */
     isValid: function() {
-      var value = this.modelObject.get(this.field);
+      var value = this.getValue();
           
       if (this.minimum && value.length < this.minimum) {
         this.message = this.tooShortMessage;
@@ -153,7 +163,7 @@ Ext.ns('ExtMVC.Model.validation');
      * @return {Boolean} True if the field's value is allowed
      */
     isValid: function() {
-      var value = this.modelObject.get(this.field);
+      var value = this.getValue();
       
       for (var i=0; i < this.allowed.length; i++) {
         if (this.allowed[i] == value) return true;
@@ -190,7 +200,7 @@ Ext.ns('ExtMVC.Model.validation');
      * @return {Boolean} True if the field's value is allowed
      */
     isValid: function() {
-      var value = this.modelObject.get(this.field),
+      var value = this.getValue(),
           valid = true;
       
       for (var i=0; i < this.disallowed.length; i++) {
@@ -220,9 +230,7 @@ Ext.ns('ExtMVC.Model.validation');
      * @return {Boolean} True if the field's value matches
      */
     isValid: function() {
-      var value = this.modelObject.get(this.field);
-      
-      return this.regex.test(value);
+      return this.regex.test(this.getValue());
     }
   });
 })();
