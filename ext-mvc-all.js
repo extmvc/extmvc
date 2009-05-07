@@ -229,6 +229,30 @@ ExtMVC.Inflector = {
 };
 
 /**
+ * Turns an array into a sentence, joined by a specified connector - e.g.:
+ * ['Adama', 'Tigh', 'Roslin'].toSentence(); //'Adama, Tigh and Roslin'
+ * ['Adama', 'Tigh', 'Roslin'].toSentence('or'); //'Adama, Tigh or Roslin'
+ */
+Array.prototype.toSentence = function(connector) {
+  connector = connector || 'and';
+  
+  var sentence = "";
+  if (this.length <= 1) { 
+    sentence = this[0];
+  } else {
+    //we'll join all but the last error with commas
+    var firstErrors = this.slice(0, this.length - 1);
+    
+    //add the last error, with the connector string
+    sentence = String.format("{0} {1} {2}", firstErrors.join(", "), connector, this[this.length - 1]);
+  }
+  return sentence;
+  
+  ///add a full stop; sometimes one already present in which case remove final one
+  // return (/\.$/.test(sentence) ? sentence : sentence + ".");
+};
+
+/**
  * @returns A capitalized string (e.g. "some test sentence" becomes "Some test sentence")
  * @type String
  */
@@ -2398,6 +2422,11 @@ ExtMVC.Model.ValidationErrors.prototype = {
   }
 };
 
+/**
+ * The Validation classes themselves are defined here.
+ * Subclass ExtMVC.Model.validation.AbstractValidation to create your own validations
+ */
+
 Ext.ns('ExtMVC.Model.validation');
 
 (function() {
@@ -2518,6 +2547,106 @@ Ext.ns('ExtMVC.Model.validation');
      */
     isValid: function() {
       return 'number' == typeof this.modelObject.get(this.field);
+    }
+  });
+  
+  /**
+   * @class V.ValidatesInclusionOf
+   * @extends V.AbstractValidation
+   * Ensures that the field is one of the allowed values
+   */
+  V.ValidatesInclusionOf = Ext.extend(V.AbstractValidation, {
+   
+    /**
+     * Override Abstract constructor to build the validation message
+     */
+    constructor: function(m, f, config) {
+      //set up defaults
+      config = config || {};
+      Ext.applyIf(config, { allowed: [] });
+      
+      V.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
+      
+      Ext.applyIf(this, {
+        message: 'must be one of ' + this.allowed.toSentence('or')
+      });
+    },
+    
+    /**
+     * Returns true if the value of this field is one of those specified in this.allowed
+     * @return {Boolean} True if the field's value is allowed
+     */
+    isValid: function() {
+      var value = this.modelObject.get(this.field);
+      
+      for (var i=0; i < this.allowed.length; i++) {
+        if (this.allowed[i] == value) return true;
+      };
+      
+      return false;
+    }
+  });
+  
+  /**
+   * @class V.ValidatesExclusionOf
+   * @extends V.AbstractValidation
+   * Ensures that the field is not one of the allowed values
+   */
+  V.ValidatesExclusionOf = Ext.extend(V.AbstractValidation, {
+  
+    /**
+     * Override Abstract constructor to build the validation message
+     */
+    constructor: function(m, f, config) {
+      //set up defaults
+      config = config || {};
+      Ext.applyIf(config, { disallowed: [] });
+      
+      V.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
+      
+      Ext.applyIf(this, {
+        message: 'must not be ' + this.disallowed.toSentence('or')
+      });
+    },
+    
+    /**
+     * Returns true if the value of this field is one of those specified in this.allowed
+     * @return {Boolean} True if the field's value is allowed
+     */
+    isValid: function() {
+      var value = this.modelObject.get(this.field),
+          valid = true;
+      
+      for (var i=0; i < this.disallowed.length; i++) {
+        if (this.disallowed[i] == value) valid = false;
+      };
+      
+      return valid;
+    }
+  });
+  
+  /**
+   * @class V.ValidatesFormatOf
+   * @extends V.AbstractValidation
+   * Ensures that the field matches the given regular expression
+   */
+  V.ValidatesFormatOf = Ext.extend(V.AbstractValidation, {
+    
+    /**
+     * @property message
+     * @type String
+     * The default message to return if this validation does not pass
+     */
+    message: 'is invalid',
+    
+    /**
+     * Returns true if the value of this field matches the suppled regular expression
+     * @return {Boolean} True if the field's value matches
+     */
+    isValid: function() {
+      var value = this.modelObject.get(this.field);
+      
+      return this.regex.test(value);
     }
   });
 })();
