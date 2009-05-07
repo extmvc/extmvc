@@ -4,16 +4,16 @@
  */
 ExtMVC.Model.ValidationErrors = function(modelObject) {
   this.modelObject = modelObject;
-};
-
-ExtMVC.Model.ValidationErrors.prototype = {
   
   /**
    * @property errors
    * @type Array
    * Raw array of all errors attached to this model.  This is READ ONLY - do not interact with directly
    */
-  errors: [],
+  this.errors = [];
+};
+
+ExtMVC.Model.ValidationErrors.prototype = {
   
   /**
    * Returns an errors object suitable for applying to a form via BasicForm's markInvalid() method
