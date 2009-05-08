@@ -58,7 +58,7 @@ Ext.ns('ExtMVC.Model.association');
 
 
 // ExtMVC.Model.define('User', {
-//   fields:    [],
+//   fields:  [],
 //   hasMany: [{
 //     name:       'posts',
 //     className:  'Post',

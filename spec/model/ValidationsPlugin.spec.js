@@ -44,7 +44,6 @@ Screw.Unit(function() {
        * in ExtMVC.Model.validation.Plugin and applied to Ext.data.Record's prototype.  As this
        * means each Model instance has it available, that's how it's being tested here...
        */
-       
       var validInstance = new ns.ValidatedModel({
         title: 'Title',
         text:  'My Text',
