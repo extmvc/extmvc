@@ -213,7 +213,8 @@ ExtMVC.Model = function() {
           i = ExtMVC.Inflector;
       
       Ext.applyIf(model.prototype, {
-        tableName: i.pluralize(p.modelName.underscore())
+        tableName:      i.pluralize(p.modelName.underscore()),
+        foreignKeyName: i.singularize(p.modelName.underscore()) + '_id'
       });
     }
   };

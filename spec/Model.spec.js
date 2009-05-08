@@ -229,6 +229,11 @@ Screw.Unit(function() {
           expect(newUser.tableName).to(equal, 'users');
           expect(lmn.tableName).to(equal, 'long_model_names');
         });
+        
+        it("should return a foreignKeyName based on the model name", function() {
+          expect(newUser.foreignKeyName).to(equal, "user_id");
+          expect(lmn.foreignKeyName).to(equal, 'long_model_name_id');
+        });
       });
       
       describe("which has already been saved (has a primary key set)", function() {
