@@ -13,8 +13,8 @@ Ext.ns('ExtMVC.Model.validation');
    * @class ExtMVC.Model.validation.AbstractValidation
    * Base class for all validations - don't use this directly but use a subclass
    */
-  V.AbstractValidation = function(modelObject, field, config) {
-    this.modelObject = modelObject;
+  V.AbstractValidation = function(ownerClass, field, config) {
+    this.ownerClass = ownerClass;
     this.field = field;
     
     Ext.apply(this, config);
@@ -23,10 +23,11 @@ Ext.ns('ExtMVC.Model.validation');
   V.AbstractValidation.prototype = {
     /**
      * Returns the current value of the field to which this validation applies
+     * @param {ExtMVC.Model.Base} instance The model instance to get the value from
      * @return {Mixed} The current value of the field
      */
-    getValue: function() {
-      return this.modelObject.get(this.field);
+    getValue: function(instance) {
+      return instance.get(this.field);
     },
     
     /**
@@ -34,7 +35,7 @@ Ext.ns('ExtMVC.Model.validation');
      * true if the validation passes, false otherwise
      * @return {Boolean} True if this validation passes
      */
-    isValid: function() {
+    isValid: function(instance) {
       return true;
     }
   };
@@ -56,8 +57,8 @@ Ext.ns('ExtMVC.Model.validation');
      * Returns true if the field is an object or a non-empty string
      * @return {Boolean} True if the field is present
      */
-    isValid: function() {
-      var value = this.modelObject.get(this.field),
+    isValid: function(instance) {
+      var value = this.getValue(instance),
           valid = false;
       
       switch(typeof value) {
@@ -97,8 +98,10 @@ Ext.ns('ExtMVC.Model.validation');
      * Intended to be used on strings and arrays
      * @return {Boolean} True if the conditions are met
      */
-    isValid: function() {
-      var value = this.getValue();
+    isValid: function(instance) {
+      var value = this.getValue(instance);
+      
+      if (typeof value == 'undefined') return true;
           
       if (this.minimum && value.length < this.minimum) {
         this.message = this.tooShortMessage;
@@ -131,8 +134,8 @@ Ext.ns('ExtMVC.Model.validation');
      * Returns true if the typeof this field is a number
      * @return {Boolean} True if this is a number
      */
-    isValid: function() {
-      return 'number' == typeof this.modelObject.get(this.field);
+    isValid: function(instance) {
+      return 'number' == typeof this.getValue(instance);
     }
   });
   
@@ -142,7 +145,8 @@ Ext.ns('ExtMVC.Model.validation');
    * Ensures that the field is one of the allowed values
    */
   V.ValidatesInclusionOf = Ext.extend(V.AbstractValidation, {
-   
+  
+ 
     /**
      * Override Abstract constructor to build the validation message
      */
@@ -162,8 +166,8 @@ Ext.ns('ExtMVC.Model.validation');
      * Returns true if the value of this field is one of those specified in this.allowed
      * @return {Boolean} True if the field's value is allowed
      */
-    isValid: function() {
-      var value = this.getValue();
+    isValid: function(instance) {
+      var value = this.getValue(instance);
       
       for (var i=0; i < this.allowed.length; i++) {
         if (this.allowed[i] == value) return true;
@@ -199,8 +203,8 @@ Ext.ns('ExtMVC.Model.validation');
      * Returns true if the value of this field is one of those specified in this.allowed
      * @return {Boolean} True if the field's value is allowed
      */
-    isValid: function() {
-      var value = this.getValue(),
+    isValid: function(instance) {
+      var value = this.getValue(instance),
           valid = true;
       
       for (var i=0; i < this.disallowed.length; i++) {
@@ -229,8 +233,8 @@ Ext.ns('ExtMVC.Model.validation');
      * Returns true if the value of this field matches the suppled regular expression
      * @return {Boolean} True if the field's value matches
      */
-    isValid: function() {
-      return this.regex.test(this.getValue());
+    isValid: function(instance) {
+      return this.regex.test(this.getValue(instance));
     }
   });
 })();

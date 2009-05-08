@@ -323,5 +323,48 @@ Screw.Unit(function() {
         expect(ns.User.methodToOverwrite()).to(equal, true);
       });
     });
+    
+    describe("Plugins", function() {
+      var initializeCalled,
+          myPlugin = { initialize: Ext.emptyFn };
+      
+      var normalPlugins = ExtMVC.Model.plugins;
+      
+      before(function() {
+        //clear out all plugins between tests
+        ExtMVC.Model.plugins = [];
+      });
+      
+      after(function() {
+        ExtMVC.Model.plugins = normalPlugins;
+      });
+      
+      it("should allow specification of new plugins", function() {
+        var p = ExtMVC.Model.plugins;
+        expect(p.length).to(equal, 0);
+        
+        ExtMVC.Model.addPlugin(myPlugin);
+        expect(p.length).to(equal, 1);
+      });
+      
+      it("should call each plugin's initialize method when a model is created", function() {
+        initializeCalled = false;
+        var initializeArgument;
+        
+        //set up a fake plugin initializer to check that we're receiving a reference to the model
+        myPlugin.initialize = function(model) {
+          initializeCalled = true;
+          initializeArgument = model;
+        };
+                
+        ExtMVC.Model.addPlugin(myPlugin);
+        
+        ExtMVC.Model.define('AnotherModel', {fields: []});
+        expect(initializeCalled).to(equal, true);
+        expect(initializeArgument).to(equal, ns.AnotherModel);
+        
+        delete ns.AnotherModel;
+      });
+    });
   });
 });

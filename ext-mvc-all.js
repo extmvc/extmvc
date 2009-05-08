@@ -1826,6 +1826,7 @@ ExtMVC.Model = function() {
         if (methodName != 'prototype') model[methodName] = classMethods[methodName];
       };
 
+      this.initializePlugins(model);
       this.afterCreate(modelName);
     },
     
@@ -1897,6 +1898,31 @@ ExtMVC.Model = function() {
         tableName:      i.pluralize(p.modelName.underscore()),
         foreignKeyName: i.singularize(p.modelName.underscore()) + '_id'
       });
+    },
+    
+    /**
+     * @property plugins
+     * @type Array
+     * An array containing all plugin constructor functions - these get applied at model creation time
+     */
+    plugins: [],
+    
+    /**
+     * Makes Model aware of a new plugin.  All plugins defined here will be initialized when a model is created
+     * @param {Function} plugin The plugin object
+     */
+    addPlugin: function(plugin) {
+      this.plugins.push(plugin);
+    },
+    
+    /**
+     * Runs each plugin's initialize method with a newly created model constructor
+     * @param {ExtMVC.Model} model The model to initialize the plugin with
+     */
+    initializePlugins: function(model) {
+      Ext.each(this.plugins, function(plugin) {
+        plugin.initialize(model);
+      }, this);
     }
   };
 }();
@@ -2297,243 +2323,6 @@ ExtMVC.Model.Base.prototype = {
  */
 Ext.apply(Ext.data.Record.prototype, new ExtMVC.Model.Base());
 
-/**
- * The Validation classes themselves are defined here.
- * Subclass ExtMVC.Model.validation.AbstractValidation to create your own validations
- */
-
-Ext.ns('ExtMVC.Model.validation');
-
-(function() {
-  //local reference to save my fingers, object lookups (maybe?) and # bytes
-  var V = ExtMVC.Model.validation;
-  
-  /**
-   * @class ExtMVC.Model.validation.AbstractValidation
-   * Base class for all validations - don't use this directly but use a subclass
-   */
-  V.AbstractValidation = function(modelObject, field, config) {
-    this.modelObject = modelObject;
-    this.field = field;
-    
-    Ext.apply(this, config);
-  };
-
-  V.AbstractValidation.prototype = {
-    /**
-     * Returns the current value of the field to which this validation applies
-     * @return {Mixed} The current value of the field
-     */
-    getValue: function() {
-      return this.modelObject.get(this.field);
-    },
-    
-    /**
-     * Empty function which must be overridden by a validation subclass. Make your function return
-     * true if the validation passes, false otherwise
-     * @return {Boolean} True if this validation passes
-     */
-    isValid: function() {
-      return true;
-    }
-  };
-  
-  /**
-   * @class ExtMVC.model.validation.ValidatesPresenceOf
-   * @extends ExtMVC.model.validation.AbstractValidation
-   * Ensures that a field is present
-   */
-  V.ValidatesPresenceOf = Ext.extend(V.AbstractValidation, {
-    /**
-     * @property message
-     * @type String
-     * The textual message returned if this validation didn't pass
-     */
-    message: 'must be present',
-    
-    /**
-     * Returns true if the field is an object or a non-empty string
-     * @return {Boolean} True if the field is present
-     */
-    isValid: function() {
-      var value = this.modelObject.get(this.field),
-          valid = false;
-      
-      switch(typeof value) {
-        case 'object': if (value != null)     valid = true; break;
-        case 'string': if (value.length != 0) valid = true; break;
-      };
-      
-      return valid;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesLengthOf
-   * @extends V.AbstractValidation
-   * Returns true if the field is within the length bounds imposed.
-   */
-  V.ValidatesLengthOf = Ext.extend(V.AbstractValidation, {
-    
-    /**
-     * @property tooShortMessage
-     * @type String
-     * The message returned if this field was too short
-     */
-    tooShortMessage: 'is too short',
-    
-    /**
-     * @property tooLongMessage
-     * @type String
-     * The message returned if this field was too long
-     */
-    tooLongMessage: 'is too long',
-    
-    message: '',
-  
-    /**
-     * Tests that the mimimum and maximum length of this field are met.
-     * Intended to be used on strings and arrays
-     * @return {Boolean} True if the conditions are met
-     */
-    isValid: function() {
-      var value = this.getValue();
-          
-      if (this.minimum && value.length < this.minimum) {
-        this.message = this.tooShortMessage;
-        return false;
-      }
-      
-      if (this.maximum & value.length > this.maximum) {
-        this.message = this.tooLongMessage;
-        return false;
-      }
-      
-      return true;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesNumericalityOf
-   * @extends V.AbstractValidation
-   * Ensures that the field is a number
-   */
-  V.ValidatesNumericalityOf = Ext.extend(V.AbstractValidation, {
-    /**
-     * @property message
-     * @type String
-     * The message returned if this field is not a number
-     */
-    message: 'must be a number',
-    
-    /**
-     * Returns true if the typeof this field is a number
-     * @return {Boolean} True if this is a number
-     */
-    isValid: function() {
-      return 'number' == typeof this.modelObject.get(this.field);
-    }
-  });
-  
-  /**
-   * @class V.ValidatesInclusionOf
-   * @extends V.AbstractValidation
-   * Ensures that the field is one of the allowed values
-   */
-  V.ValidatesInclusionOf = Ext.extend(V.AbstractValidation, {
-   
-    /**
-     * Override Abstract constructor to build the validation message
-     */
-    constructor: function(m, f, config) {
-      //set up defaults
-      config = config || {};
-      Ext.applyIf(config, { allowed: [] });
-      
-      V.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
-      
-      Ext.applyIf(this, {
-        message: 'must be one of ' + this.allowed.toSentence('or')
-      });
-    },
-    
-    /**
-     * Returns true if the value of this field is one of those specified in this.allowed
-     * @return {Boolean} True if the field's value is allowed
-     */
-    isValid: function() {
-      var value = this.getValue();
-      
-      for (var i=0; i < this.allowed.length; i++) {
-        if (this.allowed[i] == value) return true;
-      };
-      
-      return false;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesExclusionOf
-   * @extends V.AbstractValidation
-   * Ensures that the field is not one of the allowed values
-   */
-  V.ValidatesExclusionOf = Ext.extend(V.AbstractValidation, {
-  
-    /**
-     * Override Abstract constructor to build the validation message
-     */
-    constructor: function(m, f, config) {
-      //set up defaults
-      config = config || {};
-      Ext.applyIf(config, { disallowed: [] });
-      
-      V.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
-      
-      Ext.applyIf(this, {
-        message: 'must not be ' + this.disallowed.toSentence('or')
-      });
-    },
-    
-    /**
-     * Returns true if the value of this field is one of those specified in this.allowed
-     * @return {Boolean} True if the field's value is allowed
-     */
-    isValid: function() {
-      var value = this.getValue(),
-          valid = true;
-      
-      for (var i=0; i < this.disallowed.length; i++) {
-        if (this.disallowed[i] == value) valid = false;
-      };
-      
-      return valid;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesFormatOf
-   * @extends V.AbstractValidation
-   * Ensures that the field matches the given regular expression
-   */
-  V.ValidatesFormatOf = Ext.extend(V.AbstractValidation, {
-    
-    /**
-     * @property message
-     * @type String
-     * The default message to return if this validation does not pass
-     */
-    message: 'is invalid',
-    
-    /**
-     * Returns true if the value of this field matches the suppled regular expression
-     * @return {Boolean} True if the field's value matches
-     */
-    isValid: function() {
-      return this.regex.test(this.getValue());
-    }
-  });
-})();
-
 Ext.ns('ExtMVC.Model.association');
 
 (function() {
@@ -2646,12 +2435,251 @@ Ext.ns('ExtMVC.Model.association');
 // });
 
 /**
+ * The Validation classes themselves are defined here.
+ * Subclass ExtMVC.Model.validation.AbstractValidation to create your own validations
+ */
+
+Ext.ns('ExtMVC.Model.validation');
+
+(function() {
+  //local reference to save my fingers, object lookups (maybe?) and # bytes
+  var V = ExtMVC.Model.validation;
+  
+  /**
+   * @class ExtMVC.Model.validation.AbstractValidation
+   * Base class for all validations - don't use this directly but use a subclass
+   */
+  V.AbstractValidation = function(ownerClass, field, config) {
+    this.ownerClass = ownerClass;
+    this.field = field;
+    
+    Ext.apply(this, config);
+  };
+
+  V.AbstractValidation.prototype = {
+    /**
+     * Returns the current value of the field to which this validation applies
+     * @param {ExtMVC.Model.Base} instance The model instance to get the value from
+     * @return {Mixed} The current value of the field
+     */
+    getValue: function(instance) {
+      return instance.get(this.field);
+    },
+    
+    /**
+     * Empty function which must be overridden by a validation subclass. Make your function return
+     * true if the validation passes, false otherwise
+     * @return {Boolean} True if this validation passes
+     */
+    isValid: function(instance) {
+      return true;
+    }
+  };
+  
+  /**
+   * @class ExtMVC.model.validation.ValidatesPresenceOf
+   * @extends ExtMVC.model.validation.AbstractValidation
+   * Ensures that a field is present
+   */
+  V.ValidatesPresenceOf = Ext.extend(V.AbstractValidation, {
+    /**
+     * @property message
+     * @type String
+     * The textual message returned if this validation didn't pass
+     */
+    message: 'must be present',
+    
+    /**
+     * Returns true if the field is an object or a non-empty string
+     * @return {Boolean} True if the field is present
+     */
+    isValid: function(instance) {
+      var value = this.getValue(instance),
+          valid = false;
+      
+      switch(typeof value) {
+        case 'object': if (value != null)     valid = true; break;
+        case 'string': if (value.length != 0) valid = true; break;
+      };
+      
+      return valid;
+    }
+  });
+  
+  /**
+   * @class V.ValidatesLengthOf
+   * @extends V.AbstractValidation
+   * Returns true if the field is within the length bounds imposed.
+   */
+  V.ValidatesLengthOf = Ext.extend(V.AbstractValidation, {
+    
+    /**
+     * @property tooShortMessage
+     * @type String
+     * The message returned if this field was too short
+     */
+    tooShortMessage: 'is too short',
+    
+    /**
+     * @property tooLongMessage
+     * @type String
+     * The message returned if this field was too long
+     */
+    tooLongMessage: 'is too long',
+    
+    message: '',
+  
+    /**
+     * Tests that the mimimum and maximum length of this field are met.
+     * Intended to be used on strings and arrays
+     * @return {Boolean} True if the conditions are met
+     */
+    isValid: function(instance) {
+      var value = this.getValue(instance);
+      
+      if (typeof value == 'undefined') return true;
+          
+      if (this.minimum && value.length < this.minimum) {
+        this.message = this.tooShortMessage;
+        return false;
+      }
+      
+      if (this.maximum & value.length > this.maximum) {
+        this.message = this.tooLongMessage;
+        return false;
+      }
+      
+      return true;
+    }
+  });
+  
+  /**
+   * @class V.ValidatesNumericalityOf
+   * @extends V.AbstractValidation
+   * Ensures that the field is a number
+   */
+  V.ValidatesNumericalityOf = Ext.extend(V.AbstractValidation, {
+    /**
+     * @property message
+     * @type String
+     * The message returned if this field is not a number
+     */
+    message: 'must be a number',
+    
+    /**
+     * Returns true if the typeof this field is a number
+     * @return {Boolean} True if this is a number
+     */
+    isValid: function(instance) {
+      return 'number' == typeof this.getValue(instance);
+    }
+  });
+  
+  /**
+   * @class V.ValidatesInclusionOf
+   * @extends V.AbstractValidation
+   * Ensures that the field is one of the allowed values
+   */
+  V.ValidatesInclusionOf = Ext.extend(V.AbstractValidation, {
+  
+ 
+    /**
+     * Override Abstract constructor to build the validation message
+     */
+    constructor: function(m, f, config) {
+      //set up defaults
+      config = config || {};
+      Ext.applyIf(config, { allowed: [] });
+      
+      V.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
+      
+      Ext.applyIf(this, {
+        message: 'must be one of ' + this.allowed.toSentence('or')
+      });
+    },
+    
+    /**
+     * Returns true if the value of this field is one of those specified in this.allowed
+     * @return {Boolean} True if the field's value is allowed
+     */
+    isValid: function(instance) {
+      var value = this.getValue(instance);
+      
+      for (var i=0; i < this.allowed.length; i++) {
+        if (this.allowed[i] == value) return true;
+      };
+      
+      return false;
+    }
+  });
+  
+  /**
+   * @class V.ValidatesExclusionOf
+   * @extends V.AbstractValidation
+   * Ensures that the field is not one of the allowed values
+   */
+  V.ValidatesExclusionOf = Ext.extend(V.AbstractValidation, {
+  
+    /**
+     * Override Abstract constructor to build the validation message
+     */
+    constructor: function(m, f, config) {
+      //set up defaults
+      config = config || {};
+      Ext.applyIf(config, { disallowed: [] });
+      
+      V.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
+      
+      Ext.applyIf(this, {
+        message: 'must not be ' + this.disallowed.toSentence('or')
+      });
+    },
+    
+    /**
+     * Returns true if the value of this field is one of those specified in this.allowed
+     * @return {Boolean} True if the field's value is allowed
+     */
+    isValid: function(instance) {
+      var value = this.getValue(instance),
+          valid = true;
+      
+      for (var i=0; i < this.disallowed.length; i++) {
+        if (this.disallowed[i] == value) valid = false;
+      };
+      
+      return valid;
+    }
+  });
+  
+  /**
+   * @class V.ValidatesFormatOf
+   * @extends V.AbstractValidation
+   * Ensures that the field matches the given regular expression
+   */
+  V.ValidatesFormatOf = Ext.extend(V.AbstractValidation, {
+    
+    /**
+     * @property message
+     * @type String
+     * The default message to return if this validation does not pass
+     */
+    message: 'is invalid',
+    
+    /**
+     * Returns true if the value of this field matches the suppled regular expression
+     * @return {Boolean} True if the field's value matches
+     */
+    isValid: function(instance) {
+      return this.regex.test(this.getValue(instance));
+    }
+  });
+})();
+
+/**
  * @class ExtMVC.Model.validation.Errors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-ExtMVC.Model.validation.Errors = function(modelObject) {
-  // this.modelObject = modelObject;
-  
+ExtMVC.Model.validation.Errors = function() {
   /**
    * @property errors
    * @type Object
@@ -2752,6 +2780,147 @@ ExtMVC.Model.validation.Errors.prototype = {
     };
   }
 };
+
+Ext.ns('ExtMVC.Model.validation');
+
+/**
+ * This is the Validation plugin definition, which mixes in validation.Errors
+ * and some other functions into a model prototype
+ */
+(function() {
+  var V = ExtMVC.Model.validation;
+  
+  /**
+   * Overrides Ext.data.Record's isValid() function.
+   * We apply this to Record's prototype as there is no need to define it per model or instance
+   */
+  Ext.apply(Ext.data.Record.prototype, {
+    isValid: function() {
+      if (this.validations) {
+        if (!this.errors) this.errors = new ExtMVC.Model.validations.Errors();
+        
+        this.errors.clear();
+        
+        //test each validation, add to errors if any fail
+        Ext.each(this.validations, function(validation) {
+          if (!validation.isValid(this)) {
+            this.errors.add(validation.field, validation.message);
+          };
+        }, this);
+      };
+      
+      return this.errors.isValid();
+    }
+  });
+  
+  /**
+   * FIXME: This is possibly the most horrendous hack ever. I'm so sorry :(
+   * 
+   * The basic problem is that we need to add an errors object to every Record instance,
+   * which means we need to hook into the constructor somehow.  Sadly everything I tried
+   * to overload the constructor directly failed, so this horrific hack has been done instead
+   */
+  (function() {
+    var oldPrototype       = Ext.data.Record.prototype,
+        oldConstructor     = Ext.data.Record,
+        oldFunctionMethods = {};
+
+    for (var method in Ext.data.Record) {
+      oldFunctionMethods[method] = Ext.data.Record[method];
+    }
+
+    Ext.data.Record = function(data, id) {
+      oldConstructor.apply(this, arguments);
+
+      this.errors = new ExtMVC.Model.validation.Errors();
+    };
+
+    for (var method in oldFunctionMethods) {
+      Ext.data.Record[method] = oldFunctionMethods[method];
+    }
+  })();
+  /**
+   * Again, I'm really sorry :(
+   */
+  
+  /**
+   * @class ExtMVC.Model.validation.Plugin
+   */
+  V.Plugin = {
+    /**
+     * Initializes this plugin for a given model.  This is called every time a model is *created*
+     * via ExtMVC.Model.create, not when a model object is *instantiated*
+     * @param {ExtMVC.Model} model The model to initialize the plugin for
+     */
+    initialize: function(model) {
+      this.model = model;
+      
+      Ext.apply(model.prototype, {
+        /**
+         * @property validations
+         * @type Array
+         * An array of all validations performed on this model
+         */
+        validations: this.parseValidations()
+      });
+    },
+    
+    /**
+     * Parses a defined model's prototype for validation declarations and creates validation instances
+     * @return {Array} An Array of validation objects
+     */
+    parseValidations: function() {
+      var validations = [];
+      
+      for (var validation in ExtMVC.Model.validation) {
+        if (/^validate/.test(validation.toLowerCase())) {
+          
+          //for each validation type defined on ExtMVC.Model.validation, check to see if we are using
+          //it in on our model
+          for (var modelKey in this.model.prototype) {
+            if (modelKey.toLowerCase() == validation.toLowerCase()) {
+              //this validation is being used by the model, so add it now
+              var validationConstructor = ExtMVC.Model.validation[validation],
+                  validationOptions     = this.model.prototype[modelKey];
+              
+              if (!Ext.isArray(validationOptions)) {
+                validationOptions = [validationOptions];
+              };
+              
+              Ext.each(validationOptions, function(options) {
+                validations.push(this.buildValidation(validationConstructor, options));
+              }, this);
+            };
+          }
+        };
+      }
+      
+      return validations;
+    },
+    
+    /**
+     * Creates a new Validation object based on the passed constructor and options
+     * @param {Function} validation The validation constructor function
+     * @param {Object|String} options A fieldname string, or config object
+     * @return {ExtMVC.Model.validation.AbstractValidation} The validation instance
+     */
+    buildValidation: function(validation, options) {
+      var field, config = {};
+      
+      if ('string' == typeof options) {
+        field = options;
+      } else {
+        field = options.field;
+        delete options.field;
+        config = options;
+      }
+      
+      return new validation(this.model, field, config);
+    }
+  };
+  
+  ExtMVC.Model.addPlugin(V.Plugin);
+})();
 
 /**
  * A simple manager for registering and retrieving named ViewportBuilders

@@ -145,6 +145,7 @@ ExtMVC.Model = function() {
         if (methodName != 'prototype') model[methodName] = classMethods[methodName];
       };
 
+      this.initializePlugins(model);
       this.afterCreate(modelName);
     },
     
@@ -216,6 +217,31 @@ ExtMVC.Model = function() {
         tableName:      i.pluralize(p.modelName.underscore()),
         foreignKeyName: i.singularize(p.modelName.underscore()) + '_id'
       });
+    },
+    
+    /**
+     * @property plugins
+     * @type Array
+     * An array containing all plugin constructor functions - these get applied at model creation time
+     */
+    plugins: [],
+    
+    /**
+     * Makes Model aware of a new plugin.  All plugins defined here will be initialized when a model is created
+     * @param {Function} plugin The plugin object
+     */
+    addPlugin: function(plugin) {
+      this.plugins.push(plugin);
+    },
+    
+    /**
+     * Runs each plugin's initialize method with a newly created model constructor
+     * @param {ExtMVC.Model} model The model to initialize the plugin with
+     */
+    initializePlugins: function(model) {
+      Ext.each(this.plugins, function(plugin) {
+        plugin.initialize(model);
+      }, this);
     }
   };
 }();

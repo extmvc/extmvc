@@ -2,9 +2,7 @@
  * @class ExtMVC.Model.validation.Errors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-ExtMVC.Model.validation.Errors = function(modelObject) {
-  // this.modelObject = modelObject;
-  
+ExtMVC.Model.validation.Errors = function() {
   /**
    * @property errors
    * @type Object
