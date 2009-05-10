@@ -55,10 +55,44 @@ Ext.ns('ExtMVC.Model.association');
   });
 })();
 
+/**
+ * Method  Collection Individual
+ * create  yes        yes  (but different)
+ * build   yes        yes
+ * find    yes        no
+ * loaded  yes        yes  (but different)
+ * count   yes        no
+ * destroy yes        yes  (but different)
+ */
 
+/**
+ * Method  HasMany BelongsTo
+ * create  yes     no
+ * build   yes     no
+ * destroy yes     yes
+ * find    yes     yes
+ */
+
+/**
+ * User.find(1, {
+ *   success: function(user) {
+ *     //on belongs to associations
+ *     user.group.destroy();
+ *     user.group.find({success: function(group) {}});
+ *     user.group.set(someGroupInstance); //someGroupInstance must be a saved record (e.g. have an ID)
+ * 
+ *     //on has many associations
+ *     user.posts.destroy(1);
+ *     user.posts.find({id: 1, conditions: [{field: 'title', comparator: '=', value: 'some title'}]}, options);
+ *     user.posts.create(data, options)
+ *     user.posts.build(data)
+ *   }
+ * };
+ */
 
 // ExtMVC.Model.define('User', {
 //   fields:  [],
+//   belongsTo: "Group",
 //   hasMany: [{
 //     name:       'posts',
 //     className:  'Post',

@@ -246,6 +246,8 @@ ExtMVC.Model = function() {
   };
 }();
 
+Ext.ns('ExtMVC.Model.plugin');
+
 // /**
 //  * ExtMVC.Model
 //  * @extends Ext.util.Observable

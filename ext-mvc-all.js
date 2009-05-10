@@ -1927,6 +1927,8 @@ ExtMVC.Model = function() {
   };
 }();
 
+Ext.ns('ExtMVC.Model.plugin');
+
 // /**
 //  * ExtMVC.Model
 //  * @extends Ext.util.Observable
@@ -2380,10 +2382,44 @@ Ext.ns('ExtMVC.Model.association');
   });
 })();
 
+/**
+ * Method  Collection Individual
+ * create  yes        yes  (but different)
+ * build   yes        yes
+ * find    yes        no
+ * loaded  yes        yes  (but different)
+ * count   yes        no
+ * destroy yes        yes  (but different)
+ */
 
+/**
+ * Method  HasMany BelongsTo
+ * create  yes     no
+ * build   yes     no
+ * destroy yes     yes
+ * find    yes     yes
+ */
+
+/**
+ * User.find(1, {
+ *   success: function(user) {
+ *     //on belongs to associations
+ *     user.group.destroy();
+ *     user.group.find({success: function(group) {}});
+ *     user.group.set(someGroupInstance); //someGroupInstance must be a saved record (e.g. have an ID)
+ * 
+ *     //on has many associations
+ *     user.posts.destroy(1);
+ *     user.posts.find({id: 1, conditions: [{field: 'title', comparator: '=', value: 'some title'}]}, options);
+ *     user.posts.create(data, options)
+ *     user.posts.build(data)
+ *   }
+ * };
+ */
 
 // ExtMVC.Model.define('User', {
 //   fields:  [],
+//   belongsTo: "Group",
 //   hasMany: [{
 //     name:       'posts',
 //     className:  'Post',
@@ -2433,6 +2469,960 @@ Ext.ns('ExtMVC.Model.association');
 //   fields:    [],
 //   belongsTo: "Post"
 // });
+
+Ext.ns('ExtMVC.Model.plugin');
+
+ExtMVC.Model.plugin.adapter = (function() {
+  return {
+    initialize: function(model) {
+      var adapter = new this.RESTAdapter(),
+          instanceMethods  = adapter.instanceMethods(),
+          classMethods     = adapter.classMethods(),
+          hasManyMethods   = adapter.hasManyAssociationMethods(),
+          belongsToMethods = adapter.belongsToAssociationMethods();
+      
+      Ext.override(Ext.data.Record, instanceMethods);
+      Ext.apply(model, classMethods);
+    }
+  };
+})();
+
+ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.adapter);
+
+/**
+ * @class ExtMVC.Model.plugin.adapter.Abstract
+ * Abstract adapter class containing methods that all Adapters should provide
+ * All of these methods are expected to be asynchronous except for loaded()
+ */
+
+/**
+ * @constructor
+ * @param {ExtMVC.Model} model The model this adapter represents
+*/
+ExtMVC.Model.plugin.adapter.Abstract = function(model) {
+  /**
+   * @property model
+   * @type ExtMVC.Model.Base
+   * The model this adapter represents (set on initialize)
+   */
+  // this.model = model;
+};
+
+ExtMVC.Model.plugin.adapter.Abstract.prototype = {
+  
+  /**
+   * Abstract save method which should be overridden by an Adapter subclass
+   * @param {ExtMVC.Model.Base} instance A model instance to save
+   * @param {Object} options Save options (e.g. {success: function(), failure: function()})
+   */
+  doSave: Ext.emptyFn,
+  
+  /**
+   * Abstract find method which should be overridden by an Adapter subclass
+   * @param {Object} options Options for the find, such as primaryKey and conditions
+   */
+  doFind: Ext.emptyFn,
+  
+  /**
+   * Abstract destroy method which should be overridden by an Adapter subclass
+   * @param {ExtMVC.Model.Base} instance The model instance to destroy
+   */
+  doDestroy: Ext.emptyFn,
+  
+  /**
+   * @property instanceMethods
+   * @type Object
+   * An object of properties that get added to the model's prototype
+   * These all run within the scope of a model instance
+   */
+  instanceMethods: function() {
+    return {
+      adapter: this,
+    
+      /**
+       * Attempts to save this instance
+       * @param {Object} options Options (see collectionMethods.create for arguments)
+       */
+      save: function(options) {
+        options = options || {};
+        if (options.skipValidation === true || this.isValid()) {
+          //looks good, attempt the save
+          return this.adapter.doSave(this, options);
+        } else {
+          //couldn't save
+          if (typeof options.failure == 'function') {
+            return options.failure.call(options.scope || this, options);
+          };
+        };
+      },
+    
+      /**
+       * Attempts to destroy this instance (asynchronously)
+       * @param {Object} options Options to pass to the destroy command (see collectionMethods.create for args)
+       */
+      destroy: function(options) {
+        return this.adapter.doDestroy(this, options);
+      },
+    
+      /**
+       * Updates selected fields with new values and saves straight away
+       * @param {Object} data The fields to update with new values
+       * @param {Object} options Options (see collectionMethods.create for arguments)
+       */
+      update: function(data, options) {
+        this.setValues(data);
+        this.save(options);
+      },
+    
+      /**
+       * Returns true if this instance has been loaded from backend storage or has only been instantiated
+       * @return {Boolean} True if loaded from the server
+       */
+      loaded: function() {
+      
+      }
+    };
+  },
+  
+  classMethods: function() {
+    return {
+      adapter: this,
+    
+      /**
+       * Attempts to create and save a new instance of this model
+       * @param {Object} data The data to use in creating and saving an instance of this model
+       * @param {Object} options Options object:
+       * * skipValidation - set to true to bypass validation before saving (defaults to false)
+       * * scope   - The scope to run callback functions in
+       * * success - pass in a function as a callback if save succeeds.  Function called with 1
+       *             argument - the new model instance
+       * * failure - pass in a function as a callback if save succeeds.  Function called with 2
+       *             arguments - the unsaved model instance and the json response
+       */
+      create: function(data, options) {
+        var instance = new this(data);
+        this.adapter.doSave(instance, options);
+      
+        return instance;
+      },
+    
+      /**
+       * Builds a new model on this collection but does not save it
+       * @param {Object} data The data to use in creating and saving an instance of this model
+       * @return {Object} The new model instance
+       */
+      build: function(data) {
+        return new this(data);
+      },
+    
+      /**
+       * Finds the given related model on a relationship
+       * @param {Number|String|Object} conditions The unique identifier for this model, or a conditions object
+       * @param {Object} options Options (see collectionMethods.create for arguments)
+       */
+      find: function(conditions, options) {
+        //assume to be the primary key
+        if (typeof(conditions) != 'object') conditions = {primaryKey: conditions};
+        
+        return this.adapter.doFind(conditions, options, this);
+      },
+    
+      /**
+       * Issues a destroy (delete) command to delete the appropriate related object by ID
+       * @param {Number|String} id The ID of the associated model to delete
+       * @param {Object} options Options (see collectionMethods.create for arguments)
+       */
+      destroy: function(id, options) {
+        return this.adapter.doDestroy(id, options);
+      }
+    };
+  },
+
+  /**
+   * @property hasManyAssociationMethods
+   * @type Object
+   * An object full of properties and functions that get mixed in to hasMany association collections
+   */
+  hasManyAssociationMethods: function() {
+    return {
+      adapter: this,
+    
+      /**
+       * Attempts to create and save a new instance of this model
+       * @param {Object} data The data to use in creating and saving an instance of this model
+       * @param {Object} options Options object:
+       * * skipValidation - set to true to bypass validation before saving (defaults to false)
+       * * success - pass in a function as a callback if save succeeds.  Function called with 1
+       *             arguments - the new model instance
+       * * failure - pass in a function as a callback if save succeeds.  Function called with 2
+       *             arguments - the unsaved model instance and the json response
+       */
+      create: function(data, options) {
+
+      },
+    
+      /**
+       * Builds a new model on this collection but does not save it
+       * @param {Object} data The data to use in creating and saving an instance of this model
+       * @return {Object} The new model instance
+       */
+      build: function(data, options) {
+      
+      },
+    
+      /**
+       * Finds the given related model on a relationship
+       * @param {Number|String} id The unique identifier for this model.
+       */
+      find: function(id) {
+      
+      },
+    
+      /**
+       * Returns true if this association has been fully loaded yet
+       * @return {Boolean} True if this association has been loaded yet
+       */
+      loaded: function() {
+      
+      },
+    
+      /**
+       * Issues a destroy (delete) command to delete the appropriate related object by ID
+       * @param {Number|String} id The ID of the associated model to delete
+       */
+      destroy: function(id) {
+      
+      }
+    };
+  },
+  
+  /**
+   * @property belongsToAssociationMethods
+   * @type Object
+   * An object full of properties and functions that get mixed in to belongsTo association collections
+   */
+  belongsToAssociationMethods: function() {
+    return {
+      adapter: this,
+      
+      /**
+       * Finds the given related model on a relationship
+       * @param {Number|String} id The unique identifier for this model.
+       */
+      find: function(id) {
+      
+      },
+    
+      /**
+       * Returns true if this association has been fully loaded yet
+       * @return {Boolean} True if this association has been loaded yet
+       */
+      loaded: function() {
+      
+      },
+    
+      /**
+       * Issues a destroy (delete) command to delete the appropriate related object by ID
+       * @param {Number|String} id The ID of the associated model to delete
+       */
+      destroy: function(id) {
+      
+      }
+    };
+  }
+};
+
+/**
+ * Method  Collection Individual
+ * create  yes        yes  (but different)
+ * build   yes        yes  (might be different)
+ * find    yes        no
+ * loaded  yes        no
+ * count   yes        no
+ * destroy yes        yes  (but different)
+ */
+
+
+// ExtMVC.Model.Adapter.Abstract = {
+//   initialize: function(model) {
+//     
+//   },
+//   
+//   classMethods: {
+//     find: function(options) {
+//       
+//     },
+//     
+//     findById: function(id, options) {
+//       return this.findByField('id', id, options);
+//     },
+//     
+//     findByField: function(fieldName, matcher, options) {
+//       
+//     },
+//     
+//     findAll: function(options) {
+//       
+//     }
+//   },
+//   
+//   instanceMethods: {
+//     save:    Ext.emptyFn,
+//     
+//     reload:  Ext.emptyFn,
+//     
+//     destroy: Ext.emptyFn
+//   }
+// };
+// 
+// /**
+//  * Methods adding url data mapping
+//  */
+// ExtMVC.Model.AbstractAdapter = {
+//   /**
+//    * Set up the model for use with Active Resource.  Add various url-related properties to the model
+//    */
+//   initAdapter: function() {
+//     Ext.applyIf(this, {
+//       urlNamespace: '/admin',
+//       urlExtension: '.ext_json',
+//       urlName:      ExtMVC.Model.urlizeName(this.modelName)
+//     });
+//   },
+//   
+//   /**
+//    * Saves this record.  Performs validations first unless you pass false as the single argument
+//    */
+//   save: function(performValidations) {
+//     var performValidations = performValidations || true;
+//     
+//     console.log("saving model");
+//   },
+//   
+//   destroy: function(config) {
+//     var config = config || {};
+//     
+//     console.log("destroying model");
+//   },
+//   
+//   /**
+//    * Loads this record with data from the given ID
+//    * @param {Number} id The unique ID of the record to load the record data with
+//    * @param {Boolean} asynchronous False to load the record synchronously (defaults to true)
+//    */
+//   load: function(id, asynchronous) {
+//     var asynchronous = asynchronous || true;
+//     
+//     console.log("loading model");
+//   },
+//   
+//   /**
+//    * URL to retrieve a JSON representation of this model from
+//    */
+//   singleDataUrl : function(record_or_id) {
+//     return this.namespacedUrl(String.format("{0}/{1}", this.urlName, this.data.id));
+//   },
+//   
+//   /**
+//    * URL to retrieve a JSON representation of the collection of this model from
+//    * This would typically return the first page of results (see {@link #collectionStore})
+//    */
+//   collectionDataUrl : function() {
+//     return this.namespacedUrl(this.urlName);
+//   },
+// 
+//   /**
+//    * URL to retrieve a tree representation of this model from (in JSON format)
+//    * This is used when populating most of the trees in ExtMVC, though
+//    * only applies to models which can be representated as trees
+//    */
+//   treeUrl: function() {
+//     return this.namespacedUrl(String.format("{0}/tree", this.urlName));
+//   },
+//   
+//   /**
+//    * URL to post details of a drag/drop reorder operation to.  When reordering a tree
+//    * for a given model, this url is called immediately after the drag event with the
+//    * new configuration
+//    * TODO: Provide more info/an example here
+//    */
+//   treeReorderUrl: function() {
+//     return this.namespacedUrl(String.format("{0}/reorder/{1}", this.urlName, this.data.id));
+//   },
+//   
+//   /**
+//    * Provides a namespaced url for a generic url segment.  Wraps the segment in this.urlNamespace and this.urlExtension
+//    * @param {String} url The url to wrap
+//    * @returns {String} The namespaced URL
+//    */
+//   namespacedUrl: function(url) {
+//     return(String.format("{0}/{1}{2}", this.urlNamespace, url, this.urlExtension));
+//   }
+// };
+// 
+// // ExtMVC.Model.registerAdapter('REST', ExtMVC.Model.AbstractAdapter);
+
+/**
+ * @class ExtMVC.Model.plugin.adapter.RESTAdapter
+ * @extends ExtMVC.Model.plugin.adapter.Abstract
+ * An adapter which hooks into a RESTful server side API for its data storage
+ */
+ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.Abstract, {
+  
+  /**
+   * @property createMethod
+   * @type String
+   * The HTTP verb to use when creating a new instance (defaults to 'POST')
+   */
+  createMethod: 'POST',
+  
+  /**
+   * @property readMethod
+   * @type String
+   * The HTTP verb to use when reading data from the server (e.g. in find requests). Defaults to 'GET'
+   */
+  readMethod: 'GET',
+
+  /**
+   * @property updateMethod
+   * @type String
+   * The HTTP verb to use when updating an existing instance (defaults to 'PUT')
+   */
+  updateMethod: 'PUT',
+  
+  /**
+   * @property destroyMethod
+   * @type String
+   * The HTTP verb to use when destroying an instance (defaults to 'DELETE')
+   */
+  destroyMethod: 'DELETE',
+  
+  /**
+   * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
+   */
+  doSave: function(instance, options) {
+    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
+    options = options || {};
+    
+    Ext.Ajax.request(
+      Ext.applyIf(options, {
+        url:    this.instanceUrl(instance),
+        method: instance.newRecord() ? this.createMethod : this.updateMethod,
+        params: this.buildPostData(instance)
+      })
+    );
+  },
+  
+  /**
+   * Performs the actual find request.
+   * @param {Object} conditions An object containing find conditions. If a primaryKey is set this will be used
+   * to build the url for that particular instance, otherwise the collection url will be used
+   * @param {Object} options Callbacks (use callback, success and failure)
+   */
+  doFind: function(conditions, options, constructor) {
+    conditions = conditions || {}; options = options || {};
+    
+    var url = this.findUrl(conditions, constructor);
+    
+    //store references to user callbacks as we need to overwrite them in the request
+    var optionsCallback = options.callback, 
+        successCallback = options.success, 
+        failureCallback = options.failure;
+    
+    delete options.callback; delete options.success; delete options.failure;
+    
+    //apply some defaults
+    Ext.applyIf(options, {
+      method: this.readMethod,
+      url:    url,
+      params: conditions,
+      scope:  this
+    });
+    
+    //helper function to cut down repetition in Ajax request callback
+    var callIf = function(callback, args) {
+      if (typeof callback == 'function') callback.apply(options.scope, args);
+    };
+    
+    Ext.Ajax.request(
+      Ext.apply(options, {
+        callback: function(opts, success, response) {
+          if (success === true) {
+            var instance = new constructor(response.responseText);
+            
+            callIf(successCallback, [instance, opts, response]);
+          } else callIf(failureCallback, arguments);
+          
+          //call the generic callback passed into options
+          callIf(optionsCallback, arguments);
+        }
+      })
+    );
+  },
+  
+  doDestroy: function(instance, options) {
+    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
+    options = options || {};
+    
+    Ext.Ajax.request(
+      Ext.applyIf(options, {
+        method: this.destroyMethod,
+        url:    this.instanceUrl(instance)
+      })
+    );
+  },
+  
+  /**
+   * Calculates the unique REST URL for a given model instance
+   * @param {ExtMVC.Model.Base} instance The model instance
+   * @return {String} The url associated with this instance
+   */
+  instanceUrl: function(instance) {
+    if (instance.newRecord()) {
+      return String.format("/{0}", instance.tableName);
+    } else {
+      return String.format("/{0}/{1}", instance.tableName, instance.get(instance.primaryKey));
+    }
+  },
+  
+  collectionUrl: function(constructor) {
+    return String.format("/{0}", constructor.prototype.tableName);
+  },
+  
+  /**
+   * Creates a params object suitable for sending as POST data to the server
+   * @param {ExtMVC.Model.Base} instance The models instance to build post data for
+   * @return {Object} Params object to send to the server
+   */
+  buildPostData: function(instance) {
+    var data   = {},
+        prefix = instance.modelName.underscore();
+    
+    for (key in instance.data) {
+      data[prefix + '[' + key + ']'] = instance.data[key];
+    }
+    
+    return data;
+  },
+  
+  //private
+  findUrl: function(conditions, constructor) {
+    if (typeof(conditions) == 'object' && conditions.primaryKey) {
+      //find by ID
+      var instance = new constructor({});
+      instance.set(instance.primaryKey, conditions.primaryKey);
+      delete conditions.primaryKey;
+      
+      return this.instanceUrl(instance);
+    } else {
+      //find by conditions
+      return this.collectionUrl(constructor);
+    }
+  }
+});
+
+
+// Ext.ns('ExtMVC.Model.Adapter');
+// 
+// (function() {
+//   var A = ExtMVC.Model.Adapter;
+//   
+//   A.REST = {
+//     initialize: function(model) {
+//       // console.log('initialising REST adapter');
+//       
+//       A.Abstract.initialize(model);
+//     },
+//     
+//     classMethods: {
+//       /**
+//        * Generic find method, accepts many forms:
+//        * find(10, opts)      // equivalent to findById(10, opts)
+//        * find('all', opts)   // equivalent to findAll(opts)
+//        * find('first', opts) // equivalent to findById(1, opts)
+//        */
+//       find: function(what, options) {
+//         var id;
+//         if (id = parseInt(what, 10)) {
+//           return this.findById(id, options);
+//         };
+//         
+//         switch(what) {
+//           case 'first': return this.findById(1, options);
+//           default     : return this.findAll(options);
+//         }
+//       },
+//       
+//       /**
+//        * Shortcut for findByField('id', 1, {})
+//        */
+//       findById: function(id, options) {
+//         // return this.findByField('id', id, options);
+//         var options = options || {};
+//         
+//         // TODO
+//         // Old code before below fix
+//         // Ext.applyIf(options, {
+//         //   url: this.singleDataUrl(id)
+//         // });
+//         
+//         // This needs to be done as url is set as 'null' in
+//         // crudcontroller.js line 133.
+//         // this is temp n00b hack which teh master can fix. can't use apply either.
+//         if (options.url == null) {
+//           options.url = this.singleDataUrl(id);
+//         };
+//         
+//         return this.performFindRequest(options);
+//       },
+//           
+//       /**
+//        * Performs a custom find on a given field and value pair.  e.g.:
+//        * User.findByField('email', 'adama@bsg.net') creates the following request:
+//        * GET /users?email=adama@bsg.net
+//        * And creates an array of User objects based on the server's response
+//        * @param {String} fieldName The name of the field to search on
+//        * @param {String/Number} matcher The field value to search for
+//        * @param {Object} options An object which should contain at least a success function, which will
+//        * be passed an array of instantiated model objects
+//        */
+//       findByField: function(fieldName, matcher, options) {
+//         var fieldName = fieldName || 'id';
+//         var options   = options || {};
+//         
+//         options.conditions = options.conditions || [];
+//         options.conditions.push({key: fieldName, value: matcher, comparator: '='});
+//                 
+//         return this.performFindRequest(options);
+//       },
+//       
+//       findAll: function(options) {
+//         var options = options || {};
+//         
+//         var url = options.url ? this.namespacedUrl(options.url) : this.collectionDataUrl();
+//         
+//         var proxyOpts = {};
+//         Ext.apply(proxyOpts, this.proxyConfig, {
+//           url:    url,
+//           method: "GET"
+//         });
+//         
+//         return new Ext.data.Store(
+//           Ext.applyIf(options, {
+//             autoLoad:   true,
+//             remoteSort: false,
+//             proxy:      new this.proxyType(proxyOpts),
+//             reader:     this.getReader()
+//           })
+//         );
+//       },
+//       
+//       /**
+//        * Private, internal methods below here.  Not expected to be useful by anything else but
+//        * are left public for now just in case
+//        */
+//        
+//       /**
+//        * Underlying function which handles all find requests.  Private
+//        */
+//       performFindRequest: function(options) {
+//         var options = options || {};
+//         Ext.applyIf(options, {
+//           scope:   this,
+//           url:     this.collectionDataUrl(),
+//           method:  'GET',
+//           success: Ext.emptyFn,
+//           failure: Ext.emptyFn
+//         });
+//         
+//         //keep a handle on user-defined callbacks
+//         var callbacks = {
+//           successFn: options.success,
+//           failureFn: options.failure
+//         };
+//         
+//         // FIXME fix scope issue
+//         // For some reason the scope isnt correct on this?
+//         // cant figure out why. scope is set on the applyIf block so it should work..
+//         var scope = this;
+//         
+//         options.success = function(response, opts) {
+//           scope.parseSingleLoadResponse(response, opts, callbacks);
+//         };
+//         
+//         /**
+//          * Build params variable from condition options.  Params should always be a string here
+//          * as we're dealing in GET requests only for a find
+//          */
+//         var params = options.params || '';
+//         if (options.conditions && options.conditions[0]) {
+//           for (var i=0; i < options.conditions.length; i++) {
+//             var cond = options.conditions[i];
+//             params += String.format("{0}{1}{2}", cond['key'], (cond['comparator'] || '='), cond['value']);
+//           };
+//           
+//           delete options.conditions;
+//         };
+//         options.params = params;
+// 
+//         return Ext.Ajax.request(options);
+//       },
+//       
+//       /**
+//        * @property urlExtension
+//        * @type String
+//        * Extension appended to the end of all generated urls (e.g. '.js').  Defaults to blank
+//        */
+//       urlExtension: '',
+// 
+//       /**
+//        * @property urlNamespace
+//        * @type String
+//        * Default url namespace prepended to all generated urls (e.g. '/admin').  Defaults to blank
+//        */
+//       urlNamespace: '',
+//       
+//       /**
+//        * @property port
+//        * @type Number
+//        * The web server port to contact (defaults to 80).  Requires host to be set also
+//        */
+//       port: 80,
+//       
+//       /**
+//        * @property host
+//        * @type String
+//        * The hostname of the server to contact (defaults to an empty string)
+//        */
+//       host: "",
+//       
+//       /**
+//        * @property proxyType
+//        * @type Function
+//        * A reference to the DataProxy implementation to use for this model (Defaults to Ext.data.HttpProxy)
+//        */
+//       proxyType: Ext.data.HttpProxy,
+//       
+//       /**
+//        * @property proxyConfig
+//        * @type Object
+//        * Config to pass to the DataProxy when it is created (e.g. use this to set callbackParam on ScriptTagProxy, or similar)
+//        */
+//       proxyConfig: {},
+//       
+//       /**
+//        * Called as the 'success' method to any single find operation (e.g. findById).
+//        * The default implementation will parse the response into a model instance and then fire your own success of failure
+//        * functions as provided to findById.  You can override this if you need to do anything different here, for example
+//        * if you are loading via a script tag proxy with a callback containing the response
+//        * @param {String} response The raw text of the response
+//        * @param {Object} options The options that were passed to the Ext.Ajax.request
+//        * @param {Object} callbacks An object containing a success function and a failure function, which should be called as appropriate
+//        */
+//       parseSingleLoadResponse: function(response, options, callbacks) {
+//         var m = this.getReader().read(response);
+//         if (m && m.records[0]) {
+//           m.records[0].newRecord = false;
+//           callbacks.successFn.call(options.scope, m.records[0]);
+//         } else {
+//           callbacks.failureFn.call(options.scope, response);
+//         };
+//       },
+//       
+//       /**
+//        * URL to retrieve a JSON representation of this model from
+//        */
+//       singleDataUrl : function(id) {
+//         return this.namespacedUrl(String.format("{0}/{1}", this.urlName, id));
+//       },
+//   
+//       /**
+//        * URL to retrieve a JSON representation of the collection of this model from
+//        * This would typically return the first page of results (see {@link #collectionStore})
+//        */
+//       collectionDataUrl : function() {
+//         return this.namespacedUrl(this.urlName);
+//       },
+//   
+//       /**
+//        * URL to retrieve a tree representation of this model from (in JSON format)
+//        * This is used when populating most of the trees in ExtMVC, though
+//        * only applies to models which can be representated as trees
+//        */
+//       treeUrl: function() {
+//         return this.namespacedUrl(String.format("{0}/tree", this.urlName));
+//       },
+//   
+//       /**
+//        * URL to post details of a drag/drop reorder operation to.  When reordering a tree
+//        * for a given model, this url is called immediately after the drag event with the
+//        * new configuration
+//        * TODO: Provide more info/an example here
+//        */
+//       treeReorderUrl: function() {
+//         return this.namespacedUrl(String.format("{0}/reorder/{1}", this.urlName, this.data.id));
+//       },
+//   
+//       /**
+//        * Provides a namespaced url for a generic url segment.  Wraps the segment in this.urlNamespace and this.urlExtension
+//        * @param {String} url The url to wrap
+//        * @returns {String} The namespaced URL
+//        */
+//       namespacedUrl: function(url) {
+//         url = url.replace(/^\//, ""); //remove any leading slashes
+//         return(String.format("{0}{1}/{2}{3}", this.hostName(), this.urlNamespace, url, this.urlExtension));
+//       },
+//       
+//       /**
+//        * Builds the hostname if host and optionally port are set
+//        * @return {String} The host name including port, if different from port 80
+//        */
+//       hostName: function() {
+//         var p = this.port == 80 ? '' : this.port.toString();
+//         
+//         if (this.host == "") {
+//           return "";
+//         } else {
+//           return this.port == 80 ? this.host : String.format("{0}:{1}", this.host, this.port);
+//         };
+//       }
+//     },
+//     
+//     instanceMethods: {
+//       /**
+//        * Saves this model instance to the server.
+//        * @param {Object} options An object passed through to Ext.Ajax.request.  The success option is a special case,
+//        * and is called with the newly instantiated model instead of the usual (response, options) signature
+//        */
+//       save: function(options) {
+//         var options = options || {};
+//         
+//         if (options.performValidations === true) {
+//           //TODO: tie in validations here
+//         };
+//         
+//         //keep a reference to this record for use in the success and failure functions below
+//         var record = this;
+//         
+//         //set a _method param to fake a PUT request (used by Rails)
+//         var params = options.params || this.namespaceFields();
+//         if (!this.newRecord) { params["_method"] = 'put'; }
+//         delete options.params;
+//         
+//         //if the user passes success and/or failure functions, keep a reference to them to allow us to do some pre-processing
+//         var userSuccessFunction = options.success || Ext.emptyFn;
+//         var userFailureFunction = options.failure || Ext.emptyFn;
+//         delete options.success; delete options.failure;
+//         
+//         //function to call if Ext.Ajax.request is successful
+//         options.success = function(response) {
+//           //definitely not a new record any more
+//           record.newRecord = false;
+//           
+//           userSuccessFunction.call(options.scope || record, record, response);
+//         };
+//         
+//         //function to call if Ext.Ajax.request fails
+//         options.failure = function(response) {
+//           //parse any errors sent back from the server
+//           record.readErrors(response.responseText);
+//           
+//           userFailureFunction.call(options.scope || record, record, response);
+//         };
+//         
+//         //do this here as the scope in the block below is not always going to be 'this'
+//         var url = this.url();
+//         
+//         Ext.applyIf(options, {
+//           // url:     url, url == null sometimes so this doesnt work
+//           method:  'POST',
+//           params:  params
+//         });
+//         
+//         //fix for the above
+//         if (options.url == null) {
+//           options.url = url;
+//         };
+//         
+//         Ext.Ajax.request(options);
+//       },
+//       
+//       /**
+//        * Updates the model instance and saves it.  Use setValues({... new attrs ...}) to change attributes without saving
+//        * @param {Object} updatedAttributes An object with any updated attributes to apply to this instance
+//        * @param {Object} saveOptions An object with save options, such as url, callback, success, failure etc.  Passed straight through to save()
+//        */
+//       update: function(updatedAttributes, saveOptions) {
+//         updatedAttributes = updatedAttributes || {};
+//         saveOptions = saveOptions || {};
+//         
+//         this.setValues(updatedAttributes);
+//         this.save(saveOptions);
+//       },
+//       
+//       reload: function() {
+//         console.log('reloading');
+//       },
+//       
+//       destroy: function(options) {
+//         var options = options || {};
+//         
+//         Ext.Ajax.request(
+//           Ext.applyIf(options, {
+//             url:    this.url(),
+//             method: 'post',
+//             params: "_method=delete"
+//           })
+//         );
+//       },
+//       
+//       /**
+//        * Namespaces fields within the modelName string, taking into account mappings.  For example, a model like:
+//        * 
+//        * modelName: 'user',
+//        * fields: [
+//        *   {name: 'first_name', type: 'string'},
+//        *   {name: 'last_name',  type: 'string', mapping: 'last'}
+//        * ]
+//        * 
+//        * Will be decoded to an object like:
+//        * 
+//        * {
+//        *   'user[first_name]': //whatever is in this.data.first_name
+//        *   'user[last]':       //whatever is in this.data.last_name
+//        * }
+//        *
+//        * Note especially that the mapping is used in the key where present.  This is to ensure that mappings work both
+//        * ways, so in the example above the server is sending a key called last, which we convert into last_name.  When we
+//        * send data back to the server, we convert last_name back to last.
+//        */
+//       namespaceFields: function() {
+//         var fields    = this.fields;
+//         var namespace = this.modelName;
+//         
+//         var nsfields = {};
+//         
+//         for (var i=0; i < fields.length; i++) {
+//           var item = fields.items[i];
+//           
+//           //don't send virtual fields back to the server
+//           if (item.virtual) {continue;}
+//           
+//           nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), item.mapping || item.name)] = this.data[item.name];
+//         };
+//         
+//         //not sure why we ever needed this... 
+//         // for (f in fields) {
+//         //   nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), this.data[f.name])] = fields.items[f];
+//         // }
+//         
+//         return nsfields;
+//       }
+//     }
+//   };
+// })();
+// 
+// ExtMVC.Model.AdapterManager.register('REST', ExtMVC.Model.Adapter.REST);
 
 /**
  * The Validation classes themselves are defined here.
