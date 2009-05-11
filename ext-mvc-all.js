@@ -2475,14 +2475,16 @@ Ext.ns('ExtMVC.Model.plugin');
 ExtMVC.Model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
-      var adapter = new this.RESTAdapter(),
-          instanceMethods  = adapter.instanceMethods(),
-          classMethods     = adapter.classMethods(),
-          hasManyMethods   = adapter.hasManyAssociationMethods(),
-          belongsToMethods = adapter.belongsToAssociationMethods();
+      var adapter = new this.RESTAdapter();
       
-      Ext.override(Ext.data.Record, instanceMethods);
-      Ext.apply(model, classMethods);
+      Ext.override(Ext.data.Record, adapter.instanceMethods());
+      Ext.apply(model, adapter.classMethods());
+      
+      //associations are optional so only add them if they are present
+      try {
+        Ext.override(ExtMVC.Model.association.HasMany,   adapter.hasManyAssociationMethods());
+        Ext.override(ExtMVC.Model.association.BelongsTo, adapter.belongsToAssociationMethods());
+      } catch(e) {};
     }
   };
 })();
