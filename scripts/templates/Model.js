@@ -1,9 +1,8 @@
 /**
- * @class <%= @namespace %>.models.<%= @name %>
+ * @class <%= @name %>
  * @extends ExtMVC.Model
  */
-ExtMVC.Model.define("<%= @namespace %>.models.<%= @name %>", {
-  modelName: '<%= @model_name %>',
+ExtMVC.Model.define("<%= @name %>", {
   fields:    [
 <%= @fields %>
   ]

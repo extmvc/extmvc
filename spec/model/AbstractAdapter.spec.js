@@ -28,7 +28,7 @@ Screw.Unit(function() {
     
     describe("hasMany association methods", function() {
       it("should add the correct methods to the hasMany prototype", function() {
-        var p = ExtMVC.Model.association.HasMany.prototype;
+        var p = ExtMVC.Model.plugin.association.HasMany.prototype;
         
         Ext.each(['create', 'build', 'find', 'destroy'], function(methodName) {
           expect(typeof p[methodName]).to(equal, 'function');
@@ -38,7 +38,7 @@ Screw.Unit(function() {
     
     describe("belongsTo association methods", function() {
       it("should add the correct methods to the hasMany prototype", function() {
-        var p = ExtMVC.Model.association.HasMany.prototype;
+        var p = ExtMVC.Model.plugin.association.HasMany.prototype;
         
         Ext.each(['find', 'destroy'], function(methodName) {
           expect(typeof p[methodName]).to(equal, 'function');

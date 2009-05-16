@@ -1,5 +1,3 @@
-Ext.ns('ExtMVC.Model.plugin');
-
 ExtMVC.Model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
@@ -10,8 +8,8 @@ ExtMVC.Model.plugin.adapter = (function() {
       
       //associations are optional so only add them if they are present
       try {
-        Ext.override(ExtMVC.Model.association.HasMany,   adapter.hasManyAssociationMethods());
-        Ext.override(ExtMVC.Model.association.BelongsTo, adapter.belongsToAssociationMethods());
+        Ext.override(ExtMVC.Model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
+        Ext.override(ExtMVC.Model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
       } catch(e) {};
     }
   };
@@ -172,6 +170,8 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
    * @property hasManyAssociationMethods
    * @type Object
    * An object full of properties and functions that get mixed in to hasMany association collections
+   * These methods are run in the scope of the model instance that owns the association, e.g. if
+   * User hasMany Posts, then 'this' refers to the user instance
    */
   hasManyAssociationMethods: function() {
     return {
@@ -188,7 +188,10 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
        *             arguments - the unsaved model instance and the json response
        */
       create: function(data, options) {
-
+        var instance = new this.associatedClass(data);
+        
+        //automatically set the foreign key here
+        // instance.set(this.foreignKey, )
       },
     
       /**
