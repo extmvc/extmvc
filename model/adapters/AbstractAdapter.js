@@ -1,7 +1,7 @@
 ExtMVC.Model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
-      var adapter = new this.RESTAdapter();
+      var adapter = new this.MemoryAdapter();
       
       Ext.override(Ext.data.Record, adapter.instanceMethods());
       Ext.apply(model, adapter.classMethods());
@@ -129,7 +129,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
        */
       create: function(data, options) {
         var instance = new this(data);
-        this.adapter.doSave(instance, options);
+        instance.save(options);
       
         return instance;
       },

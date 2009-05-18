@@ -2,7 +2,7 @@
  * Initialise package and set version
  */
 ExtMVC = Ext.extend(Ext.util.Observable, {
-  version: "0.5b1",
+  version: "0.6a1",
   
   constructor: function() {
     ExtMVC.superclass.constructor.apply(this, arguments);
