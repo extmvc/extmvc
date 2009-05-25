@@ -11,9 +11,8 @@ module ExtMVC
     def self.auto *args
       filename = 'index.html'
       command  = "ruby script/build all"
-      files    = self.js_files_in_html(filename)
       
-      self.listen_and_run(files, command, "Built Ext MVC app")
+      self.listen_to_file_and_run(filename, command, "Built Ext MVC app")
     end
     
     # Builds the current app based on the files specified in the index.html file
@@ -48,13 +47,7 @@ module ExtMVC
     def self.concatenate_css filename
       puts; puts "Concatenating CSS files"
       
-      files = []
-      
-      #find all script files in the html file.  Ignore any with a class 'concat-ignore'
-      doc = Hpricot(open(filename))
-      (doc/"link[@re!='stylesheet']").each {|s| files.push(s['href']) if s['href'] && !s['href'].match(/http(.*)/)}
-    
-      self.concatenate_files(files, "public/stylesheets/application-all.css")
+      self.concatenate_files(self.css_files_in_html(filename), "public/stylesheets/application-all.css")
     end
     
     # Watches all ExtMVC core files and automatically rebuilds whenever any of them change
@@ -65,6 +58,7 @@ module ExtMVC
       
       files = self.js_files_in_directories([
         "vendor/mvc/MVC.js",
+        "vendor/mvc/App.js",
         "vendor/mvc/controller/**/*.js",
         "vendor/mvc/lib/**/*.js",
         "vendor/mvc/model/**/*.js",
@@ -78,11 +72,11 @@ module ExtMVC
     # Builds MVC from source
     def self.mvc
       # Files to build in their dependency order. This is a bit gash :/
-      files = ["MVC.js", "lib/Inflector.js", "lib/Array.js", "lib/String.js", "lib/Router.js", "lib/Route.js", "lib/Dependencies.js",
+      files = ["MVC.js", "lib/Inflector.js", "lib/Array.js", "lib/String.js", "lib/Router.js", "lib/Route.js",
                "controller/Controller.js", "controller/CrudController.js", "os/OS.js", 
                "model/Model.js", "model/Base.js",
                "model/associations/Association.js",
-               "model/adapters/AbstractAdapter.js", "model/adapters/RESTAdapter.js", "model/adapters/MemoryAdapter.js",
+               "model/adapters/AbstractAdapter.js", "model/adapters/RESTAdapter.js",
                "model/validations/Validations.js", "model/validations/Errors.js", "model/validations/Plugin.js",
                "os/viewportbuilder/ViewportBuilderManager.js", "os/viewportbuilder/ViewportBuilder.js", 
                "view/scaffold/ScaffoldFormPanel.js", "view/scaffold/Index.js", "view/scaffold/New.js", "view/scaffold/Edit.js", "view/HasManyEditorGridPanel.js"]
@@ -103,6 +97,92 @@ module ExtMVC
       (doc/"script[@class!='concat-ignore']").each {|s| files.push(s['src']) if s['src']}
       
       files
+    end
+    
+    # Returns an array of all CSS files included by the given HTML file
+    def self.css_files_in_html filename
+      files = []
+      
+      #find all script files in the html file.  Ignore any with a class 'concat-ignore'
+      doc = Hpricot(open(filename))
+      (doc/"link[@rel='stylesheet']").each {|s| files.push(s['href']) if s['href'] && !s['href'].match(/http(.*)/)}
+    
+      files
+    end
+    
+    def self.files_with_timestamps files_array
+      files = {}
+      files_array.each do |file|
+        files[file] = File.mtime(file)
+      end
+      
+      files
+    end
+    
+    # Returns a hash with the filenames of <script> include tags from an HTML file as the keys,
+    # and the modification timestamp for each file as values
+    def self.js_files_in_html_with_timestamps filename
+      self.files_with_timestamps(self.js_files_in_html(filename))
+    end
+    
+    # Returns a hash with the filenames of <script> include tags from an HTML file as the keys,
+    # and the modification timestamp for each file as values
+    def self.css_files_in_html_with_timestamps filename
+      self.files_with_timestamps(self.css_files_in_html(filename))
+    end
+    
+    # Watches a file for changes and rebuilds based on it's script includes each time it is modified.
+    # This is intended to be used on an MVC app's index.html file - command is execute every time any of the
+    # files included in that HTML file are changed the command is run, or when the file itself is updated
+    def self.listen_to_file_and_run filename, command = '', message = nil
+      # Track when the HTML file was last modified
+      file_modified = File.mtime(filename)
+      
+      # Track modification times of all JS files included in the HTML file
+      included_files = self.js_files_in_html_with_timestamps(filename)
+      
+      trap('INT') do
+        puts "\nQuitting..."
+        exit
+      end
+      
+      puts "Watching #{included_files.keys.join(', ')}\n\nFiles: #{included_files.keys.length}"
+      
+      loop do
+        sleep 1
+        rebuild = false
+        changed_file = ''
+        
+        #index file has been changed
+        if file_modified < File.mtime(filename)
+          rebuild = true
+          changed_file = filename
+        else
+          #check to see if any of the included files have been updated
+          rebuild, last_changed = included_files.find {|f, last_changed| File.mtime(f) > last_changed}
+          changed_file = rebuild
+        end
+        
+        if rebuild
+          #reset references from above
+          file_modified = File.mtime(filename)
+          included_files = self.js_files_in_html_with_timestamps(filename)
+          
+          #issue the rebuild command
+          puts "=> #{changed_file} changed, running #{command}"
+          results = `#{command}`
+          puts results
+
+          puts "=> done"
+          system('growlnotify -m "' + message + '"') if message
+          
+          # if the file we were watching has changed, restate which files we're watching now
+          if changed_file == filename
+            puts
+            puts "Now watching #{included_files.keys.join(', ')}\n\nFiles: #{included_files.keys.length}"
+          end
+        end
+      end
     end
     
     # Listens to any changes to the specified files and runs the specified command

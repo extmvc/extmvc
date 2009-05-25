@@ -24,6 +24,68 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
   },
   
   /**
+   * Sets up Ext MVC with application-specific configuration. Internally, this creates a new
+   * Ext.App instance and assigns it to the 'name' property inside the config object you pass in.
+   * If not present, this defaults to 'MyApp'.  The config object is passed straight into ExtMVC.App's
+   * constructor, so any of ExtMVC.App's configuration options can be set this way. Sample usage:
+   * ExtMVC.setup({
+   *   name: 'MyApp',
+   *   usesHistory: true
+   * });
+   * This sets up an ExtMVC.App instance in the global variable MyApp, which is
+   * the only global variable your application should need.
+   * It automatically sets up namespaces for models, views and controllers, e.g.:
+   * MyApp.models, MyApp.views, MyApp.controllers
+   *
+   * @param {Object} config Application configuration
+   */
+  setup: function(config) {
+    this.app = new ExtMVC.App(config);
+    this.name = this.app.name;
+  },
+  
+  /**
+   * @property controllers
+   * When this.registerController('application', MyApp.ApplicationController) is called,
+   * the ApplicationController class is registered here under the 'application' key.
+   * When this.getController('application') is called, it checks here to see if the 
+   * controller has been instantiated yet.  If it has, it is returned.  If not it is
+   * instantiated, then returned.
+   */
+  controllers: {},
+  
+  /**
+   * Registers a controller for use with this OS.  The controller is instantiated lazily
+   * when needed, through the use of this.getController('MyController')
+   * @param {String} controllerName A string name for this controller, used as a key to reference this controller with this.getController
+   * @param {Function} controllerClass A reference to the controller class, which is later instantiated lazily
+   */
+  registerController: function(controllerName, controllerClass) {
+    this.controllers[controllerName] = controllerClass;
+    
+    Ext.ns(String.format("{0}.views.{1}", this.name, controllerName));
+  },
+
+  /**
+   * Returns a controller instance for the given controller name.
+   * Instantiates the controller first if it has not yet been instantiated.
+   * @param {String} controllerName The registered name of the controller to get
+   * @return {Object} The controller instance, or null if not found
+   */
+  getController: function(controllerName) {
+    var c = this.controllers[controllerName];
+    if (c) {
+      //instantiate the controller first, if required
+      if (typeof c === 'function') {
+        this.controllers[controllerName] = new this.controllers[controllerName]();
+      }
+      return this.controllers[controllerName];
+    } else {
+      return null;
+    }
+  },
+  
+  /**
    * @property currentEnvironment
    * @type String
    * The current code environment (defaults to production).  Read-only - use setCurrentEnvironment to change

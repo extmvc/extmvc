@@ -24,6 +24,68 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
   },
   
   /**
+   * Sets up Ext MVC with application-specific configuration. Internally, this creates a new
+   * Ext.App instance and assigns it to the 'name' property inside the config object you pass in.
+   * If not present, this defaults to 'MyApp'.  The config object is passed straight into ExtMVC.App's
+   * constructor, so any of ExtMVC.App's configuration options can be set this way. Sample usage:
+   * ExtMVC.setup({
+   *   name: 'MyApp',
+   *   usesHistory: true
+   * });
+   * This sets up an ExtMVC.App instance in the global variable MyApp, which is
+   * the only global variable your application should need.
+   * It automatically sets up namespaces for models, views and controllers, e.g.:
+   * MyApp.models, MyApp.views, MyApp.controllers
+   *
+   * @param {Object} config Application configuration
+   */
+  setup: function(config) {
+    this.app = new ExtMVC.App(config);
+    this.name = this.app.name;
+  },
+  
+  /**
+   * @property controllers
+   * When this.registerController('application', MyApp.ApplicationController) is called,
+   * the ApplicationController class is registered here under the 'application' key.
+   * When this.getController('application') is called, it checks here to see if the 
+   * controller has been instantiated yet.  If it has, it is returned.  If not it is
+   * instantiated, then returned.
+   */
+  controllers: {},
+  
+  /**
+   * Registers a controller for use with this OS.  The controller is instantiated lazily
+   * when needed, through the use of this.getController('MyController')
+   * @param {String} controllerName A string name for this controller, used as a key to reference this controller with this.getController
+   * @param {Function} controllerClass A reference to the controller class, which is later instantiated lazily
+   */
+  registerController: function(controllerName, controllerClass) {
+    this.controllers[controllerName] = controllerClass;
+    
+    Ext.ns(String.format("{0}.views.{1}", this.name, controllerName));
+  },
+
+  /**
+   * Returns a controller instance for the given controller name.
+   * Instantiates the controller first if it has not yet been instantiated.
+   * @param {String} controllerName The registered name of the controller to get
+   * @return {Object} The controller instance, or null if not found
+   */
+  getController: function(controllerName) {
+    var c = this.controllers[controllerName];
+    if (c) {
+      //instantiate the controller first, if required
+      if (typeof c === 'function') {
+        this.controllers[controllerName] = new this.controllers[controllerName]();
+      }
+      return this.controllers[controllerName];
+    } else {
+      return null;
+    }
+  },
+  
+  /**
    * @property currentEnvironment
    * @type String
    * The current code environment (defaults to production).  Read-only - use setCurrentEnvironment to change
@@ -805,17 +867,6 @@ ExtMVC.Controller = function(config) {
   ExtMVC.Controller.superclass.constructor.call(this, config);
   
   /**
-   * @property os
-   * @type ExtMVC.OS
-   * Maintains a reference to the current OS
-   */
-  //we need to wrap this in try/catch because OS also inherits from Controller, so can't call getOS()
-  //get.  Hmm
-  try {
-    this.os = ExtMVC.OS.getOS();
-  } catch(e) {};
-  
-  /**
    * @property views
    * @type Object
    * Hash of all views registered for use with this Controller.
@@ -1458,100 +1509,73 @@ Ext.ns('ExtMVC.plugin.CrudController');
 })();
 
 /**
- * ExtMVC.OS
- * @extends ExtMVC.Controller
- * Specialised ExtMVC.Controller intended to create and manage generic Operating System
- * components (e.g. not elements specific to a single Application within the OS)
- * When an OS is instantiated, ExtMVC.OS.getOS() is defined and returns the OS instance
+ * @class ExtMVC.App
+ * @extends Ext.util.Observable
+ * @cfg {Boolean} usesHistory True to automatically create required DOM elements for Ext.History,
+ * sets up a listener on Ext.History's change event to fire this.onHistoryChange. False by default
  */
-ExtMVC.OS = function(config) {
-  ExtMVC.OS.superclass.constructor.call(this, config);
-  
-  this.addEvents(
-    /**
-     * @event beforelaunch
-     * Fires before this application launches
-     * @param {ExtMVC.Application} this The application about to be launched
-     */
-    'beforelaunch',
+ExtMVC.App = Ext.extend(Ext.util.Observable, {
+  /**
+   * @constructor
+   * Sets up the Application - adds events, sets up namespaces, optionally sets up history.
+   * Fires the 'before-launch' event before initializing router, viewport and history.
+   * Calls this.launch() once everything else is set up (override the 'launch' method to provide your own logic).
+   * Fires the 'launched' event after calling this.launch()
+   */
+  constructor: function(config) {
+    ExtMVC.App.superclass.constructor.apply(this, arguments);
     
-    /**
-     * @event launch
-     * Fires after the application has been launched
-     * @param {ExtMVC.Application} this The application which has been launched
-     */
-    'launch'
-  );
-  
-  this.initialiseNamespaces();
-  
-  var os = this;
-  ExtMVC.OS.getOS = function() {return os;};
-};
-Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
-  /**
-   * Registers a controller for use with this OS.  The controller is instantiated lazily
-   * when needed, through the use of this.getController('MyController')
-   * @param {String} controllerName A string name for this controller, used as a key to reference this controller with this.getController
-   * @param {Function} controllerClass A reference to the controller class, which is later instantiated lazily
-   */
-  registerController: function(controllerName, controllerClass) {
-    this.controllers[controllerName] = controllerClass;
-  },
+    //apply configuration object and set up namespaces
+    Ext.apply(this, config || {});
+    window[this.name] = this;
+    
+    this.initializeNamespaces();
+    
+    Ext.onReady(function() {
+      if (this.fireEvent('before-launch', this)) {
+        this.initializeRouter();
+        // this.initializeViewport();
+        this.initializeEvents();
 
-  /**
-   * Returns a controller instance for the given controller name.
-   * Instantiates the controller first if it has not yet been instantiated.
-   * @param {String} controllerName The registered name of the controller to get
-   * @return {Object} The controller instance, or null if not found
-   */
-  getController: function(controllerName) {
-    var c = this.controllers[controllerName];
-    if (c) {
-      //instantiate the controller first, if required
-      if (typeof c === 'function') {
-        this.controllers[controllerName] = new this.controllers[controllerName]();
-      };
-      return this.controllers[controllerName];
-    } else {
-      return null;
-    };
+        if (this.usesHistory) this.initializeHistory();     
+
+        this.launch();
+        this.fireEvent('launched', this);
+        
+        /**
+         * TODO: This used to reside in initializeHistory but this.launch() needs to be
+         * called before this dispatches so it is temporarily here... ugly though
+         */
+        if (this.usesHistory && this.dispatchHistoryOnLoad) {
+          Ext.History.init(function(history) {
+            var hash   = document.location.hash.replace("#", "");
+            var params = this.router.recognise(hash);
+            if (params) {this.dispatch(params);}
+          }, this);
+        } else {
+          Ext.History.init();
+        }
+      }
+    }, this);
   },
-  
+    
   /**
-   * @property controllers
-   * When this.registerController('application', MyApp.ApplicationController) is called,
-   * the ApplicationController class is registered here under the 'application' key.
-   * When this.getController('application') is called, it checks here to see if the 
-   * controller has been instantiated yet.  If it has, it is returned.  If not it is
-   * instantiated, then returned.
+   * @property name
+   * @type String
+   * The application's name.  This is used when creating namespaces for models, views and controllers,
+   * and automatically set up as a global variable reference to this application. Read only.
    */
-  controllers: {},
-  
-  /**
-   * Launches this application
-   */
-  launch: function() {
-    if (this.fireEvent('beforelaunch', this)) {
-      this.initializeRouter();
-      this.initializeViewport();
-      
-      if (this.usesHistory) { this.initialiseHistory(); }      
-      
-      this.onLaunch();
-      this.fireEvent('launch', this);
-    };
-  },
-  
+  name: 'MyApp',
+    
   /**
    * @property usesHistory
    * @type Boolean
    * True to automatically create required DOM elements for Ext.History,
-   * sets up a listener on Ext.History's change event to fire this.handleHistoryChange. 
+   * sets up a listener on Ext.History's change event to fire this.onHistoryChange. 
    * False by default
    */
   usesHistory: false,
-  
+ 
   /**
    * @prop dispatchHistoryOnLoad
    * @type Boolean
@@ -1561,28 +1585,9 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
   dispatchHistoryOnLoad: true,
   
   /**
-   * @property viewportBuilder
-   * @type String
-   * The type of viewport to construct (can be any registered with ExtMVC.ViewportBuilderManager)
+   * Called when the application is booted up. Override this to provide your own startup logic (defaults to Ext.emptyFn)
    */
-  viewportBuilder: 'leftmenu',
-  
-  /**
-   * Config object which is passed made available to the ViewportBuilder
-   */
-  viewportBuilderConfig: {},
-  
-  /**
-   * Called just before onLaunch.  Runs the ExtMVC.ViewportBuilder
-   * specified in this.viewportBuilder.
-   * Override this to create your own viewport instead of using a builder
-   */
-  initializeViewport: function() {
-    var builder = ExtMVC.ViewportBuilderManager.find(this.viewportBuilder);
-    if (builder) {
-      builder.build(this);
-    };
-  },
+  launch: Ext.emptyFn,
   
   /**
    * @property params
@@ -1608,17 +1613,14 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
     
     this.params = dispatchConfig;
     
-    var c;
-    if (c = this.getController(dispatchConfig.controller)) {
-      c.fireAction(dispatchConfig.action, scope || c, args || []);
-    };
+    var c = ExtMVC.getController(dispatchConfig.controller);
+    if (typeof c != 'undefined') {
+      var action = c[dispatchConfig.action];
+      
+      if (typeof action == "function") action.apply(scope, args || []);
+      else throw new Error(String.format("Action '{0}' not found on Controller '{1}'", dispatchConfig.action, dispatchConfig.controller));
+    }
   },
-  
-  /**
-   * Override this to perform custom processing between the beforelaunch and
-   * launch events
-   */
-  onLaunch: Ext.emptyFn,
   
   /**
    * Sets up a Router instance.  This is called automatically before onLaunch()
@@ -1642,7 +1644,7 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
    * E.g. if name = 'Blog' or this.name = 'Blog', this is the same as:
    * Ext.ns('Blog', 'Blog.controllers', 'Blog.models', 'Blog.views')
    */
-  initialiseNamespaces: function(name) {
+  initializeNamespaces: function(name) {
     var name = name || this.name;
     if (name) {
       Ext.ns(name, name + '.controllers', name + '.models', name + '.views');
@@ -1654,7 +1656,7 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
    * Sets up listeners on Ext.History's change event to fire the dispatch() action in the normal way.
    * This is not called automatically as not all applications will need it
    */
-  initialiseHistory: function() {
+  initializeHistory: function() {
     this.historyForm = Ext.getBody().createChild({
       tag:    'form',
       action: '#',
@@ -1678,19 +1680,7 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
       ]
     });
     
-    //initialize History management.  Fire a dispatch event if a hash url is present and startup
-    //dispatch is requested
-    if (this.dispatchHistoryOnLoad) {
-      Ext.History.init(function(history) {
-        var hash   = document.location.hash.replace("#", "");
-        var params = this.router.recognise(hash);
-        if (params) {this.dispatch(params);}
-      }, this);
-    } else {
-      Ext.History.init();
-    }
-    
-    Ext.History.on('change', this.handleHistoryChange, this);
+    Ext.History.on('change', this.onHistoryChange, this);
   },
   
   /**
@@ -1698,7 +1688,7 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
    * to the appropriate controller and action if a match was found
    * @param {String} token The url token (e.g. the token would be cont/act/id for a url like mydomain.com/#cont/act/id)
    */
-  handleHistoryChange: function(token) {
+  onHistoryChange: function(token) {
     var match = this.router.recognise(token);
     
     if (match) {
@@ -1707,22 +1697,26 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
   },
   
   /**
-   * Simple convenience function to change the document title whenever this view is displayed
-   * @param {Ext.Component} view The view (Ext.Panel subclass normally) to listen to show/activate events on
-   * @param {String} title The string to change the document title to (defaults to view.initialConfig.title)
+   * Sets up events emitted by the Application
    */
-  setsTitle: function(view, title) {
-    var title = title || view.title || view.initialConfig ? view.initialConfig.title : null;
-    if (title) {
-      view.on('show',     function() {document.title = title;});
-      view.on('activate', function() {document.title = title;});
-    };
+  initializeEvents: function() {
+    this.addEvents(
+      /**
+       * @event before-launch
+       * Fires before this application launches
+       * @param {ExtMVC.App} this The application about to be launched
+       */
+      'before-launch',
+
+      /**
+       * @event launched
+       * Fires once the application has been launched
+       * @param {ExtMVC.App} this The application which has been launched
+       */
+      'launched'
+    );
   }
 });
-
-Ext.reg('os', ExtMVC.OS);
-
-// ExtMVC.getOS = ExtMVC.OS.getOS();
 
 ExtMVC.Model = function() {
   return {
