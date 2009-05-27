@@ -2592,7 +2592,8 @@ ExtMVC.Model.Base.prototype = {
    * @return {Boolean} True if this model's primaryKey has not yet been set
    */
   newRecord: function() {
-    return typeof(this.data[this.primaryKey]) == 'undefined';
+    var id = this.get(this.primaryKey);
+    return typeof id == 'undefined' || id == '';
   },
   
   /**
