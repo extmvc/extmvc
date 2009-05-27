@@ -10,8 +10,7 @@ ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      title:       'New ' + this.model.prototype.modelName.capitalize(),
-      saveHandler: this.onCreate
+      title: 'New ' + this.model.prototype.singularHumanName
     });
     ExtMVC.view.scaffold.New.superclass.initComponent.apply(this, arguments);
   }

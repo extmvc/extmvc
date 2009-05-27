@@ -8,14 +8,11 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   /**
    * Sets up the FormPanel, adds default configuration and items
    */
-  constructor: function(model, config) {
+  constructor: function(config) {
     var config = config || {};
     
-    this.model = model;
-    this.os    = ExtMVC.OS.getOS();
-    
-    this.controllerName = this.model.modelName.pluralize();
-    this.controller     = this.os.getController(this.controllerName);
+    this.model = config.model;
+    if (this.model == undefined) throw new Error("No model supplied to scaffold Form view");
     
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
   },
@@ -26,7 +23,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   initComponent: function() {
     Ext.applyIf(this, {
       autoScroll: true,
-      items:      this.buildItems(this.model),
+      items:      this.buildItems(),
       keys: [
         {
           key:     Ext.EventObject.ESC,
@@ -38,7 +35,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
           ctrl:      true,
           scope:     this,
           stopEvent: true,
-          handler:   this.saveHandler
+          handler:   this.onSave
         }
       ],
       buttons: [
@@ -46,7 +43,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
           text:    'Save',
           scope:   this,
           iconCls: 'save',
-          handler: this.saveHandler
+          handler: this.onSave
         },
         {
           text:    'Cancel',
@@ -56,9 +53,6 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
         }
       ]
     });
-    
-    //sets the document's title to the title of this panel
-    this.os.setsTitle(this);
     
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
   },
@@ -85,49 +79,47 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * @param {ExtMVC.Model} model The model to build form items for
    * @return {Array} An array of auto-generated form items
    */
-  buildItems: function(model) {
+  buildItems: function() {
     //check to see if FormFields have been created for this model
     //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.FormFields
-    var formFields;
-    
-    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace.split(".")[0], model.modelName.pluralize().toLowerCase()))) {
-      return formFields;
-    };
+    if (this.viewsPackage && this.viewsPackage.FormFields) {
+      return this.viewsPackage.FormFields;
+    }
     
     //no user defined form fields, generate them automatically
-    var items = [];
-    
-    for (var i=0; i < model.fields.length; i++) {
-      var f = model.fields[i];
+    var model  = this.model,
+        proto  = model.prototype,
+        fields = proto.fields,
+        items  = [];
+        
+    fields.each(function(field) {
       
       //add if it's not a field to be ignored
-      if (this.ignoreFields.indexOf(f.name) == -1) {
+      if (this.ignoreFields.indexOf(field.name) == -1) {
         items.push(Ext.applyIf({
-          name:        f.name,
-          fieldLabel: (f.name.replace(/_/g, " ")).capitalize()
+          name:        field.name,
+          fieldLabel: (field.name.replace(/_/g, " ")).capitalize()
         }, this.formItemConfig));
       };
-    };
+    }, this);
     
     return items;
   },
   
   /**
    * Called when the save button is clicked or CTRL + s pressed.  By default this simply fires
-   * the associated controller's 'update' action, passing this.getForm() as the sole argument
+   * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
-  onCreate: function() {
-    this.controller.fireAction('create', null, [this.getForm()]);
-  },
-  
-  onUpdate: function() {
-    this.controller.fireAction('update', null, [this.getForm()]);
+  onSave: function() {
+    this.fireEvent('save', this.getForm().getValues());
   },
   
   /**
    * Called when the cancel button is clicked or ESC pressed.  By default this simply calls Ext.History.back
    */
-  onCancel: Ext.History.back
+  onCancel: function() {
+    this.fireEvent('cancel');
+  }
 });
 
 Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);

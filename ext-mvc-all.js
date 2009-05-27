@@ -62,8 +62,6 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
    */
   registerController: function(controllerName, controllerClass) {
     this.controllers[controllerName] = controllerClass;
-    
-    Ext.ns(String.format("{0}.views.{1}", this.name, controllerName));
   },
 
   /**
@@ -150,6 +148,217 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 ExtMVC = new ExtMVC();
 
 Ext.ns('ExtMVC.Model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');
+
+/**
+ * @class ExtMVC.App
+ * @extends Ext.util.Observable
+ * @cfg {Boolean} usesHistory True to automatically create required DOM elements for Ext.History,
+ * sets up a listener on Ext.History's change event to fire this.onHistoryChange. False by default
+ */
+ExtMVC.App = Ext.extend(Ext.util.Observable, {
+  /**
+   * @constructor
+   * Sets up the Application - adds events, sets up namespaces, optionally sets up history.
+   * Fires the 'before-launch' event before initializing router, viewport and history.
+   * Calls this.launch() once everything else is set up (override the 'launch' method to provide your own logic).
+   * Fires the 'launched' event after calling this.launch()
+   */
+  constructor: function(config) {
+    ExtMVC.App.superclass.constructor.apply(this, arguments);
+    
+    //apply configuration object and set up namespaces
+    Ext.apply(this, config || {});
+    window[this.name] = this;
+    
+    this.initializeNamespaces();
+    
+    Ext.onReady(function() {
+      if (this.fireEvent('before-launch', this)) {
+        this.initializeRouter();
+        // this.initializeViewport();
+        this.initializeEvents();
+
+        if (this.usesHistory) this.initializeHistory();     
+
+        this.launch();
+        this.fireEvent('launched', this);
+        
+        /**
+         * TODO: This used to reside in initializeHistory but this.launch() needs to be
+         * called before this dispatches so it is temporarily here... ugly though
+         */
+        if (this.usesHistory && this.dispatchHistoryOnLoad) {
+          Ext.History.init(function(history) {
+            var hash   = document.location.hash.replace("#", "");
+            var params = this.router.recognise(hash);
+            if (params) {this.dispatch(params);}
+          }, this);
+        } else {
+          Ext.History.init();
+        }
+      }
+    }, this);
+  },
+    
+  /**
+   * @property name
+   * @type String
+   * The application's name.  This is used when creating namespaces for models, views and controllers,
+   * and automatically set up as a global variable reference to this application. Read only.
+   */
+  name: 'MyApp',
+    
+  /**
+   * @property usesHistory
+   * @type Boolean
+   * True to automatically create required DOM elements for Ext.History,
+   * sets up a listener on Ext.History's change event to fire this.onHistoryChange. 
+   * False by default
+   */
+  usesHistory: false,
+
+ 
+  /**
+   * @prop dispatchHistoryOnLoad
+   * @type Boolean
+   * If usesHistory is true and dispatchHistoryOnLoad is also true, the OS will attempt to match
+   * any string currently after the # in the url and dispatch to it
+   */
+  dispatchHistoryOnLoad: true,
+  
+  /**
+   * Called when the application is booted up. Override this to provide your own startup logic (defaults to Ext.emptyFn)
+   */
+  launch: Ext.emptyFn,
+  
+  /**
+   * @property params
+   * @type Object
+   * An object containing the most current parameters (usually decoded from a url using this.router)
+   * e.g. {controller: 'index', action: 'welcome', id: 10}
+   */
+  params: {},
+  
+  /**
+   * Dispatches a request to a registered controller. 
+   * @param {Object} dispatchConfig A config object which should look something like this:
+   * {controller: 'MyController', action: 'index'}, where 'MyController' is the key for a controller
+   * which has been registered to the controller.  If action is not specified, it defaults to 'index'
+   * @param {Object} scope The scope in which to fire the event (defaults to the controller)
+   * @param {Array} args An array of arguments which are passed to the controller action.
+   */
+  dispatch: function(dispatchConfig, scope, args) {
+    var dispatchConfig = dispatchConfig || {};
+    Ext.applyIf(dispatchConfig, {
+      action: 'index'
+    });
+    
+    this.params = dispatchConfig;
+    
+    var c = ExtMVC.getController(dispatchConfig.controller);
+    if (c != undefined) {
+      var action = c[dispatchConfig.action];
+      
+      if (typeof action == "function") action.apply(scope || c, args || []);
+      else throw new Error(String.format("Action '{0}' not found on Controller '{1}'", dispatchConfig.action, dispatchConfig.controller));
+    }
+  },
+  
+  /**
+   * Sets up a Router instance.  This is called automatically before onLaunch()
+   * Add routes using this.router.connect
+   */
+  initializeRouter: function() {
+    if (this.router) {return;}
+    this.router = new ExtMVC.Router();
+    ExtMVC.Router.defineRoutes(this.router);
+  },
+  
+  /**
+   * @property name
+   * @type String
+   * The name to namespace this application under (e.g. 'MyApp').  If set,  the appropriate subnamespaces are created automatically
+   */
+  name: undefined,
+  
+  /**
+   * Uses Ext.namespace to create packages view controllers, models and views
+   * E.g. if name = 'Blog' or this.name = 'Blog', this is the same as:
+   * Ext.ns('Blog', 'Blog.controllers', 'Blog.models', 'Blog.views')
+   */
+  initializeNamespaces: function(name) {
+    var name = name || this.name;
+    if (name) {
+      Ext.ns(name, name + '.controllers', name + '.models', name + '.views');
+    };
+  },
+  
+  /**
+   * Creates the necessary DOM elements required for Ext.History to manage state
+   * Sets up listeners on Ext.History's change event to fire the dispatch() action in the normal way.
+   * This is not called automatically as not all applications will need it
+   */
+  initializeHistory: function() {
+    this.historyForm = Ext.getBody().createChild({
+      tag:    'form',
+      action: '#',
+      cls:    'x-hidden',
+      id:     'history-form',
+      children: [
+        {
+          tag: 'div',
+          children: [
+            {
+              tag:  'input',
+              id:   'x-history-field',
+              type: 'hidden'
+            },
+            {
+              tag: 'iframe',
+              id:  'x-history-frame'
+            }
+          ]
+        }
+      ]
+    });
+    
+    Ext.History.on('change', this.onHistoryChange, this);
+  },
+  
+  /**
+   * Takes a history token (anything after the # in the url), consults the router and dispatches
+   * to the appropriate controller and action if a match was found
+   * @param {String} token The url token (e.g. the token would be cont/act/id for a url like mydomain.com/#cont/act/id)
+   */
+  onHistoryChange: function(token) {
+    var match = this.router.recognise(token);
+    
+    if (match) {
+      this.dispatch(match, null, [{url: token}]);
+    };
+  },
+  
+  /**
+   * Sets up events emitted by the Application
+   */
+  initializeEvents: function() {
+    this.addEvents(
+      /**
+       * @event before-launch
+       * Fires before this application launches
+       * @param {ExtMVC.App} this The application about to be launched
+       */
+      'before-launch',
+
+      /**
+       * @event launched
+       * Fires once the application has been launched
+       * @param {ExtMVC.App} this The application which has been launched
+       */
+      'launched'
+    );
+  }
+});
 
 /*
  * Adapted from http://snippets.dzone.com/posts/show/3205
@@ -345,6 +554,10 @@ String.prototype.singularize = function() {
 
 String.prototype.pluralize = function() {
   return ExtMVC.Inflector.pluralize(this);
+};
+
+String.prototype.humanize = function() {
+  return this.underscore().replace(/_/g, " ");
 };
 
 String.prototype.escapeHTML = function () {                                       
@@ -858,91 +1071,47 @@ ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
  * @extends Ext.util.Observable
  * Controller base class
  */
-ExtMVC.Controller = function(config) {
-  var config = config || {};
-  Ext.applyIf(config, {
-    autoRegisterViews: true
-  });
-  
-  ExtMVC.Controller.superclass.constructor.call(this, config);
+ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   
   /**
-   * @property views
-   * @type Object
-   * Hash of all views registered for use with this Controller.
-   * Read only, use @link {getViewClass} for access
+   * @property name
+   * @type String
+   * The string name for this controller. Used to automatically register the controller with ExtMVC,
+   * and to include all views under the view package of the same name.  For example, if your application is
+   * called MyApp and the controller name is users, all views in the MyApp.views.users namespace will be 
+   * registered automatically for use with this.render().
    */
-  this.views = {};
+  name: null,
   
-  /**
-   * @property runningViews
-   * @type Object
-   * Hash of all views which are currently rendered and referenced.  Indexed by the view's ID
-   * Read only!  Use renderView and destroyView to add or remove.
-   */
-  this.runningViews = {};
+  onExtended: function() {
+    if (this.name != null) {
+      this.viewsPackage = Ext.ns(String.format("{0}.views.{1}", ExtMVC.name, this.name));
+      
+      ExtMVC.registerController(this.name, this.constructor);
+    }
+  },
   
-  /**
-   * @property actions
-   * @type Object
-   * Maintains a reference to each registered action. Read only.
-   */
-  this.actions = {};
-  
-  this.addEvents(
-    /**
-     * @event init
-     * Fires when this controller is created.
-     * @param {ExtMVC.Controller} this The controller instance
-     */
-    'init',
+  constructor: function(config) {
+    ExtMVC.Controller.superclass.constructor.apply(this, arguments);
     
-    /**
-     * @event beforedefaultaction
-     * Fires is this.fireAction('someAction') is called, but 'someAction' has not been defined
-     * with this.registerAction().  Default behaviour in this case is to attempt to find a view
-     * of the same name and display it.  If you want to provide your own behaviour here, just
-     * return false to this event
-     * @param {string} actionName The name of the action being fired
-     * @param {Object} scope The scope the action is being fired within
-     * @param {Array} args An array of arguments passed to the action
-     */
-    'beforedefaultaction'
-  );
-  
-  /**
-   * Automatically register all views in the config.viewsPackage
-   */
-  if (config.autoRegisterViews && config.viewsPackage) {
-    for (var v in config.viewsPackage) {
-      this.registerView(v.toLowerCase(), config.viewsPackage[v]);
-    }
-  };
-  
-  this.fireEvent('init', this);
-};
-
-Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
-  
-  /**
-   * Attaches a view class to this controller - allows the controller to create the view
-   * @param {String} viewName The name of this view (e.g. 'index')
-   * @param {Function} viewClass A reference to the view class to be instantiated (e.g. MyApp.view.Index, which is some subclass of Ext.Panel)
-   */
-  registerView: function(viewName, viewClass) {
-    this.views[viewName] = viewClass;
+    Ext.apply(this, config || {});
+    
+    this.initEvents();
+    this.initListeners();
   },
   
   /**
-   * Convenience method to batch register views with this Controller
-   * @param {Object} An object of viewName: viewClass options.  e.g. {'index': MyApp.view.Index}
-   * would be the same as this.registerView('index', MyApp.view.Index)
+   * Sets up events emitted by this controller. This defaults to an empty function and is
+   * called automatically when the controller is constructed so can simply be overridden
    */
-  registerViews: function(viewObject) {
-    for (var v in viewObject) {
-      this.registerView(v, viewObject[v]);
-    }
-  },
+  initEvents: Ext.emptyFn,
+  
+  /**
+   * Sets up events this controller listens to, and the actions the controller should take
+   * when each event is received.  This defaults to an empty function and is called when
+   * the controller is constructed so can simply be overridden
+   */
+  initListeners: Ext.emptyFn,
   
   /**
    * Returns the view class registered for the given view name, or null
@@ -950,15 +1119,8 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
    * @return {Function/null} The view class (or null if not present)
    */
   getViewClass: function(viewName) {
-    return this.views[viewName];
+    return this.viewsPackage[viewName];
   },
-  
-  /**
-   * @property renderMethod
-   * @type String
-   * Can be either renderNow or return.  renderNow attempts to actually render the view, whereas return just returns it
-   */
-  renderMethod: 'renderNow',
   
   /**
    * @property addTo
@@ -968,12 +1130,276 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
   addTo: null,
   
   /**
+   * Renders a given view name in the way set up by the controller.  For this to work you must have passed a 
+   * 'name' property when creating the controller, which is automatically used to find the view namespace for
+   * this controller.  For example, in an application called MyApp, and a controller with a name of 'users',
+   * the view namespace would be MyApp.views.users, and render('Index') would search for a class called
+   * MyApp.views.users.Index and instantiate it with the passed config.
+   * An error is thrown if the view could not be found.
+   * @param {String} viewName The name of the view class within the view namespace used by this controller
+   * @param {Object} config Configuration options passed through to the view class' constructor
+   * @return {Ext.Component} The view object that was just created
+   */
+  render: function(viewName, config) {
+    var viewC = this.getViewClass(viewName);
+    
+    if (typeof viewC == "function") {
+      var view = new viewC(config);
+      if (this.addTo) this.renderViaAddTo(view);
+      
+      return view;
+    } else {
+      throw new Error(String.format("View '{0}' not found", viewName));
+    }
+  },
+  
+  /**
+   * Adds the given component to this application's main container.  This is usually a TabPanel
+   * or similar, and must be assigned to the controllers addTo property.  By default,
+   * this method removes any other items from the container first, then adds the new component
+   * and calls doLayout
+   * @param {Ext.Component} component The component to add to the controller's container
+   */
+  renderViaAddTo: function(component) {
+    if (this.addTo != undefined) {
+      this.addTo.removeAll();
+      this.addTo.doLayout();
+      
+      this.addTo.add(component);
+      this.addTo.doLayout();
+    }
+  }
+});
+
+Ext.reg('controller', ExtMVC.Controller); 
+
+/**
+ * @class ExtMVC.controller.CrudController
+ * @extends ExtMVC.Controller
+ * An extension of Controller which provides the generic CRUD actions
+ */
+ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
+  /**
    * @property model
    * @type Function/Null
    * Defaults to null.  If set to a reference to an ExtMVC.Model subclass, renderView will attempt to dynamically
    * scaffold any missing views, if the corresponding view is defined in the ExtMVC.view.scaffold package
    */
   model: null,
+
+  /**
+   * @action create
+   * Attempts to create a new instance of this controller's associated model
+   * @param {Object} data A fields object (e.g. {title: 'My instance'})
+   */
+  create: function(data, form) {
+    var instance = new this.model(data);
+
+    instance.save({
+      scope:    this,
+      success: function(instance) {
+        this.fireEvent('create', instance);
+      },
+      failure: function(instance) {
+        this.fireEvent('create-failed', instance);
+      }
+    });
+  },
+  
+  /**
+   * @action read
+   * Attempts to find (read) a single model instance by ID
+   * @param {Number} id The Id of the instance to read
+   */
+  read: function(id) {
+    this.model.findById(id, {
+      scope: this,
+      success: function(instance) {
+        this.fireEvent('read', instance);
+      },
+      failure: function() {
+        this.fireEvent('read-failed', id);
+      }
+    });
+  },
+  
+  /**
+   * Attempts to update an existing instance with new values
+   * @param {ExtMVC.Model.Base} instance The existing instance object
+   * @param {Object} updates An object containing updates to apply to the instance
+   */
+  update: function(instance, updates) {
+    for (var key in updates) {
+      instance.set(key, updates[key]);
+    }
+    
+    instance.save({
+      scope:   this,
+      success: function() {
+        this.fireEvent('update', instance, updates);
+      },
+      failure: function() {
+        this.fireEvent('update-failed', instance, updates);
+      }
+    });
+  },
+  
+  /**
+   * @action destroy
+   * Attempts to delete an existing instance
+   * @param {Mixed} instance The ExtMVC.Model.Base subclass instance to delete.  Will also accept a string/number ID
+   */
+  destroy: function(instance) {
+    instance.destroy({
+      scope:   this,
+      success: function() {
+        this.fireEvent('delete', instance);
+      },
+      failure: function() {
+        this.fireEvent('delete-failed', instance);
+      }
+    });
+  },
+  
+  /**
+   * @action index
+   * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
+   */
+  index: function() {
+    this.render('Index', {
+      model: this.model,
+      listeners: {
+        scope   : this,
+        'delete': this.destroy,
+        'add'   : this.build,
+        'edit'  : this.edit
+      }
+    });
+  },
+  
+  /**
+   * @action build
+   * Renders the custom New view if present, otherwise falls back to the default scaffold New form
+   */
+  build: function() {
+    this.render('New', {
+      model: this.model,
+      listeners: {
+        scope:  this,
+        cancel: this.index,
+        save:   this.create
+      }
+    });
+  },
+  
+  /**
+   * @action edit
+   * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
+   * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.Model.Base
+   * instance, a findById() will be called on this controller's associated model
+   */
+  edit: function(instance) {
+    //TODO: 
+    
+    this.render('Edit', {
+      model: this.model,
+      listeners: {
+        scope : this,
+        cancel: this.index,
+        save  : this.update
+      }
+    }).loadRecord(instance);
+  },
+  
+  /**
+   * Sets up events emitted by the CRUD Controller's actions
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event create
+       * Fired when a new instance has been successfully created
+       * @param {ExtMVC.Model.Base} instance The newly created model instance
+       */
+      'create',
+      
+      /**
+       * @event create-failed
+       * Fired when an attempt to create a new instance failed
+       * @param {ExtMVC.Model.Base} instance The instance object which couldn't be saved
+       */
+      'create-failed',
+      
+      /**
+       * @event read
+       * Fired when a single instance has been loaded from the database
+       * @param {ExtMVC.Model.Base} instance The instance instance that was loaded
+       */
+      'read',
+      
+      /**
+       * @event read-failed
+       * Fired when an attempt to load a single instance failed
+       * @param {Number} id The ID of the instance we were attempting to find
+       */
+      'read-failed',
+      
+      /**
+       * @event update
+       * Fired when an existing instance has been successfully created
+       * @param {ExtMVC.Model.Base} instance The updated instance
+       * @param {Object} updates The updates object that was supplied
+       */
+      'update',
+      
+      /**
+       * @event update-failed
+       * Fired when an attempty to update an existing instance failed
+       * @param {ExtMVC.Model.Base} instance The instance we were attempting to update
+       * @param {Object} updates The object of updates we were trying to apply
+       */
+      'update-failed',
+      
+      /**
+       * @event delete
+       * Fired when an existing instance has been successfully deleteed
+       * @param {ExtMVC.Model.Base} instance The instance that was deleteed
+       */
+      'delete',
+      
+      /**
+       * @event delete-failed
+       * Fired when an attempt to delete an existing instance failed
+       * @param {ExtMVC.Model.Base} instance The instance we were trying to delete
+       */
+      'delete-failed',
+      
+      /**
+       * @event index
+       * Fired when an instances collection has been loaded from the database
+       * @param {Ext.data.Store} instances An Ext.data.Store containing the instances retrieved
+       */
+      'index',
+      
+      /**
+       * @event index-failed
+       * Fired when an error was encountered while trying to load the instances from the database
+       */
+      'index-failed'
+    );
+  },
+  
+  /**
+   * If a view of the given viewName is defined in this controllers viewPackage, a reference to its
+   * constructor is defined.  If not, a reference to the default scaffold for the viewName is returned
+   * @param {String} viewName The name of the view to return a constructor function for
+   * @return {Function} A reference to the custom view, or the scaffold fallback
+   */
+  getViewClass: function(viewName) {
+    var userView = ExtMVC.CrudController.superclass.getViewClass.call(this, viewName);
+    
+    return (userView == undefined) ? this.scaffoldViewName(viewName) : userView;
+  },
   
   /**
    * Returns a reference to the Scaffold view class for a given viewName
@@ -982,238 +1408,8 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
    */
   scaffoldViewName: function(viewName) {
     return ExtMVC.view.scaffold[viewName.titleize()];
-  },
-  
-  /**
-   * Creates the requested view and registers it with this.runningViews.
-   * Each view should have a unique ID, or the view is not rendered and an error is raised
-   * @param {String} viewName The registered name of the view to create and render
-   * @param {Object} viewConfig Generic config object passed to the view's constructor
-   * @param {Object} renderConfig Render configuration options
-   * @return {Object} A reference to the newly created view
-   * @throws Error when a view for the given viewName has not been registered, or if the view's ID has already been taken
-   */
-  renderView: function(viewName, viewConfig, renderConfig) {
-    var renderConfig = renderConfig || {};
-    var viewConfig   = viewConfig   || {};
-    
-    //by default we render straight away, to the Body element
-    Ext.applyIf(renderConfig, {
-      renderTo:   Ext.getBody(),
-      renderNow:  true,
-      renderOnce: true
-    });
-    
-    var v;
-    
-    //if a view class has been registered
-    if (typeof((this.getViewClass(viewName))) == 'function') {
-      v = new (this.getViewClass(viewName))(viewConfig);
-      
-    //view has not been registered, attempt to create one
-    } else if (this.model) {
-      try {
-        v = new (this.scaffoldViewName(viewName))(this.model);
-      } catch(e) {};
-    }
-    
-    if (!v || typeof(v) == 'undefined') {return;}
-    
-    var running = this.getRunningView(v.id);
-    if (running) {
-      if (renderConfig.renderOnce) {
-        v.destroy();
-        return running;
-      } else {
-        //view ID has already been taken, throw an error
-        throw new Error('The view ID ' + v.id + ' has already been taken.  Each view instance must have a unique ID');        
-      };
-    } else {
-      return this.launchView(v);
-    };
-
-  },
-  
-  /**
-   * Launches a view instance by either rendering it to the renderTo element or adding it to this.addTo
-   * @param {Ext.Component} v Any Component which can be added to a container or rendered to an element
-   * @param {Object} renderConfig A config object with instructions on how to render this view.  Relevant options are:
-   *                              renderNow: true to render the view right away (defaults to true)
-   *                              renderTo: The element to render this view to (unless using the addTo method)
-   */
-  launchView: function(v, renderConfig) {
-    var renderConfig = renderConfig || {};
-    Ext.applyIf(renderConfig, {
-      renderNow: true,
-      renderTo:  Ext.getBody()
-    });
-    
-    v.on('close',   function()     {this.destroyView(v.id); },            this);
-    v.on('destroy', function(view) {delete this.runningViews[view.id]; }, this);
-    this.runningViews[v.id] = v;
-    
-    if (this.renderMethod == 'renderNow' && renderConfig.renderNow) {
-      v.render(renderConfig.renderTo, renderConfig.renderPosition);
-      return v;
-    } else {
-      if (this.addTo && renderConfig.renderNow) {
-        this.addTo.add(v).show();
-        this.addTo.doLayout();
-        return v;
-      };
-      
-      // XXX
-      // TODO there needs to be some kind of exception here if nothing happens
-      return v;
-    };
-  },
-  
-  /**
-   * Returns an instance of a running view with the given ID
-   * @param {String} viewId The unique ID of a view instantiation
-   * @return {Object} The view instance, or null if no match
-   */
-  getRunningView: function(viewId) {
-    return this.runningViews[viewId];
-  },
-  
-  /**
-   * Returns an array of all running view instances whose IDs match the given regex
-   * @param {Object} regex The regular expression to compare unique view instance IDs to
-   * @return {Array} An array of matching view instances
-   */
-  getRunningViews: function(regex) {
-    //make sure we have a regex object
-    if (!regex.test) { return []; }
-    
-    var matches = [];
-    for (var v in this.runningViews) {
-      if (regex.test(v)) {
-        matches.push(this.runningViews[v]);
-      };
-    }
-    
-    return matches;
-  },
-  
-  /**
-   * Destroys the currently running view as referenced by the argument.
-   * The argument must be an <em>ID</em> of a running view, not the registered viewName.
-   * Check that a running view for a given ID exists using this.getRunningView.
-   * @param {String} viewId The ID of the running view to destroy
-   */
-  destroyView: function(viewId) {
-    var view = this.getRunningView(viewId);
-    if (view) {
-      view.destroy();
-      delete this.runningViews[viewId];
-    };
-  },
-  
-  /**
-   * Destroys all views with IDs matching the given regex
-   * @param {Object} regex The Regular Expression to match IDs against
-   */
-  destroyViews: function(regex) {
-    //make sure we have a regex object
-    if (!regex.test) { return []; }
-    
-    for (var v in this.runningViews) {
-      if (regex.test(v)) {
-        this.destroyView(v);
-      };
-    }
-  },
-  
-  /**
-   * Registers a function as an Action for this Controller.  Actions registered here
-   * can take part in this.fireAction, and are automatically given before and after events.
-   * For example registerAction('index', function() { ... }) registeres before_index and after_index
-   * events, which are called before and after the action has been fired.  Return false to the before_
-   * event in order to stop the action being called.
-   * @param {String} actionName The string name to associate with this action function
-   * @param {Function} actionFunction The action function to be called with this.fireAction(actionName)
-   * @param {Object} options Gives ability to optionally bypass creation of before_ and after_ events
-   * (e.g. {before_filter: false, after_filter: true}).  Both default to true
-   * Also takes an overwrite option which will stop this action overwriting a previous action defined with
-   * this action name (defaults to true)
-   */
-  registerAction: function(actionName, actionFunction, options) {
-    var options = options || {};
-    Ext.applyIf(options, { before_filter: true, after_filter: true, overwrite: true});
-    
-    //create the before and after filters
-    if (options.before_filter) { this.addEvents('before_' + actionName); }
-    if (options.after_filter)  { this.addEvents('after_'  + actionName); }
-    
-    //don't overwrite the existing action if told not to
-    if (!this.getAction(actionName) || options.overwrite == true) {
-      this.actions[actionName] = actionFunction;
-    };
-  },
-  
-  /**
-   * Returns a reference to the function of the requested action name.  Does not execute the action
-   * @param {String} actionName The string name of the action to find
-   * @return {Function} A reference to the function, or null if not found
-   */
-  getAction: function(actionName) {
-    return this.actions[actionName];
-  },
-  
-  /**
-   * Fires the requested action with any arguments passed to it.  If before and after filters have been
-   * added to this action, they are fired before and after the action is executed (see {@link registerAction}).
-   * If the specified action has not been registered, this will try to display the registered view with the same name,
-   * if one has been defined.
-   * @param {String} actionName The name of the action to call.  Nothing will happen if an invalid action name is specified
-   * @param {Object} scope The scope in which to execute the action (defaults to the controller's scope).  Set this to null 
-   * keep scope as the controller's scope if you need to pass additional params to the action
-   * @param {Array} args An array of arguments to execute the action with (optional)
-   */
-  fireAction: function(actionName, scope, args) {
-    var scope = scope || this;
-    var args  = args  || [];
-    
-    var a = this.getAction(actionName);
-    if (a) {
-      if (this.fireEvent('before_' + actionName)) {
-        a.apply(scope, args);
-        
-        this.fireEvent('after_' + actionName);
-      };
-    } else {
-      if (this.fireEvent('beforedefaultaction', actionName, scope, args)) {
-        var v;
-        if (v = this.renderView(actionName, args[0])) {
-          v.show();
-        }
-      };
-    };
-  },
-  
-  /**
-   * Attaches an action to an event on any Ext.util.Observable object. Mainly a convenience method
-   * in place of firingObject.on(eventName, actionName, actionScope)
-   * @param {Object} firingObject The object to listen to for fired events
-   * @param {String} eventName The name of the event to handle
-   * @param {String} actionName The name of the action to dispatch to (this will be called with the arguments attached to the event)
-   * @param {Object} actionScope The scope to execute the action within (defaults to this controller)
-   */
-  handleEvent: function(firingObject, eventName, actionName, actionScope) {
-    var actionScope = actionScope || this;
-    
-    firingObject.on(eventName, function() {
-      this.fireAction(actionName, actionScope, arguments);
-    }, this);
   }
 });
-
-Ext.reg('controller', ExtMVC.Controller); 
-
-/**
- * This started life as a plugin, moving it here for now as it might be useful on every project (hence oddish definition)
- */
 
 
 Ext.ns('ExtMVC.plugin.CrudController');
@@ -1230,7 +1426,7 @@ Ext.ns('ExtMVC.plugin.CrudController');
    * edit() - displays the 'edit' view and loads the model whose id is in your os.params.id
    * create(form) - takes an Ext.form.BasicForm and attempts to create + save a new model object with it
    * update(form) - takes a BasicForm and attempts to update an existing object with it (again using os.params.id)
-   * destroy(id, store) - takes an ID, deletes it and optionally refreshes a store
+   * delete(id, store) - takes an ID, deletes it and optionally refreshes a store
    * 
    * It does not overwrite any existing action already defined under one of those names.
    *
@@ -1312,17 +1508,17 @@ Ext.ns('ExtMVC.plugin.CrudController');
     }, {overwrite: false});
     
     /**
-     * @action destroy 
+     * @action delete 
      * Deletes a given model instance
      */
-    this.registerAction('destroy', function(id, store) {
+    this.registerAction('delete', function(id, store) {
       var id = id || this.os.params.id;
       if (id) {
         var u = new this.model({id: id});
         u.destroy({
           scope:   this,
-          success: this.onDestroySuccess.createDelegate(this, [store]),
-          failure: this.onDestroyFailure
+          success: this.ondeleteSuccess.createDelegate(this, [store]),
+          failure: this.ondeleteFailure
         });
       };
     }, {overwrite: false});
@@ -1481,18 +1677,18 @@ Ext.ns('ExtMVC.plugin.CrudController');
     },
     
     /**
-     * Called after an item has been successfully destroyed (deleted).  By default this reloads the grid's store
+     * Called after an item has been successfully deleteed (deleted).  By default this reloads the grid's store
      * @param {Ext.data.Store} store The Ext.data.Store to reload after deletion
      */
-    onDestroySuccess: function(store) {
+    ondeleteSuccess: function(store) {
       if (store) store.reload();
     },
     
     /**
-     * Called after an destroy attempt was made on a model instance, but the attempt failed.  By default this shows
+     * Called after an delete attempt was made on a model instance, but the attempt failed.  By default this shows
      * a MessageBox alert informing the user
      */
-    onDestroyFailure: function(paramName) {
+    ondeleteFailure: function(paramName) {
       Ext.Msg.alert(
         'Delete Failed',
         'Sorry, something went wrong when trying to delete that item.  Please try again'
@@ -1509,73 +1705,100 @@ Ext.ns('ExtMVC.plugin.CrudController');
 })();
 
 /**
- * @class ExtMVC.App
- * @extends Ext.util.Observable
- * @cfg {Boolean} usesHistory True to automatically create required DOM elements for Ext.History,
- * sets up a listener on Ext.History's change event to fire this.onHistoryChange. False by default
+ * ExtMVC.OS
+ * @extends ExtMVC.Controller
+ * Specialised ExtMVC.Controller intended to create and manage generic Operating System
+ * components (e.g. not elements specific to a single Application within the OS)
+ * When an OS is instantiated, ExtMVC.OS.getOS() is defined and returns the OS instance
  */
-ExtMVC.App = Ext.extend(Ext.util.Observable, {
+ExtMVC.OS = function(config) {
+  ExtMVC.OS.superclass.constructor.call(this, config);
+  
+  this.addEvents(
+    /**
+     * @event beforelaunch
+     * Fires before this application launches
+     * @param {ExtMVC.Application} this The application about to be launched
+     */
+    'beforelaunch',
+    
+    /**
+     * @event launch
+     * Fires after the application has been launched
+     * @param {ExtMVC.Application} this The application which has been launched
+     */
+    'launch'
+  );
+  
+  this.initialiseNamespaces();
+  
+  var os = this;
+  ExtMVC.OS.getOS = function() {return os;};
+};
+Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
   /**
-   * @constructor
-   * Sets up the Application - adds events, sets up namespaces, optionally sets up history.
-   * Fires the 'before-launch' event before initializing router, viewport and history.
-   * Calls this.launch() once everything else is set up (override the 'launch' method to provide your own logic).
-   * Fires the 'launched' event after calling this.launch()
+   * Registers a controller for use with this OS.  The controller is instantiated lazily
+   * when needed, through the use of this.getController('MyController')
+   * @param {String} controllerName A string name for this controller, used as a key to reference this controller with this.getController
+   * @param {Function} controllerClass A reference to the controller class, which is later instantiated lazily
    */
-  constructor: function(config) {
-    ExtMVC.App.superclass.constructor.apply(this, arguments);
-    
-    //apply configuration object and set up namespaces
-    Ext.apply(this, config || {});
-    window[this.name] = this;
-    
-    this.initializeNamespaces();
-    
-    Ext.onReady(function() {
-      if (this.fireEvent('before-launch', this)) {
-        this.initializeRouter();
-        // this.initializeViewport();
-        this.initializeEvents();
-
-        if (this.usesHistory) this.initializeHistory();     
-
-        this.launch();
-        this.fireEvent('launched', this);
-        
-        /**
-         * TODO: This used to reside in initializeHistory but this.launch() needs to be
-         * called before this dispatches so it is temporarily here... ugly though
-         */
-        if (this.usesHistory && this.dispatchHistoryOnLoad) {
-          Ext.History.init(function(history) {
-            var hash   = document.location.hash.replace("#", "");
-            var params = this.router.recognise(hash);
-            if (params) {this.dispatch(params);}
-          }, this);
-        } else {
-          Ext.History.init();
-        }
-      }
-    }, this);
+  registerController: function(controllerName, controllerClass) {
+    this.controllers[controllerName] = controllerClass;
   },
-    
+
   /**
-   * @property name
-   * @type String
-   * The application's name.  This is used when creating namespaces for models, views and controllers,
-   * and automatically set up as a global variable reference to this application. Read only.
+   * Returns a controller instance for the given controller name.
+   * Instantiates the controller first if it has not yet been instantiated.
+   * @param {String} controllerName The registered name of the controller to get
+   * @return {Object} The controller instance, or null if not found
    */
-  name: 'MyApp',
-    
+  getController: function(controllerName) {
+    var c = this.controllers[controllerName];
+    if (c) {
+      //instantiate the controller first, if required
+      if (typeof c === 'function') {
+        this.controllers[controllerName] = new this.controllers[controllerName]();
+      };
+      return this.controllers[controllerName];
+    } else {
+      return null;
+    };
+  },
+  
+  /**
+   * @property controllers
+   * When this.registerController('application', MyApp.ApplicationController) is called,
+   * the ApplicationController class is registered here under the 'application' key.
+   * When this.getController('application') is called, it checks here to see if the 
+   * controller has been instantiated yet.  If it has, it is returned.  If not it is
+   * instantiated, then returned.
+   */
+  controllers: {},
+  
+  /**
+   * Launches this application
+   */
+  launch: function() {
+    if (this.fireEvent('beforelaunch', this)) {
+      this.initializeRouter();
+      this.initializeViewport();
+      
+      if (this.usesHistory) { this.initialiseHistory(); }      
+      
+      this.onLaunch();
+      this.fireEvent('launch', this);
+    };
+  },
+  
   /**
    * @property usesHistory
    * @type Boolean
    * True to automatically create required DOM elements for Ext.History,
-   * sets up a listener on Ext.History's change event to fire this.onHistoryChange. 
+   * sets up a listener on Ext.History's change event to fire this.handleHistoryChange. 
    * False by default
    */
   usesHistory: false,
- 
+  
   /**
    * @prop dispatchHistoryOnLoad
    * @type Boolean
@@ -1585,9 +1808,28 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   dispatchHistoryOnLoad: true,
   
   /**
-   * Called when the application is booted up. Override this to provide your own startup logic (defaults to Ext.emptyFn)
+   * @property viewportBuilder
+   * @type String
+   * The type of viewport to construct (can be any registered with ExtMVC.ViewportBuilderManager)
    */
-  launch: Ext.emptyFn,
+  viewportBuilder: 'leftmenu',
+  
+  /**
+   * Config object which is passed made available to the ViewportBuilder
+   */
+  viewportBuilderConfig: {},
+  
+  /**
+   * Called just before onLaunch.  Runs the ExtMVC.ViewportBuilder
+   * specified in this.viewportBuilder.
+   * Override this to create your own viewport instead of using a builder
+   */
+  initializeViewport: function() {
+    var builder = ExtMVC.ViewportBuilderManager.find(this.viewportBuilder);
+    if (builder) {
+      builder.build(this);
+    };
+  },
   
   /**
    * @property params
@@ -1613,14 +1855,17 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
     
     this.params = dispatchConfig;
     
-    var c = ExtMVC.getController(dispatchConfig.controller);
-    if (typeof c != 'undefined') {
-      var action = c[dispatchConfig.action];
-      
-      if (typeof action == "function") action.apply(scope, args || []);
-      else throw new Error(String.format("Action '{0}' not found on Controller '{1}'", dispatchConfig.action, dispatchConfig.controller));
-    }
+    var c;
+    if (c = this.getController(dispatchConfig.controller)) {
+      c.fireAction(dispatchConfig.action, scope || c, args || []);
+    };
   },
+  
+  /**
+   * Override this to perform custom processing between the beforelaunch and
+   * launch events
+   */
+  onLaunch: Ext.emptyFn,
   
   /**
    * Sets up a Router instance.  This is called automatically before onLaunch()
@@ -1644,7 +1889,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * E.g. if name = 'Blog' or this.name = 'Blog', this is the same as:
    * Ext.ns('Blog', 'Blog.controllers', 'Blog.models', 'Blog.views')
    */
-  initializeNamespaces: function(name) {
+  initialiseNamespaces: function(name) {
     var name = name || this.name;
     if (name) {
       Ext.ns(name, name + '.controllers', name + '.models', name + '.views');
@@ -1656,7 +1901,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * Sets up listeners on Ext.History's change event to fire the dispatch() action in the normal way.
    * This is not called automatically as not all applications will need it
    */
-  initializeHistory: function() {
+  initialiseHistory: function() {
     this.historyForm = Ext.getBody().createChild({
       tag:    'form',
       action: '#',
@@ -1680,7 +1925,19 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
       ]
     });
     
-    Ext.History.on('change', this.onHistoryChange, this);
+    //initialize History management.  Fire a dispatch event if a hash url is present and startup
+    //dispatch is requested
+    if (this.dispatchHistoryOnLoad) {
+      Ext.History.init(function(history) {
+        var hash   = document.location.hash.replace("#", "");
+        var params = this.router.recognise(hash);
+        if (params) {this.dispatch(params);}
+      }, this);
+    } else {
+      Ext.History.init();
+    }
+    
+    Ext.History.on('change', this.handleHistoryChange, this);
   },
   
   /**
@@ -1688,7 +1945,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * to the appropriate controller and action if a match was found
    * @param {String} token The url token (e.g. the token would be cont/act/id for a url like mydomain.com/#cont/act/id)
    */
-  onHistoryChange: function(token) {
+  handleHistoryChange: function(token) {
     var match = this.router.recognise(token);
     
     if (match) {
@@ -1697,26 +1954,22 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   },
   
   /**
-   * Sets up events emitted by the Application
+   * Simple convenience function to change the document title whenever this view is displayed
+   * @param {Ext.Component} view The view (Ext.Panel subclass normally) to listen to show/activate events on
+   * @param {String} title The string to change the document title to (defaults to view.initialConfig.title)
    */
-  initializeEvents: function() {
-    this.addEvents(
-      /**
-       * @event before-launch
-       * Fires before this application launches
-       * @param {ExtMVC.App} this The application about to be launched
-       */
-      'before-launch',
-
-      /**
-       * @event launched
-       * Fires once the application has been launched
-       * @param {ExtMVC.App} this The application which has been launched
-       */
-      'launched'
-    );
+  setsTitle: function(view, title) {
+    var title = title || view.title || view.initialConfig ? view.initialConfig.title : null;
+    if (title) {
+      view.on('show',     function() {document.title = title;});
+      view.on('activate', function() {document.title = title;});
+    };
   }
 });
+
+Ext.reg('os', ExtMVC.OS);
+
+// ExtMVC.getOS = ExtMVC.OS.getOS();
 
 ExtMVC.Model = function() {
   return {
@@ -1934,8 +2187,10 @@ ExtMVC.Model = function() {
           i = ExtMVC.Inflector;
       
       Ext.applyIf(model.prototype, {
-        tableName:      i.pluralize(p.modelName.underscore()),
-        foreignKeyName: i.singularize(p.modelName.underscore()) + '_id'
+        tableName        : i.pluralize(p.modelName.underscore()),
+        foreignKeyName   : i.singularize(p.modelName.underscore()) + '_id',
+        singularHumanName: p.modelName.humanize().titleize(),
+        pluralHumanName  : i.pluralize(p.modelName.humanize().titleize())
       });
     },
     
@@ -2350,6 +2605,21 @@ ExtMVC.Model.Base.prototype = {
   },
   
   /**
+   * Returns a JsonReader suitable for use decoding generic JSON data from a server response
+   * Override this to provide your own Reader
+   */
+  getReader: function() {
+    if (!this.reader) {
+      this.reader = new Ext.data.JsonReader({
+        totalProperty: "results",
+        root:          this.tableName
+      }, this.constructor);
+    }
+    
+    return this.reader;
+  },
+  
+  /**
    * @property initialize
    * @type Function
    * Function which is called whenever a model object is instantiated.  Override this with your own callback if needed
@@ -2651,7 +2921,7 @@ ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.association);
 ExtMVC.Model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
-      var adapter = new this.MemoryAdapter();
+      var adapter = new this.RESTAdapter();
       
       Ext.override(Ext.data.Record, adapter.instanceMethods());
       Ext.apply(model, adapter.classMethods());
@@ -2800,7 +3070,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
        */
       find: function(conditions, options) {
         //assume to be the primary key
-        if (typeof(conditions) != 'object') conditions = {primaryKey: conditions};
+        if (typeof(conditions) == 'number') conditions = {primaryKey: conditions};
         
         return this.adapter.doFind(conditions, options, this);
       },
@@ -3113,34 +3383,53 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
         failureCallback = options.failure;
     
     delete options.callback; delete options.success; delete options.failure;
-    
-    //apply some defaults
-    Ext.applyIf(options, {
-      method: this.readMethod,
-      url:    url,
-      params: conditions,
-      scope:  this
-    });
-    
+
     //helper function to cut down repetition in Ajax request callback
     var callIf = function(callback, args) {
       if (typeof callback == 'function') callback.apply(options.scope, args);
     };
     
-    Ext.Ajax.request(
-      Ext.apply(options, {
-        callback: function(opts, success, response) {
-          if (success === true) {
-            var instance = new constructor(response.responseText);
-            
-            callIf(successCallback, [instance, opts, response]);
-          } else callIf(failureCallback, arguments);
-          
-          //call the generic callback passed into options
-          callIf(optionsCallback, arguments);
-        }
-      })
-    );
+    //apply some defaults
+    Ext.applyIf(options, {
+      method: this.readMethod,
+      url:    url,
+      scope:  this
+    });
+    
+    if (conditions.primaryKey == undefined) {
+      //do a collection find
+      
+      return new Ext.data.Store(
+        Ext.applyIf(options, {
+          autoLoad:   true,
+          remoteSort: false,
+          reader:     constructor.prototype.getReader()
+
+          // proxy:      new this.proxyType(proxyOpts),
+          // reader:     this.getReader()
+        })
+      );
+    } else {
+      //do a single find
+     
+      
+      Ext.applyIf(options, {params: conditions});
+
+      Ext.Ajax.request(
+        Ext.apply(options, {
+          callback: function(opts, success, response) {
+            if (success === true) {
+              var instance = new constructor(response.responseText);
+
+              callIf(successCallback, [instance, opts, response]);
+            } else callIf(failureCallback, arguments);
+
+            //call the generic callback passed into options
+            callIf(optionsCallback, arguments);
+          }
+        })
+      );
+    }
   },
   
   doDestroy: function(instance, options) {
@@ -3606,110 +3895,6 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
 // })();
 // 
 // ExtMVC.Model.AdapterManager.register('REST', ExtMVC.Model.Adapter.REST);
-
-/**
- * @class ExtMVC.Model.plugin.adapter.MemoryAdapter
- * @extends ExtMVC.Model.plugin.adapter.Abstract
- * Provides a very basic storage system where model data get stored to an object in memory
- */
-ExtMVC.Model.plugin.adapter.MemoryAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.Abstract, {
-  
-  /**
-   * @property store
-   * @type Object
-   * A simple object that models get saved to
-   */
-  store: {},
-  
-  primaryKeys: {},
-    
-  /**
-   * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
-   */
-  doSave: function(instance, options) {
-    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
-    options = options || {};
-    
-    //if this model doesn't have a primary key yet, give it one now and mark it as saved
-    var id = instance.get(instance.primaryKey);
-    if (typeof id == 'undefined') {
-      id = this.primaryKeyFor(instance);
-      instance.set(instance.primaryKey, id);
-    }
-    
-    //put the model data into its store
-    this.store[instance.tableName] = this.store[instance.tableName] || {};
-    this.store[instance.tableName][id.toString()] = instance.data;
-  },
-  
-  /**
-   * Performs the actual find request.
-   * @param {Object} conditions An object containing find conditions. If a primaryKey is set this will be used
-   * to build the url for that particular instance, otherwise the collection url will be used
-   * @param {Object} options Callbacks (use callback, success and failure)
-   */
-  doFind: function(conditions, options, constructor) {
-    conditions = conditions || {}; options = options || {};
-    
-    //helper function to cut down repetition in Ajax request callback
-    var callIf = function(callback, args) {
-      if (typeof callback == 'function') callback.apply(options.scope, args);
-    };
-    
-    var modelStore = this.store[constructor.prototype.tableName] || {};
-    
-    if (typeof conditions.primaryKey == 'undefined') {
-      //return everything
-      var records = [];
-      
-      for (primaryKey in modelStore) {
-        records.push((modelStore[primaryKey]));
-      }
-      
-      console.log(records);
-      
-      return new Ext.data.Store({
-        autoLoad: true,
-        data: {'rows': records},
-        // proxy: new Ext.data.MemoryProxy({'rows': records}),
-        fields: constructor.prototype.fields.items,
-        reader: new Ext.data.JsonReader({root: 'rows'}, constructor)
-      });
-      
-    } else {
-      var data = modelStore[conditions.primaryKey.toString()];
-      
-      if (typeof data == 'undefined') {
-        callIf(options.failure);
-      } else {
-        callIf(options.success, [new constructor(data)]);
-      }
-    }
-  },
-  
-  doDestroy: function(instance, options) {
-    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
-    options = options || {};
-    
-    Ext.Ajax.request(
-      Ext.applyIf(options, {
-        method: this.destroyMethod,
-        url:    this.instanceUrl(instance)
-      })
-    );
-  },
-  
-  /**
-   * Returns the next available primary key for a model instance
-   * @param {ExtMVC.Model.Base} instance The model instance
-   * @return {Number} The primary key to use for this instance
-   */
-  primaryKeyFor: function(instance) {
-    this.primaryKeys[instance.tableName] = this.primaryKeys[instance.tableName] || 1;
-    
-    return this.primaryKeys[instance.tableName] ++;
-  }
-});
 
 /**
  * The Validation classes themselves are defined here.
@@ -4254,14 +4439,11 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   /**
    * Sets up the FormPanel, adds default configuration and items
    */
-  constructor: function(model, config) {
+  constructor: function(config) {
     var config = config || {};
     
-    this.model = model;
-    this.os    = ExtMVC.OS.getOS();
-    
-    this.controllerName = this.model.modelName.pluralize();
-    this.controller     = this.os.getController(this.controllerName);
+    this.model = config.model;
+    if (this.model == undefined) throw new Error("No model supplied to scaffold Form view");
     
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
   },
@@ -4272,7 +4454,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   initComponent: function() {
     Ext.applyIf(this, {
       autoScroll: true,
-      items:      this.buildItems(this.model),
+      items:      this.buildItems(),
       keys: [
         {
           key:     Ext.EventObject.ESC,
@@ -4284,7 +4466,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
           ctrl:      true,
           scope:     this,
           stopEvent: true,
-          handler:   this.saveHandler
+          handler:   this.onSave
         }
       ],
       buttons: [
@@ -4292,7 +4474,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
           text:    'Save',
           scope:   this,
           iconCls: 'save',
-          handler: this.saveHandler
+          handler: this.onSave
         },
         {
           text:    'Cancel',
@@ -4302,9 +4484,6 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
         }
       ]
     });
-    
-    //sets the document's title to the title of this panel
-    this.os.setsTitle(this);
     
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
   },
@@ -4331,49 +4510,47 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * @param {ExtMVC.Model} model The model to build form items for
    * @return {Array} An array of auto-generated form items
    */
-  buildItems: function(model) {
+  buildItems: function() {
     //check to see if FormFields have been created for this model
     //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.FormFields
-    var formFields;
-    
-    if (formFields = eval(String.format("{0}.views.{1}.FormFields", model.namespace.split(".")[0], model.modelName.pluralize().toLowerCase()))) {
-      return formFields;
-    };
+    if (this.viewsPackage && this.viewsPackage.FormFields) {
+      return this.viewsPackage.FormFields;
+    }
     
     //no user defined form fields, generate them automatically
-    var items = [];
-    
-    for (var i=0; i < model.fields.length; i++) {
-      var f = model.fields[i];
+    var model  = this.model,
+        proto  = model.prototype,
+        fields = proto.fields,
+        items  = [];
+        
+    fields.each(function(field) {
       
       //add if it's not a field to be ignored
-      if (this.ignoreFields.indexOf(f.name) == -1) {
+      if (this.ignoreFields.indexOf(field.name) == -1) {
         items.push(Ext.applyIf({
-          name:        f.name,
-          fieldLabel: (f.name.replace(/_/g, " ")).capitalize()
+          name:        field.name,
+          fieldLabel: (field.name.replace(/_/g, " ")).capitalize()
         }, this.formItemConfig));
       };
-    };
+    }, this);
     
     return items;
   },
   
   /**
    * Called when the save button is clicked or CTRL + s pressed.  By default this simply fires
-   * the associated controller's 'update' action, passing this.getForm() as the sole argument
+   * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
-  onCreate: function() {
-    this.controller.fireAction('create', null, [this.getForm()]);
-  },
-  
-  onUpdate: function() {
-    this.controller.fireAction('update', null, [this.getForm()]);
+  onSave: function() {
+    this.fireEvent('save', this.getForm().getValues());
   },
   
   /**
    * Called when the cancel button is clicked or ESC pressed.  By default this simply calls Ext.History.back
    */
-  onCancel: Ext.History.back
+  onCancel: function() {
+    this.fireEvent('cancel');
+  }
 });
 
 Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);
@@ -4383,70 +4560,105 @@ Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);
  * @extends Ext.grid.GridPanel
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
-ExtMVC.view.scaffold.Index = function(model, config) {
-  var config = config || {};
+ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   
-  this.model = model;
-  this.os    = ExtMVC.OS.getOS();
-  
-  this.controllerName = model.modelName.pluralize();
-  this.controller     = this.os.getController(this.controllerName);
-  
-  //we can't put these in applyIf block below as the functions are executed immediately
-  config.columns = config.columns || this.buildColumns(model);
-  config.store   = config.store   || model.findAll();
-  
-  var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
-  var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(config.store) : null;
-  
-  Ext.applyIf(config, {
-    title:      'Showing ' + model.prototype.modelName.pluralize().capitalize(),
-    viewConfig: { forceFit: true },
-    id:         model.prototype.modelName + 's_index',
+  constructor: function(config) {
+    config = config || {};
+
+    this.model = config.model;
+    if (this.model == undefined) throw new Error("No model supplied to scaffold Index view");
     
-    loadMask: true,
+    //we can't put these in applyIf block below as the functions are executed immediately
+    config.columns = config.columns || this.buildColumns(this.model);
+    config.store   = config.store   || this.model.find();
     
-    tbar: tbarConfig,
-    bbar: bbar,
-    
-    listeners: {
-      'dblclick': {
-        scope: this,
-        fn: function(e) {
-          var obj = this.getSelectionModel().getSelected();
-          
-          if (obj) {
-            this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: obj.data.id});
-          };
+    var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
+    var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(config.store) : null;
+
+    Ext.applyIf(config, {
+      title:      this.getTitle(),
+      viewConfig: { forceFit: true },
+      id:         String.format("{0}_index", this.model.prototype.tableName),
+
+      loadMask: true,
+
+      tbar: tbarConfig,
+      bbar: bbar,
+      
+
+      keys: [
+        {
+          key:     'a',
+          scope:   this,
+          handler: this.onAdd
+        },
+        {
+          key:     'e',
+          scope:   this,
+          handler: this.onEdit
+        },
+        {
+          key:     Ext.EventObject.DELETE,
+          scope:   this,
+          handler: this.onDelete
         }
-      }
-    },
+      ]
+
+    });
+
+    ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
     
-    keys: [
-      {
-        key:     'a',
-        scope:   this,
-        handler: this.onAdd
-      },
-      {
-        key:     'e',
-        scope:   this,
-        handler: this.onEdit
-      },
-      {
-        key:     Ext.EventObject.DELETE,
-        scope:   this,
-        handler: this.onDelete
-      }
-    ]
+    this.initEvents();
+    this.initListeners();
+  },
+  
+  /**
+   * Sets up events emitted by the grid panel
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event edit
+       * Fired when the user wishes to edit a particular record
+       * @param {ExtMVC.Model.Base} instance The instance of the model the user wishes to edit
+       */
+      'edit',
+      
+      /**
+       * @event add
+       * Fired when the user wishes to add a new record
+       */
+      'add',
+      
+      /**
+       * @event delete
+       * Fired when the user wishes to destroy a particular record
+       * @param {ExtMVC.Model.Base} instance The instance fo the model the user wishes to destroy
+       */
+      'delete'
+    );
+  },
+  
+  /**
+   * Listens to clicks in the grid and contained components and takes action accordingly.
+   * Mostly, this is simply a case of capturing events received and re-emitting normalized events
+   */
+  initListeners: function() {
+    this.on({
+      scope     : this,
+      'dblclick': this.onEdit
+    });
+  },
 
-  });
- 
-  ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
-  ExtMVC.OS.getOS().setsTitle(this);
-};
-
-Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
+  
+  /**
+   * Returns the title to give to this grid.  If this view is currently representing a model called User,
+   * this will return "Showing Users". Override to set your own grid title
+   * @return {String} The title to give the grid
+   */
+  getTitle: function() {
+    return String.format("Showing {0}", this.model.prototype.pluralHumanName);
+  },
   
   /**
    * @property preferredColumns
@@ -4495,30 +4707,30 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * Takes a model definition and returns a column array to use for a columnModel
    */
   buildColumns: function(model) {
-    var columns     = [];
-    var wideColumns = [];
+    var model       = this.model,
+        proto       = model.prototype,
+        fields      = proto.fields,
+        columns     = [];
+        wideColumns = [];
     
     //put any preferred columns at the front
-    for (var i=0; i < model.fields.length; i++) {
-      var f = model.fields[i];
-      if (this.preferredColumns.indexOf(f.name) > -1) {
-        columns.push(this.buildColumn(f.name));
+    fields.each(function(field) {
+      if (this.preferredColumns.indexOf(field.name) > -1) {
+        columns.push(this.buildColumn(field.name));
       }
-    };
+    }, this);
     
     //add the rest of the columns to the end
-    for (var i = model.fields.length - 1; i >= 0; i--){
-      var f = model.fields[i];
-      //if this field is not in the prefer or ignore list, add it to the columns array
-      if (this.preferredColumns.indexOf(f.name) == -1 && this.ignoreColumns.indexOf(f.name) == -1) {
-        columns.push(this.buildColumn(f.name));
+    fields.each(function(field) {
+      if (this.preferredColumns.indexOf(field.name) == -1 && this.ignoreColumns.indexOf(f.name) == -1) {
+        columns.push(this.buildColumn(field.name));
       };
       
       //if it's been declared as a wide column, add it to the wideColumns array
-      if (this.wideColumns.indexOf(f.name)) {
-        wideColumns.push(f.name);
+      if (this.wideColumns.indexOf(field.name)) {
+        wideColumns.push(field.name);
       }
-    };
+    }, this);
     
     //add default widths to each
     var numberOfSegments = columns.length + (2 * wideColumns.length);
@@ -4564,7 +4776,7 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
    */
   buildTopToolbar: function() {
     this.addButton = new Ext.Button({
-      text:    'New ' + this.model.modelName.titleize(),
+      text:    'New ' + this.model.prototype.singularHumanName,
       scope:   this,
       iconCls: 'add',
       handler: this.onAdd
@@ -4615,44 +4827,40 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
       store:       store,
       displayInfo: true,
       pageSize:    25,
-      emptyMsg:    String.format("No {0} to display", modelObj.humanPluralName)
+      emptyMsg:    String.format("No {0} to display", this.model.prototype.pluralHumanName)
     });
   },
   
   /**
-   * Called when the add button is pressed, or when the 'a' key is pressed.  By default this will redirect to the
-   * 'New' form for this resource
+   * Called when the add button is pressed, or when the 'a' key is pressed.  By default this will simply fire the 'add' event
    */
   onAdd: function() {
-    this.os.router.redirectTo({controller: this.controllerName, action: 'new'});
+    this.fireEvent('add');
   },
   
   /**
-   * Called when the edit button is pressed, or when the 'e' key is pressed.  By default this will look to see if a row
-   * is selected, then redirect to the appropriate Edit form.
-   * If you override this you'll need to provide the row record lookup yourself
+   * Called when a row in this grid panel is double clicked.  By default this will find the associated
+   * record and fire the 'edit' event.  Override to provide your own logic
+   * @param {Ext.EventObject} e The Event object
    */
-  onEdit: function() {
-    var selected = this.getSelectionModel().getSelected();
-    if (selected) {
-      this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: selected.data.id});
-    }
+  onEdit: function(e) {
+    var obj = this.getSelectionModel().getSelected();
+    
+    if (obj) this.fireEvent('edit', obj);
   },
   
   /**
    * Called when the delete button is pressed, or the delete key is pressed.  By default this will ask the user to confirm,
-   * then fire the controller's destroy action with the selected record's data.id and a reference to this grid as arguments.
+   * then fire the delete action with the selected record as the sole argument
    */
   onDelete: function() {
     Ext.Msg.confirm(
       'Are you sure?',
-      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.modelName.titleize()),
+      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.prototype.modelName.titleize()),
       function(btn) {
         if (btn == 'yes') {
           var selected = this.getSelectionModel().getSelected();
-          if (selected) {
-            this.controller.fireAction('destroy', null, [selected.data.id, this.store]);
-          }
+          if (selected) this.fireEvent('delete', selected);
         };
       },
       this
@@ -4674,8 +4882,7 @@ ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      title:       'New ' + this.model.prototype.modelName.capitalize(),
-      saveHandler: this.onCreate
+      title: 'New ' + this.model.prototype.singularHumanName
     });
     ExtMVC.view.scaffold.New.superclass.initComponent.apply(this, arguments);
   }
@@ -4695,11 +4902,28 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      title:       'Edit ' + this.model.prototype.modelName.capitalize(),
-      saveHandler: this.onUpdate
+      title: 'Edit ' + this.model.prototype.singularHumanName
     });
     
     ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+  },
+  
+  /**
+   * Loads the given record into the form and maintains a reference to it so that it can be returned
+   * when the 'save' event is fired
+   * @param {ExtMVC.Model.Base} instance The model instance to load into this form
+   */
+  loadRecord: function(instance) {
+    this.instance = instance;
+    this.getForm().loadRecord(instance);
+  },
+  
+  /**
+   * Called when the save button is clicked or CTRL + s pressed.  By default this simply fires
+   * the 'save' event, passing this.getForm().getValues() as the sole argument
+   */
+  onSave: function() {
+    this.fireEvent('save', this.instance, this.getForm().getValues());
   }
 });
 

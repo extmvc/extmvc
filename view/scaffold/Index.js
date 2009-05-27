@@ -3,70 +3,105 @@
  * @extends Ext.grid.GridPanel
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
-ExtMVC.view.scaffold.Index = function(model, config) {
-  var config = config || {};
+ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   
-  this.model = model;
-  this.os    = ExtMVC.OS.getOS();
-  
-  this.controllerName = model.modelName.pluralize();
-  this.controller     = this.os.getController(this.controllerName);
-  
-  //we can't put these in applyIf block below as the functions are executed immediately
-  config.columns = config.columns || this.buildColumns(model);
-  config.store   = config.store   || model.findAll();
-  
-  var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
-  var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(config.store) : null;
-  
-  Ext.applyIf(config, {
-    title:      'Showing ' + model.prototype.modelName.pluralize().capitalize(),
-    viewConfig: { forceFit: true },
-    id:         model.prototype.modelName + 's_index',
+  constructor: function(config) {
+    config = config || {};
+
+    this.model = config.model;
+    if (this.model == undefined) throw new Error("No model supplied to scaffold Index view");
     
-    loadMask: true,
+    //we can't put these in applyIf block below as the functions are executed immediately
+    config.columns = config.columns || this.buildColumns(this.model);
+    config.store   = config.store   || this.model.find();
     
-    tbar: tbarConfig,
-    bbar: bbar,
-    
-    listeners: {
-      'dblclick': {
-        scope: this,
-        fn: function(e) {
-          var obj = this.getSelectionModel().getSelected();
-          
-          if (obj) {
-            this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: obj.data.id});
-          };
+    var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
+    var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(config.store) : null;
+
+    Ext.applyIf(config, {
+      title:      this.getTitle(),
+      viewConfig: { forceFit: true },
+      id:         String.format("{0}_index", this.model.prototype.tableName),
+
+      loadMask: true,
+
+      tbar: tbarConfig,
+      bbar: bbar,
+      
+
+      keys: [
+        {
+          key:     'a',
+          scope:   this,
+          handler: this.onAdd
+        },
+        {
+          key:     'e',
+          scope:   this,
+          handler: this.onEdit
+        },
+        {
+          key:     Ext.EventObject.DELETE,
+          scope:   this,
+          handler: this.onDelete
         }
-      }
-    },
+      ]
+
+    });
+
+    ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
     
-    keys: [
-      {
-        key:     'a',
-        scope:   this,
-        handler: this.onAdd
-      },
-      {
-        key:     'e',
-        scope:   this,
-        handler: this.onEdit
-      },
-      {
-        key:     Ext.EventObject.DELETE,
-        scope:   this,
-        handler: this.onDelete
-      }
-    ]
+    this.initEvents();
+    this.initListeners();
+  },
+  
+  /**
+   * Sets up events emitted by the grid panel
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event edit
+       * Fired when the user wishes to edit a particular record
+       * @param {ExtMVC.Model.Base} instance The instance of the model the user wishes to edit
+       */
+      'edit',
+      
+      /**
+       * @event add
+       * Fired when the user wishes to add a new record
+       */
+      'add',
+      
+      /**
+       * @event delete
+       * Fired when the user wishes to destroy a particular record
+       * @param {ExtMVC.Model.Base} instance The instance fo the model the user wishes to destroy
+       */
+      'delete'
+    );
+  },
+  
+  /**
+   * Listens to clicks in the grid and contained components and takes action accordingly.
+   * Mostly, this is simply a case of capturing events received and re-emitting normalized events
+   */
+  initListeners: function() {
+    this.on({
+      scope     : this,
+      'dblclick': this.onEdit
+    });
+  },
 
-  });
- 
-  ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
-  ExtMVC.OS.getOS().setsTitle(this);
-};
-
-Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
+  
+  /**
+   * Returns the title to give to this grid.  If this view is currently representing a model called User,
+   * this will return "Showing Users". Override to set your own grid title
+   * @return {String} The title to give the grid
+   */
+  getTitle: function() {
+    return String.format("Showing {0}", this.model.prototype.pluralHumanName);
+  },
   
   /**
    * @property preferredColumns
@@ -115,30 +150,30 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
    * Takes a model definition and returns a column array to use for a columnModel
    */
   buildColumns: function(model) {
-    var columns     = [];
-    var wideColumns = [];
+    var model       = this.model,
+        proto       = model.prototype,
+        fields      = proto.fields,
+        columns     = [];
+        wideColumns = [];
     
     //put any preferred columns at the front
-    for (var i=0; i < model.fields.length; i++) {
-      var f = model.fields[i];
-      if (this.preferredColumns.indexOf(f.name) > -1) {
-        columns.push(this.buildColumn(f.name));
+    fields.each(function(field) {
+      if (this.preferredColumns.indexOf(field.name) > -1) {
+        columns.push(this.buildColumn(field.name));
       }
-    };
+    }, this);
     
     //add the rest of the columns to the end
-    for (var i = model.fields.length - 1; i >= 0; i--){
-      var f = model.fields[i];
-      //if this field is not in the prefer or ignore list, add it to the columns array
-      if (this.preferredColumns.indexOf(f.name) == -1 && this.ignoreColumns.indexOf(f.name) == -1) {
-        columns.push(this.buildColumn(f.name));
+    fields.each(function(field) {
+      if (this.preferredColumns.indexOf(field.name) == -1 && this.ignoreColumns.indexOf(f.name) == -1) {
+        columns.push(this.buildColumn(field.name));
       };
       
       //if it's been declared as a wide column, add it to the wideColumns array
-      if (this.wideColumns.indexOf(f.name)) {
-        wideColumns.push(f.name);
+      if (this.wideColumns.indexOf(field.name)) {
+        wideColumns.push(field.name);
       }
-    };
+    }, this);
     
     //add default widths to each
     var numberOfSegments = columns.length + (2 * wideColumns.length);
@@ -184,7 +219,7 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
    */
   buildTopToolbar: function() {
     this.addButton = new Ext.Button({
-      text:    'New ' + this.model.modelName.titleize(),
+      text:    'New ' + this.model.prototype.singularHumanName,
       scope:   this,
       iconCls: 'add',
       handler: this.onAdd
@@ -235,44 +270,40 @@ Ext.extend(ExtMVC.view.scaffold.Index, Ext.grid.GridPanel, {
       store:       store,
       displayInfo: true,
       pageSize:    25,
-      emptyMsg:    String.format("No {0} to display", modelObj.humanPluralName)
+      emptyMsg:    String.format("No {0} to display", this.model.prototype.pluralHumanName)
     });
   },
   
   /**
-   * Called when the add button is pressed, or when the 'a' key is pressed.  By default this will redirect to the
-   * 'New' form for this resource
+   * Called when the add button is pressed, or when the 'a' key is pressed.  By default this will simply fire the 'add' event
    */
   onAdd: function() {
-    this.os.router.redirectTo({controller: this.controllerName, action: 'new'});
+    this.fireEvent('add');
   },
   
   /**
-   * Called when the edit button is pressed, or when the 'e' key is pressed.  By default this will look to see if a row
-   * is selected, then redirect to the appropriate Edit form.
-   * If you override this you'll need to provide the row record lookup yourself
+   * Called when a row in this grid panel is double clicked.  By default this will find the associated
+   * record and fire the 'edit' event.  Override to provide your own logic
+   * @param {Ext.EventObject} e The Event object
    */
-  onEdit: function() {
-    var selected = this.getSelectionModel().getSelected();
-    if (selected) {
-      this.os.router.redirectTo({controller: this.controllerName, action: 'edit', id: selected.data.id});
-    }
+  onEdit: function(e) {
+    var obj = this.getSelectionModel().getSelected();
+    
+    if (obj) this.fireEvent('edit', obj);
   },
   
   /**
    * Called when the delete button is pressed, or the delete key is pressed.  By default this will ask the user to confirm,
-   * then fire the controller's destroy action with the selected record's data.id and a reference to this grid as arguments.
+   * then fire the delete action with the selected record as the sole argument
    */
   onDelete: function() {
     Ext.Msg.confirm(
       'Are you sure?',
-      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.modelName.titleize()),
+      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.prototype.modelName.titleize()),
       function(btn) {
         if (btn == 'yes') {
           var selected = this.getSelectionModel().getSelected();
-          if (selected) {
-            this.controller.fireAction('destroy', null, [selected.data.id, this.store]);
-          }
+          if (selected) this.fireEvent('delete', selected);
         };
       },
       this

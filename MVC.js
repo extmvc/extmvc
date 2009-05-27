@@ -62,8 +62,6 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
    */
   registerController: function(controllerName, controllerClass) {
     this.controllers[controllerName] = controllerClass;
-    
-    Ext.ns(String.format("{0}.views.{1}", this.name, controllerName));
   },
 
   /**

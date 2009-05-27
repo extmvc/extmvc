@@ -34,6 +34,21 @@ ExtMVC.Model.Base.prototype = {
   },
   
   /**
+   * Returns a JsonReader suitable for use decoding generic JSON data from a server response
+   * Override this to provide your own Reader
+   */
+  getReader: function() {
+    if (!this.reader) {
+      this.reader = new Ext.data.JsonReader({
+        totalProperty: "results",
+        root:          this.tableName
+      }, this.constructor);
+    }
+    
+    return this.reader;
+  },
+  
+  /**
    * @property initialize
    * @type Function
    * Function which is called whenever a model object is instantiated.  Override this with your own callback if needed

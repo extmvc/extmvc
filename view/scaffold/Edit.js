@@ -10,11 +10,28 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      title:       'Edit ' + this.model.prototype.modelName.capitalize(),
-      saveHandler: this.onUpdate
+      title: 'Edit ' + this.model.prototype.singularHumanName
     });
     
     ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+  },
+  
+  /**
+   * Loads the given record into the form and maintains a reference to it so that it can be returned
+   * when the 'save' event is fired
+   * @param {ExtMVC.Model.Base} instance The model instance to load into this form
+   */
+  loadRecord: function(instance) {
+    this.instance = instance;
+    this.getForm().loadRecord(instance);
+  },
+  
+  /**
+   * Called when the save button is clicked or CTRL + s pressed.  By default this simply fires
+   * the 'save' event, passing this.getForm().getValues() as the sole argument
+   */
+  onSave: function() {
+    this.fireEvent('save', this.instance, this.getForm().getValues());
   }
 });
 

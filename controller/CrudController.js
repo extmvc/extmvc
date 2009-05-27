@@ -1,6 +1,240 @@
 /**
- * This started life as a plugin, moving it here for now as it might be useful on every project (hence oddish definition)
+ * @class ExtMVC.controller.CrudController
+ * @extends ExtMVC.Controller
+ * An extension of Controller which provides the generic CRUD actions
  */
+ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
+  /**
+   * @property model
+   * @type Function/Null
+   * Defaults to null.  If set to a reference to an ExtMVC.Model subclass, renderView will attempt to dynamically
+   * scaffold any missing views, if the corresponding view is defined in the ExtMVC.view.scaffold package
+   */
+  model: null,
+
+  /**
+   * @action create
+   * Attempts to create a new instance of this controller's associated model
+   * @param {Object} data A fields object (e.g. {title: 'My instance'})
+   */
+  create: function(data, form) {
+    var instance = new this.model(data);
+
+    instance.save({
+      scope:    this,
+      success: function(instance) {
+        this.fireEvent('create', instance);
+      },
+      failure: function(instance) {
+        this.fireEvent('create-failed', instance);
+      }
+    });
+  },
+  
+  /**
+   * @action read
+   * Attempts to find (read) a single model instance by ID
+   * @param {Number} id The Id of the instance to read
+   */
+  read: function(id) {
+    this.model.findById(id, {
+      scope: this,
+      success: function(instance) {
+        this.fireEvent('read', instance);
+      },
+      failure: function() {
+        this.fireEvent('read-failed', id);
+      }
+    });
+  },
+  
+  /**
+   * Attempts to update an existing instance with new values
+   * @param {ExtMVC.Model.Base} instance The existing instance object
+   * @param {Object} updates An object containing updates to apply to the instance
+   */
+  update: function(instance, updates) {
+    for (var key in updates) {
+      instance.set(key, updates[key]);
+    }
+    
+    instance.save({
+      scope:   this,
+      success: function() {
+        this.fireEvent('update', instance, updates);
+      },
+      failure: function() {
+        this.fireEvent('update-failed', instance, updates);
+      }
+    });
+  },
+  
+  /**
+   * @action destroy
+   * Attempts to delete an existing instance
+   * @param {Mixed} instance The ExtMVC.Model.Base subclass instance to delete.  Will also accept a string/number ID
+   */
+  destroy: function(instance) {
+    instance.destroy({
+      scope:   this,
+      success: function() {
+        this.fireEvent('delete', instance);
+      },
+      failure: function() {
+        this.fireEvent('delete-failed', instance);
+      }
+    });
+  },
+  
+  /**
+   * @action index
+   * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
+   */
+  index: function() {
+    this.render('Index', {
+      model: this.model,
+      listeners: {
+        scope   : this,
+        'delete': this.destroy,
+        'add'   : this.build,
+        'edit'  : this.edit
+      }
+    });
+  },
+  
+  /**
+   * @action build
+   * Renders the custom New view if present, otherwise falls back to the default scaffold New form
+   */
+  build: function() {
+    this.render('New', {
+      model: this.model,
+      listeners: {
+        scope:  this,
+        cancel: this.index,
+        save:   this.create
+      }
+    });
+  },
+  
+  /**
+   * @action edit
+   * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
+   * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.Model.Base
+   * instance, a findById() will be called on this controller's associated model
+   */
+  edit: function(instance) {
+    //TODO: 
+    
+    this.render('Edit', {
+      model: this.model,
+      listeners: {
+        scope : this,
+        cancel: this.index,
+        save  : this.update
+      }
+    }).loadRecord(instance);
+  },
+  
+  /**
+   * Sets up events emitted by the CRUD Controller's actions
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event create
+       * Fired when a new instance has been successfully created
+       * @param {ExtMVC.Model.Base} instance The newly created model instance
+       */
+      'create',
+      
+      /**
+       * @event create-failed
+       * Fired when an attempt to create a new instance failed
+       * @param {ExtMVC.Model.Base} instance The instance object which couldn't be saved
+       */
+      'create-failed',
+      
+      /**
+       * @event read
+       * Fired when a single instance has been loaded from the database
+       * @param {ExtMVC.Model.Base} instance The instance instance that was loaded
+       */
+      'read',
+      
+      /**
+       * @event read-failed
+       * Fired when an attempt to load a single instance failed
+       * @param {Number} id The ID of the instance we were attempting to find
+       */
+      'read-failed',
+      
+      /**
+       * @event update
+       * Fired when an existing instance has been successfully created
+       * @param {ExtMVC.Model.Base} instance The updated instance
+       * @param {Object} updates The updates object that was supplied
+       */
+      'update',
+      
+      /**
+       * @event update-failed
+       * Fired when an attempty to update an existing instance failed
+       * @param {ExtMVC.Model.Base} instance The instance we were attempting to update
+       * @param {Object} updates The object of updates we were trying to apply
+       */
+      'update-failed',
+      
+      /**
+       * @event delete
+       * Fired when an existing instance has been successfully deleteed
+       * @param {ExtMVC.Model.Base} instance The instance that was deleteed
+       */
+      'delete',
+      
+      /**
+       * @event delete-failed
+       * Fired when an attempt to delete an existing instance failed
+       * @param {ExtMVC.Model.Base} instance The instance we were trying to delete
+       */
+      'delete-failed',
+      
+      /**
+       * @event index
+       * Fired when an instances collection has been loaded from the database
+       * @param {Ext.data.Store} instances An Ext.data.Store containing the instances retrieved
+       */
+      'index',
+      
+      /**
+       * @event index-failed
+       * Fired when an error was encountered while trying to load the instances from the database
+       */
+      'index-failed'
+    );
+  },
+  
+  /**
+   * If a view of the given viewName is defined in this controllers viewPackage, a reference to its
+   * constructor is defined.  If not, a reference to the default scaffold for the viewName is returned
+   * @param {String} viewName The name of the view to return a constructor function for
+   * @return {Function} A reference to the custom view, or the scaffold fallback
+   */
+  getViewClass: function(viewName) {
+    var userView = ExtMVC.CrudController.superclass.getViewClass.call(this, viewName);
+    
+    return (userView == undefined) ? this.scaffoldViewName(viewName) : userView;
+  },
+  
+  /**
+   * Returns a reference to the Scaffold view class for a given viewName
+   * @param {String} viewName The name of the view to return a class for (index, new, edit or show)
+   * @return {Function} A reference to the view class to instantiate to render this scaffold view
+   */
+  scaffoldViewName: function(viewName) {
+    return ExtMVC.view.scaffold[viewName.titleize()];
+  }
+});
 
 
 Ext.ns('ExtMVC.plugin.CrudController');
@@ -17,7 +251,7 @@ Ext.ns('ExtMVC.plugin.CrudController');
    * edit() - displays the 'edit' view and loads the model whose id is in your os.params.id
    * create(form) - takes an Ext.form.BasicForm and attempts to create + save a new model object with it
    * update(form) - takes a BasicForm and attempts to update an existing object with it (again using os.params.id)
-   * destroy(id, store) - takes an ID, deletes it and optionally refreshes a store
+   * delete(id, store) - takes an ID, deletes it and optionally refreshes a store
    * 
    * It does not overwrite any existing action already defined under one of those names.
    *
@@ -99,17 +333,17 @@ Ext.ns('ExtMVC.plugin.CrudController');
     }, {overwrite: false});
     
     /**
-     * @action destroy 
+     * @action delete 
      * Deletes a given model instance
      */
-    this.registerAction('destroy', function(id, store) {
+    this.registerAction('delete', function(id, store) {
       var id = id || this.os.params.id;
       if (id) {
         var u = new this.model({id: id});
         u.destroy({
           scope:   this,
-          success: this.onDestroySuccess.createDelegate(this, [store]),
-          failure: this.onDestroyFailure
+          success: this.ondeleteSuccess.createDelegate(this, [store]),
+          failure: this.ondeleteFailure
         });
       };
     }, {overwrite: false});
@@ -268,18 +502,18 @@ Ext.ns('ExtMVC.plugin.CrudController');
     },
     
     /**
-     * Called after an item has been successfully destroyed (deleted).  By default this reloads the grid's store
+     * Called after an item has been successfully deleteed (deleted).  By default this reloads the grid's store
      * @param {Ext.data.Store} store The Ext.data.Store to reload after deletion
      */
-    onDestroySuccess: function(store) {
+    ondeleteSuccess: function(store) {
       if (store) store.reload();
     },
     
     /**
-     * Called after an destroy attempt was made on a model instance, but the attempt failed.  By default this shows
+     * Called after an delete attempt was made on a model instance, but the attempt failed.  By default this shows
      * a MessageBox alert informing the user
      */
-    onDestroyFailure: function(paramName) {
+    ondeleteFailure: function(paramName) {
       Ext.Msg.alert(
         'Delete Failed',
         'Sorry, something went wrong when trying to delete that item.  Please try again'

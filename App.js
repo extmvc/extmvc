@@ -65,7 +65,8 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * False by default
    */
   usesHistory: false,
- 
+
+ 
   /**
    * @prop dispatchHistoryOnLoad
    * @type Boolean
@@ -92,7 +93,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * @param {Object} dispatchConfig A config object which should look something like this:
    * {controller: 'MyController', action: 'index'}, where 'MyController' is the key for a controller
    * which has been registered to the controller.  If action is not specified, it defaults to 'index'
-   * @param {Object} scope The scope in which to fire the event (defaults to the OS)
+   * @param {Object} scope The scope in which to fire the event (defaults to the controller)
    * @param {Array} args An array of arguments which are passed to the controller action.
    */
   dispatch: function(dispatchConfig, scope, args) {
@@ -104,10 +105,10 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
     this.params = dispatchConfig;
     
     var c = ExtMVC.getController(dispatchConfig.controller);
-    if (typeof c != 'undefined') {
+    if (c != undefined) {
       var action = c[dispatchConfig.action];
       
-      if (typeof action == "function") action.apply(scope, args || []);
+      if (typeof action == "function") action.apply(scope || c, args || []);
       else throw new Error(String.format("Action '{0}' not found on Controller '{1}'", dispatchConfig.action, dispatchConfig.controller));
     }
   },

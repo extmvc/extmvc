@@ -3,91 +3,47 @@
  * @extends Ext.util.Observable
  * Controller base class
  */
-ExtMVC.Controller = function(config) {
-  var config = config || {};
-  Ext.applyIf(config, {
-    autoRegisterViews: true
-  });
-  
-  ExtMVC.Controller.superclass.constructor.call(this, config);
+ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   
   /**
-   * @property views
-   * @type Object
-   * Hash of all views registered for use with this Controller.
-   * Read only, use @link {getViewClass} for access
+   * @property name
+   * @type String
+   * The string name for this controller. Used to automatically register the controller with ExtMVC,
+   * and to include all views under the view package of the same name.  For example, if your application is
+   * called MyApp and the controller name is users, all views in the MyApp.views.users namespace will be 
+   * registered automatically for use with this.render().
    */
-  this.views = {};
+  name: null,
   
-  /**
-   * @property runningViews
-   * @type Object
-   * Hash of all views which are currently rendered and referenced.  Indexed by the view's ID
-   * Read only!  Use renderView and destroyView to add or remove.
-   */
-  this.runningViews = {};
+  onExtended: function() {
+    if (this.name != null) {
+      this.viewsPackage = Ext.ns(String.format("{0}.views.{1}", ExtMVC.name, this.name));
+      
+      ExtMVC.registerController(this.name, this.constructor);
+    }
+  },
   
-  /**
-   * @property actions
-   * @type Object
-   * Maintains a reference to each registered action. Read only.
-   */
-  this.actions = {};
-  
-  this.addEvents(
-    /**
-     * @event init
-     * Fires when this controller is created.
-     * @param {ExtMVC.Controller} this The controller instance
-     */
-    'init',
+  constructor: function(config) {
+    ExtMVC.Controller.superclass.constructor.apply(this, arguments);
     
-    /**
-     * @event beforedefaultaction
-     * Fires is this.fireAction('someAction') is called, but 'someAction' has not been defined
-     * with this.registerAction().  Default behaviour in this case is to attempt to find a view
-     * of the same name and display it.  If you want to provide your own behaviour here, just
-     * return false to this event
-     * @param {string} actionName The name of the action being fired
-     * @param {Object} scope The scope the action is being fired within
-     * @param {Array} args An array of arguments passed to the action
-     */
-    'beforedefaultaction'
-  );
-  
-  /**
-   * Automatically register all views in the config.viewsPackage
-   */
-  if (config.autoRegisterViews && config.viewsPackage) {
-    for (var v in config.viewsPackage) {
-      this.registerView(v.toLowerCase(), config.viewsPackage[v]);
-    }
-  };
-  
-  this.fireEvent('init', this);
-};
-
-Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
-  
-  /**
-   * Attaches a view class to this controller - allows the controller to create the view
-   * @param {String} viewName The name of this view (e.g. 'index')
-   * @param {Function} viewClass A reference to the view class to be instantiated (e.g. MyApp.view.Index, which is some subclass of Ext.Panel)
-   */
-  registerView: function(viewName, viewClass) {
-    this.views[viewName] = viewClass;
+    Ext.apply(this, config || {});
+    
+    this.initEvents();
+    this.initListeners();
   },
   
   /**
-   * Convenience method to batch register views with this Controller
-   * @param {Object} An object of viewName: viewClass options.  e.g. {'index': MyApp.view.Index}
-   * would be the same as this.registerView('index', MyApp.view.Index)
+   * Sets up events emitted by this controller. This defaults to an empty function and is
+   * called automatically when the controller is constructed so can simply be overridden
    */
-  registerViews: function(viewObject) {
-    for (var v in viewObject) {
-      this.registerView(v, viewObject[v]);
-    }
-  },
+  initEvents: Ext.emptyFn,
+  
+  /**
+   * Sets up events this controller listens to, and the actions the controller should take
+   * when each event is received.  This defaults to an empty function and is called when
+   * the controller is constructed so can simply be overridden
+   */
+  initListeners: Ext.emptyFn,
   
   /**
    * Returns the view class registered for the given view name, or null
@@ -95,15 +51,8 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
    * @return {Function/null} The view class (or null if not present)
    */
   getViewClass: function(viewName) {
-    return this.views[viewName];
+    return this.viewsPackage[viewName];
   },
-  
-  /**
-   * @property renderMethod
-   * @type String
-   * Can be either renderNow or return.  renderNow attempts to actually render the view, whereas return just returns it
-   */
-  renderMethod: 'renderNow',
   
   /**
    * @property addTo
@@ -113,244 +62,44 @@ Ext.extend(ExtMVC.Controller, Ext.util.Observable, {
   addTo: null,
   
   /**
-   * @property model
-   * @type Function/Null
-   * Defaults to null.  If set to a reference to an ExtMVC.Model subclass, renderView will attempt to dynamically
-   * scaffold any missing views, if the corresponding view is defined in the ExtMVC.view.scaffold package
+   * Renders a given view name in the way set up by the controller.  For this to work you must have passed a 
+   * 'name' property when creating the controller, which is automatically used to find the view namespace for
+   * this controller.  For example, in an application called MyApp, and a controller with a name of 'users',
+   * the view namespace would be MyApp.views.users, and render('Index') would search for a class called
+   * MyApp.views.users.Index and instantiate it with the passed config.
+   * An error is thrown if the view could not be found.
+   * @param {String} viewName The name of the view class within the view namespace used by this controller
+   * @param {Object} config Configuration options passed through to the view class' constructor
+   * @return {Ext.Component} The view object that was just created
    */
-  model: null,
-  
-  /**
-   * Returns a reference to the Scaffold view class for a given viewName
-   * @param {String} viewName The name of the view to return a class for (index, new, edit or show)
-   * @return {Function} A reference to the view class to instantiate to render this scaffold view
-   */
-  scaffoldViewName: function(viewName) {
-    return ExtMVC.view.scaffold[viewName.titleize()];
-  },
-  
-  /**
-   * Creates the requested view and registers it with this.runningViews.
-   * Each view should have a unique ID, or the view is not rendered and an error is raised
-   * @param {String} viewName The registered name of the view to create and render
-   * @param {Object} viewConfig Generic config object passed to the view's constructor
-   * @param {Object} renderConfig Render configuration options
-   * @return {Object} A reference to the newly created view
-   * @throws Error when a view for the given viewName has not been registered, or if the view's ID has already been taken
-   */
-  renderView: function(viewName, viewConfig, renderConfig) {
-    var renderConfig = renderConfig || {};
-    var viewConfig   = viewConfig   || {};
+  render: function(viewName, config) {
+    var viewC = this.getViewClass(viewName);
     
-    //by default we render straight away, to the Body element
-    Ext.applyIf(renderConfig, {
-      renderTo:   Ext.getBody(),
-      renderNow:  true,
-      renderOnce: true
-    });
-    
-    var v;
-    
-    //if a view class has been registered
-    if (typeof((this.getViewClass(viewName))) == 'function') {
-      v = new (this.getViewClass(viewName))(viewConfig);
+    if (typeof viewC == "function") {
+      var view = new viewC(config);
+      if (this.addTo) this.renderViaAddTo(view);
       
-    //view has not been registered, attempt to create one
-    } else if (this.model) {
-      try {
-        v = new (this.scaffoldViewName(viewName))(this.model);
-      } catch(e) {};
-    }
-    
-    if (!v || typeof(v) == 'undefined') {return;}
-    
-    var running = this.getRunningView(v.id);
-    if (running) {
-      if (renderConfig.renderOnce) {
-        v.destroy();
-        return running;
-      } else {
-        //view ID has already been taken, throw an error
-        throw new Error('The view ID ' + v.id + ' has already been taken.  Each view instance must have a unique ID');        
-      };
+      return view;
     } else {
-      return this.launchView(v);
-    };
-
+      throw new Error(String.format("View '{0}' not found", viewName));
+    }
   },
   
   /**
-   * Launches a view instance by either rendering it to the renderTo element or adding it to this.addTo
-   * @param {Ext.Component} v Any Component which can be added to a container or rendered to an element
-   * @param {Object} renderConfig A config object with instructions on how to render this view.  Relevant options are:
-   *                              renderNow: true to render the view right away (defaults to true)
-   *                              renderTo: The element to render this view to (unless using the addTo method)
+   * Adds the given component to this application's main container.  This is usually a TabPanel
+   * or similar, and must be assigned to the controllers addTo property.  By default,
+   * this method removes any other items from the container first, then adds the new component
+   * and calls doLayout
+   * @param {Ext.Component} component The component to add to the controller's container
    */
-  launchView: function(v, renderConfig) {
-    var renderConfig = renderConfig || {};
-    Ext.applyIf(renderConfig, {
-      renderNow: true,
-      renderTo:  Ext.getBody()
-    });
-    
-    v.on('close',   function()     {this.destroyView(v.id); },            this);
-    v.on('destroy', function(view) {delete this.runningViews[view.id]; }, this);
-    this.runningViews[v.id] = v;
-    
-    if (this.renderMethod == 'renderNow' && renderConfig.renderNow) {
-      v.render(renderConfig.renderTo, renderConfig.renderPosition);
-      return v;
-    } else {
-      if (this.addTo && renderConfig.renderNow) {
-        this.addTo.add(v).show();
-        this.addTo.doLayout();
-        return v;
-      };
+  renderViaAddTo: function(component) {
+    if (this.addTo != undefined) {
+      this.addTo.removeAll();
+      this.addTo.doLayout();
       
-      // XXX
-      // TODO there needs to be some kind of exception here if nothing happens
-      return v;
-    };
-  },
-  
-  /**
-   * Returns an instance of a running view with the given ID
-   * @param {String} viewId The unique ID of a view instantiation
-   * @return {Object} The view instance, or null if no match
-   */
-  getRunningView: function(viewId) {
-    return this.runningViews[viewId];
-  },
-  
-  /**
-   * Returns an array of all running view instances whose IDs match the given regex
-   * @param {Object} regex The regular expression to compare unique view instance IDs to
-   * @return {Array} An array of matching view instances
-   */
-  getRunningViews: function(regex) {
-    //make sure we have a regex object
-    if (!regex.test) { return []; }
-    
-    var matches = [];
-    for (var v in this.runningViews) {
-      if (regex.test(v)) {
-        matches.push(this.runningViews[v]);
-      };
+      this.addTo.add(component);
+      this.addTo.doLayout();
     }
-    
-    return matches;
-  },
-  
-  /**
-   * Destroys the currently running view as referenced by the argument.
-   * The argument must be an <em>ID</em> of a running view, not the registered viewName.
-   * Check that a running view for a given ID exists using this.getRunningView.
-   * @param {String} viewId The ID of the running view to destroy
-   */
-  destroyView: function(viewId) {
-    var view = this.getRunningView(viewId);
-    if (view) {
-      view.destroy();
-      delete this.runningViews[viewId];
-    };
-  },
-  
-  /**
-   * Destroys all views with IDs matching the given regex
-   * @param {Object} regex The Regular Expression to match IDs against
-   */
-  destroyViews: function(regex) {
-    //make sure we have a regex object
-    if (!regex.test) { return []; }
-    
-    for (var v in this.runningViews) {
-      if (regex.test(v)) {
-        this.destroyView(v);
-      };
-    }
-  },
-  
-  /**
-   * Registers a function as an Action for this Controller.  Actions registered here
-   * can take part in this.fireAction, and are automatically given before and after events.
-   * For example registerAction('index', function() { ... }) registeres before_index and after_index
-   * events, which are called before and after the action has been fired.  Return false to the before_
-   * event in order to stop the action being called.
-   * @param {String} actionName The string name to associate with this action function
-   * @param {Function} actionFunction The action function to be called with this.fireAction(actionName)
-   * @param {Object} options Gives ability to optionally bypass creation of before_ and after_ events
-   * (e.g. {before_filter: false, after_filter: true}).  Both default to true
-   * Also takes an overwrite option which will stop this action overwriting a previous action defined with
-   * this action name (defaults to true)
-   */
-  registerAction: function(actionName, actionFunction, options) {
-    var options = options || {};
-    Ext.applyIf(options, { before_filter: true, after_filter: true, overwrite: true});
-    
-    //create the before and after filters
-    if (options.before_filter) { this.addEvents('before_' + actionName); }
-    if (options.after_filter)  { this.addEvents('after_'  + actionName); }
-    
-    //don't overwrite the existing action if told not to
-    if (!this.getAction(actionName) || options.overwrite == true) {
-      this.actions[actionName] = actionFunction;
-    };
-  },
-  
-  /**
-   * Returns a reference to the function of the requested action name.  Does not execute the action
-   * @param {String} actionName The string name of the action to find
-   * @return {Function} A reference to the function, or null if not found
-   */
-  getAction: function(actionName) {
-    return this.actions[actionName];
-  },
-  
-  /**
-   * Fires the requested action with any arguments passed to it.  If before and after filters have been
-   * added to this action, they are fired before and after the action is executed (see {@link registerAction}).
-   * If the specified action has not been registered, this will try to display the registered view with the same name,
-   * if one has been defined.
-   * @param {String} actionName The name of the action to call.  Nothing will happen if an invalid action name is specified
-   * @param {Object} scope The scope in which to execute the action (defaults to the controller's scope).  Set this to null 
-   * keep scope as the controller's scope if you need to pass additional params to the action
-   * @param {Array} args An array of arguments to execute the action with (optional)
-   */
-  fireAction: function(actionName, scope, args) {
-    var scope = scope || this;
-    var args  = args  || [];
-    
-    var a = this.getAction(actionName);
-    if (a) {
-      if (this.fireEvent('before_' + actionName)) {
-        a.apply(scope, args);
-        
-        this.fireEvent('after_' + actionName);
-      };
-    } else {
-      if (this.fireEvent('beforedefaultaction', actionName, scope, args)) {
-        var v;
-        if (v = this.renderView(actionName, args[0])) {
-          v.show();
-        }
-      };
-    };
-  },
-  
-  /**
-   * Attaches an action to an event on any Ext.util.Observable object. Mainly a convenience method
-   * in place of firingObject.on(eventName, actionName, actionScope)
-   * @param {Object} firingObject The object to listen to for fired events
-   * @param {String} eventName The name of the event to handle
-   * @param {String} actionName The name of the action to dispatch to (this will be called with the arguments attached to the event)
-   * @param {Object} actionScope The scope to execute the action within (defaults to this controller)
-   */
-  handleEvent: function(firingObject, eventName, actionName, actionScope) {
-    var actionScope = actionScope || this;
-    
-    firingObject.on(eventName, function() {
-      this.fireAction(actionName, actionScope, arguments);
-    }, this);
   }
 });
 

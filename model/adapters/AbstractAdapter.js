@@ -1,7 +1,7 @@
 ExtMVC.Model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
-      var adapter = new this.MemoryAdapter();
+      var adapter = new this.RESTAdapter();
       
       Ext.override(Ext.data.Record, adapter.instanceMethods());
       Ext.apply(model, adapter.classMethods());
@@ -150,7 +150,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
        */
       find: function(conditions, options) {
         //assume to be the primary key
-        if (typeof(conditions) != 'object') conditions = {primaryKey: conditions};
+        if (typeof(conditions) == 'number') conditions = {primaryKey: conditions};
         
         return this.adapter.doFind(conditions, options, this);
       },

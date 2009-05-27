@@ -66,34 +66,53 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
         failureCallback = options.failure;
     
     delete options.callback; delete options.success; delete options.failure;
-    
-    //apply some defaults
-    Ext.applyIf(options, {
-      method: this.readMethod,
-      url:    url,
-      params: conditions,
-      scope:  this
-    });
-    
+
     //helper function to cut down repetition in Ajax request callback
     var callIf = function(callback, args) {
       if (typeof callback == 'function') callback.apply(options.scope, args);
     };
     
-    Ext.Ajax.request(
-      Ext.apply(options, {
-        callback: function(opts, success, response) {
-          if (success === true) {
-            var instance = new constructor(response.responseText);
-            
-            callIf(successCallback, [instance, opts, response]);
-          } else callIf(failureCallback, arguments);
-          
-          //call the generic callback passed into options
-          callIf(optionsCallback, arguments);
-        }
-      })
-    );
+    //apply some defaults
+    Ext.applyIf(options, {
+      method: this.readMethod,
+      url:    url,
+      scope:  this
+    });
+    
+    if (conditions.primaryKey == undefined) {
+      //do a collection find
+      
+      return new Ext.data.Store(
+        Ext.applyIf(options, {
+          autoLoad:   true,
+          remoteSort: false,
+          reader:     constructor.prototype.getReader()
+
+          // proxy:      new this.proxyType(proxyOpts),
+          // reader:     this.getReader()
+        })
+      );
+    } else {
+      //do a single find
+     
+      
+      Ext.applyIf(options, {params: conditions});
+
+      Ext.Ajax.request(
+        Ext.apply(options, {
+          callback: function(opts, success, response) {
+            if (success === true) {
+              var instance = new constructor(response.responseText);
+
+              callIf(successCallback, [instance, opts, response]);
+            } else callIf(failureCallback, arguments);
+
+            //call the generic callback passed into options
+            callIf(optionsCallback, arguments);
+          }
+        })
+      );
+    }
   },
   
   doDestroy: function(instance, options) {
