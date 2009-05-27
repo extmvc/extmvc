@@ -113,7 +113,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
         scope:  this,
         cancel: this.index,
         save:   this.create
-      }
+      },
+      viewsPackage: this.viewsPackage
     });
   },
   
@@ -132,7 +133,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
         scope : this,
         cancel: this.index,
         save  : this.update
-      }
+      },
+      viewsPackage: this.viewsPackage
     }).loadRecord(instance);
   },
   
