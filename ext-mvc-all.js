@@ -3391,9 +3391,14 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     
     //apply some defaults
     Ext.applyIf(options, {
-      method: this.readMethod,
-      url:    url,
-      scope:  this
+      method:  this.readMethod,
+      scope:   this,
+      proxy:   new Ext.data.HttpProxy({
+        url:     url,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
     });
     
     if (conditions.primaryKey == undefined) {
