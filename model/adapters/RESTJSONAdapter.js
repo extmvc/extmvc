@@ -15,20 +15,13 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
     
     Ext.Ajax.request(
       Ext.applyIf(options, {
-        url:    this.instanceUrl(instance),
-        method: instance.newRecord() ? this.createMethod : this.updateMethod,
-        jsonData: this.buildPostJSONData(instance)
+        url:      this.instanceUrl(instance),
+        method:   instance.newRecord() ? this.createMethod : this.updateMethod,
+        jsonData: instance.data,
+        headers:  {
+          "Content-Type": "application/json"
+        }
       })
     );
-  },
-  
-  /**
-   * Creates a jsonData object suitable for sending as POST data to the server
-   * @param {ExtMVC.Model.Base} instance The models instance to build post data for
-   * @return {Object} jsonData object to send to the server
-   */
-  buildPostJSONData: function(instance) {
-    var data = Ext.util.JSON.encode(instance.data);
-    return data;
   }
 });

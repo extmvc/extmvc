@@ -21,7 +21,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     var instance = new this.model(data);
 
     instance.save({
-      scope:    this,
+      scope:   this,
       success: function(instance) {
         this.fireEvent('create', instance);
       },
@@ -92,8 +92,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    */
   index: function() {
     this.render('Index', {
-      model: this.model,
-      listeners: {
+      model     : this.model,
+      controller: this,
+      listeners : {
         scope   : this,
         'delete': this.destroy,
         'add'   : this.build,

@@ -1,7 +1,7 @@
 ExtMVC.Model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
-      var adapter = new this.RESTAdapter();
+      var adapter = new this.RESTJSONAdapter();
       
       Ext.override(Ext.data.Record, adapter.instanceMethods());
       Ext.apply(model, adapter.classMethods());

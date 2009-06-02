@@ -11,6 +11,8 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     this.model = config.model;
     if (this.model == undefined) throw new Error("No model supplied to scaffold Index view");
     
+    this.controller = this.controller || config.controller;
+    
     //we can't put these in applyIf block below as the functions are executed immediately
     config.columns = config.columns || this.buildColumns(this.model);
     config.store   = config.store   || this.model.find();
@@ -91,6 +93,15 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       scope     : this,
       'dblclick': this.onEdit
     });
+    
+    if (this.controller) {
+      this.controller.on({
+        scope   : this,
+        'delete': function() {
+          this.store.reload();
+        }
+      });
+    }
   },
 
   

@@ -1196,7 +1196,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     var instance = new this.model(data);
 
     instance.save({
-      scope:    this,
+      scope:   this,
       success: function(instance) {
         this.fireEvent('create', instance);
       },
@@ -1267,8 +1267,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    */
   index: function() {
     this.render('Index', {
-      model: this.model,
-      listeners: {
+      model     : this.model,
+      controller: this,
+      listeners : {
         scope   : this,
         'delete': this.destroy,
         'add'   : this.build,
@@ -2924,7 +2925,7 @@ ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.association);
 ExtMVC.Model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
-      var adapter = new this.RESTAdapter();
+      var adapter = new this.RESTJSONAdapter();
       
       Ext.override(Ext.data.Record, adapter.instanceMethods());
       Ext.apply(model, adapter.classMethods());
@@ -3905,6 +3906,34 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
 // ExtMVC.Model.AdapterManager.register('REST', ExtMVC.Model.Adapter.REST);
 
 /**
+ * @class ExtMVC.Model.plugin.adapter.RESTJSONAdapter
+ * @extends ExtMVC.Model.plugin.adapter.RESTAdapter
+ * An adapter which hooks into a RESTful server side API that expects JSON for its data storage
+ */
+ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.RESTAdapter, {
+
+  /**
+   * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
+   * puts the data into jsonData for the request
+   */
+  doSave: function(instance, options) {
+    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
+    options = options || {};
+    
+    Ext.Ajax.request(
+      Ext.applyIf(options, {
+        url:      this.instanceUrl(instance),
+        method:   instance.newRecord() ? this.createMethod : this.updateMethod,
+        jsonData: instance.data,
+        headers:  {
+          "Content-Type": "application/json"
+        }
+      })
+    );
+  }
+});
+
+/**
  * The Validation classes themselves are defined here.
  * Subclass ExtMVC.Model.validation.AbstractValidation to create your own validations
  */
@@ -4582,6 +4611,8 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     this.model = config.model;
     if (this.model == undefined) throw new Error("No model supplied to scaffold Index view");
     
+    this.controller = this.controller || config.controller;
+    
     //we can't put these in applyIf block below as the functions are executed immediately
     config.columns = config.columns || this.buildColumns(this.model);
     config.store   = config.store   || this.model.find();
@@ -4662,6 +4693,15 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       scope     : this,
       'dblclick': this.onEdit
     });
+    
+    if (this.controller) {
+      this.controller.on({
+        scope   : this,
+        'delete': function() {
+          this.store.reload();
+        }
+      });
+    }
   },
 
   
