@@ -95,15 +95,19 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     });
     
     if (this.controller) {
-      this.controller.on({
-        scope   : this,
-        'delete': function() {
-          this.store.reload();
-        }
-      });
+      // this.controller.un('delete', this.refreshStore, this);
+      this.controller.on('delete', this.refreshStore, this);
     }
   },
 
+  /**
+   * Calls reload on the grid's store
+   */
+  refreshStore: function() {
+    //NOTE: For some reason this.store is undefined here, but getCmp on this.id works :/
+    var store = Ext.getCmp(this.id).store;
+    store.reload();
+  },
   
   /**
    * Returns the title to give to this grid.  If this view is currently representing a model called User,

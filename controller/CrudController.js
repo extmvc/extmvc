@@ -23,6 +23,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     instance.save({
       scope:   this,
       success: function(instance) {
+        this.showCreatedNotice();
+        this.index();
+        
         this.fireEvent('create', instance);
       },
       failure: function(instance) {
@@ -61,6 +64,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     instance.save({
       scope:   this,
       success: function() {
+        this.showUpdatedNotice();
+        this.index();
+        
         this.fireEvent('update', instance, updates);
       },
       failure: function() {
@@ -126,8 +132,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * instance, a findById() will be called on this controller's associated model
    */
   edit: function(instance) {
-    //TODO: 
-    
+    //TODO: currently this won't actually accept and ID, only an instance
     this.render('Edit', {
       model: this.model,
       listeners: {
@@ -137,6 +142,22 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
       },
       viewsPackage: this.viewsPackage
     }).loadRecord(instance);
+  },
+  
+  /**
+   * Called when an instance has been successfully created.  This just calls this.showNotice
+   * with a default message for this model. Overwrite to provide your own implementation
+   */
+  showCreatedNotice: function() {
+    this.showNotice(String.format("{0} successfully created", this.model.prototype.singularHumanName));
+  },
+  
+  /**
+   * Called when an instance has been successfully updated.  This just calls this.showNotice
+   * with a default message for this model. Overwrite to provide your own implementation
+   */
+  showUpdatedNotice: function() {
+    this.showNotice(String.format("{0} successfully updated", this.model.prototype.singularHumanName));    
   },
   
   /**

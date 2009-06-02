@@ -46,6 +46,15 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   initListeners: Ext.emptyFn,
   
   /**
+   * Shows the user a notification message. Usually used to inform user of a successful save, deletion, etc
+   * This is an empty function which you must implement yourself
+   * @param {String} notice The string notice to display
+   */
+  showNotice: function(notice) {
+    console.log(notice);
+  },
+  
+  /**
    * Returns the view class registered for the given view name, or null
    * @param {String} viewName The name registered for this view with this controller
    * @return {Function/null} The view class (or null if not present)

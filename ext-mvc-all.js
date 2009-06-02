@@ -1114,6 +1114,15 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   initListeners: Ext.emptyFn,
   
   /**
+   * Shows the user a notification message. Usually used to inform user of a successful save, deletion, etc
+   * This is an empty function which you must implement yourself
+   * @param {String} notice The string notice to display
+   */
+  showNotice: function(notice) {
+    console.log(notice);
+  },
+  
+  /**
    * Returns the view class registered for the given view name, or null
    * @param {String} viewName The name registered for this view with this controller
    * @return {Function/null} The view class (or null if not present)
@@ -1198,6 +1207,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     instance.save({
       scope:   this,
       success: function(instance) {
+        this.showCreatedNotice();
+        this.index();
+        
         this.fireEvent('create', instance);
       },
       failure: function(instance) {
@@ -1236,6 +1248,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     instance.save({
       scope:   this,
       success: function() {
+        this.showUpdatedNotice();
+        this.index();
+        
         this.fireEvent('update', instance, updates);
       },
       failure: function() {
@@ -1301,8 +1316,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * instance, a findById() will be called on this controller's associated model
    */
   edit: function(instance) {
-    //TODO: 
-    
+    //TODO: currently this won't actually accept and ID, only an instance
     this.render('Edit', {
       model: this.model,
       listeners: {
@@ -1312,6 +1326,22 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
       },
       viewsPackage: this.viewsPackage
     }).loadRecord(instance);
+  },
+  
+  /**
+   * Called when an instance has been successfully created.  This just calls this.showNotice
+   * with a default message for this model. Overwrite to provide your own implementation
+   */
+  showCreatedNotice: function() {
+    this.showNotice(String.format("{0} successfully created", this.model.prototype.singularHumanName));
+  },
+  
+  /**
+   * Called when an instance has been successfully updated.  This just calls this.showNotice
+   * with a default message for this model. Overwrite to provide your own implementation
+   */
+  showUpdatedNotice: function() {
+    this.showNotice(String.format("{0} successfully updated", this.model.prototype.singularHumanName));    
   },
   
   /**
@@ -3918,10 +3948,9 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
    */
   doSave: function(instance, options) {
     if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
-    options = options || {};
     
     Ext.Ajax.request(
-      Ext.applyIf(options, {
+      Ext.applyIf(options || {}, {
         url:      this.instanceUrl(instance),
         method:   instance.newRecord() ? this.createMethod : this.updateMethod,
         jsonData: instance.data,
@@ -4695,15 +4724,19 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     });
     
     if (this.controller) {
-      this.controller.on({
-        scope   : this,
-        'delete': function() {
-          this.store.reload();
-        }
-      });
+      // this.controller.un('delete', this.refreshStore, this);
+      this.controller.on('delete', this.refreshStore, this);
     }
   },
 
+  /**
+   * Calls reload on the grid's store
+   */
+  refreshStore: function() {
+    //NOTE: For some reason this.store is undefined here, but getCmp on this.id works :/
+    var store = Ext.getCmp(this.id).store;
+    store.reload();
+  },
   
   /**
    * Returns the title to give to this grid.  If this view is currently representing a model called User,

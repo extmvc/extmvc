@@ -11,10 +11,9 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
    */
   doSave: function(instance, options) {
     if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
-    options = options || {};
     
     Ext.Ajax.request(
-      Ext.applyIf(options, {
+      Ext.applyIf(options || {}, {
         url:      this.instanceUrl(instance),
         method:   instance.newRecord() ? this.createMethod : this.updateMethod,
         jsonData: instance.data,
