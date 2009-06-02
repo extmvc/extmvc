@@ -4,6 +4,7 @@
  * Base class for any scaffold form panel (e.g. new and edit forms)
  */
 ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
+  autoScroll: true,
   
   /**
    * Sets up the FormPanel, adds default configuration and items
@@ -22,9 +23,8 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      autoScroll: true,
-      items:      this.buildItems(),
-      keys: [
+      items: this.buildItems(),
+      keys : [
         {
           key:     Ext.EventObject.ESC,
           scope:   this,
@@ -37,22 +37,16 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
           stopEvent: true,
           handler:   this.onSave
         }
-      ],
-      buttons: [
-        {
-          text:    'Save',
-          scope:   this,
-          iconCls: 'save',
-          handler: this.onSave
-        },
-        {
-          text:    'Cancel',
-          scope:   this,
-          iconCls: 'cancel',
-          handler: this.onCancel
-        }
       ]
     });
+    
+    //applyIf applies when buttons: [] is passed, which meant there was no way to
+    //specify any empty set of buttons before
+    if (!Ext.isArray(this.buttons)) {
+      Ext.apply(this, {
+        buttons: this.buildButtons()
+      });
+    }
     
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
   },
@@ -73,6 +67,28 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * An array of fields not to show in the form (defaults to empty)
    */
   ignoreFields: ['id', 'created_at', 'updated_at'],
+  
+  /**
+   * Builds the buttons added to this form.  By default this returns an array containing
+   * a Save button and a Cancel button, which fire the 'save' and 'cancel' events respectively
+   * @return {Array} An array of Ext.Button objects or configs
+   */
+  buildButtons: function() {
+    return [
+      {
+        text:    'Save',
+        scope:   this,
+        iconCls: 'save',
+        handler: this.onSave
+      },
+      {
+        text:    'Cancel',
+        scope:   this,
+        iconCls: 'cancel',
+        handler: this.onCancel
+      }
+    ];
+  },
   
   /**
    * Builds an array of form items for the given model
@@ -106,7 +122,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     
     //apply defaults to each item
     for (var i=0; i < items.length; i++) {
-      Ext.applyIf(items[i], this.formItemConfig);
+      if (items[i].layout === undefined) Ext.applyIf(items[i], this.formItemConfig);
     }
     
     return items;
