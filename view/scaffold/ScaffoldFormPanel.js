@@ -49,6 +49,29 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     }
     
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
+    
+    this.initEvents();
+  },
+  
+  /**
+   * Sets up events emitted by this component
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event save
+       * Fired when the user clicks the save button, or presses ctrl + s
+       * @param {Object} values The values entered into the form
+       */
+      'save',
+      
+      /**
+       * @event cancel
+       * Fired when the user clicks the cancel button, or presses the esc key
+       * @param {ExtMVC.Model.Base|Null} instance If editing an existing instance, this is a reference to that instance
+       */
+      'cancel'
+    );
   },
   
   /**
@@ -137,10 +160,11 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   },
   
   /**
-   * Called when the cancel button is clicked or ESC pressed.  By default this simply calls Ext.History.back
+   * Called when the cancel button is clicked or ESC pressed. Fires the 'cancel' event.  If this is
+   * an edit form the cancel event will be called with a single argument - the current instance
    */
   onCancel: function() {
-    this.fireEvent('cancel');
+    this.fireEvent('cancel', this.instance);
   }
 });
 

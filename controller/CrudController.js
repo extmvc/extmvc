@@ -52,7 +52,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
   },
   
   /**
-   * Attempts to update an existing instance with new values
+   * Attempts to update an existing instance with new values.  If the update was successful the controller fires
+   * the 'update' event and then shows a default notice to the user (this.showUpdatedNotice()) and calls this.index().
+   * To cancel this default behaviour, return false from any listener on the 'update' event.
    * @param {ExtMVC.Model.Base} instance The existing instance object
    * @param {Object} updates An object containing updates to apply to the instance
    */
@@ -64,10 +66,10 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     instance.save({
       scope:   this,
       success: function() {
-        this.showUpdatedNotice();
-        this.index();
-        
-        this.fireEvent('update', instance, updates);
+        if (this.fireEvent('update', instance, updates) !== false) {
+          this.showUpdatedNotice();
+          this.index();          
+        }
       },
       failure: function() {
         this.fireEvent('update-failed', instance, updates);
@@ -132,16 +134,26 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * instance, a findById() will be called on this controller's associated model
    */
   edit: function(instance) {
-    //TODO: currently this won't actually accept and ID, only an instance
-    this.render('Edit', {
-      model: this.model,
-      listeners: {
-        scope : this,
-        cancel: this.index,
-        save  : this.update
-      },
-      viewsPackage: this.viewsPackage
-    }).loadRecord(instance);
+    if (instance instanceof Ext.data.Record) {
+      this.render('Edit', {
+        model: this.model,
+        listeners: {
+          scope : this,
+          cancel: this.index,
+          save  : this.update
+        },
+        viewsPackage: this.viewsPackage
+      }).loadRecord(instance);      
+    } else {
+      var id = instance;
+      
+      this.model.find(id, {
+        scope  : this,
+        success: function(instance) {
+          this.edit(instance);
+        }
+      });
+    }
   },
   
   /**

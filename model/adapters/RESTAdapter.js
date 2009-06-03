@@ -57,8 +57,10 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
    */
   doFind: function(conditions, options, constructor) {
     conditions = conditions || {}; options = options || {};
-    
-    var url = this.findUrl(conditions, constructor);
+      
+    //if primary key is given, perform a single search
+    var single = (conditions.primaryKey !== undefined),
+        url    = this.findUrl(conditions, constructor);
     
     //store references to user callbacks as we need to overwrite them in the request
     var optionsCallback = options.callback, 
@@ -76,15 +78,42 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     Ext.applyIf(options, {
       method:  this.readMethod,
       scope:   this,
+      url:     url,
+      headers: {
+        "Content-Type": "application/json"
+      },
       proxy:   new Ext.data.HttpProxy({
         url:     url,
+        
         headers: {
           "Content-Type": "application/json"
         }
       })
     });
     
-    if (conditions.primaryKey == undefined) {
+    if (single) {
+      //do a single find
+      
+      Ext.applyIf(options, {params: conditions});
+      
+      //need to make a local reference here as scope inside the Ext.data.Request block may not be 'this'
+      var decodeFunction = this.decodeSingleLoadResponse;
+       
+      Ext.Ajax.request(
+        Ext.apply(options, {
+          callback: function(opts, success, response) {
+            if (success === true) {
+              var instance = new constructor(decodeFunction(response.responseText, constructor));
+
+              callIf(successCallback, [instance, opts, response]);
+            } else callIf(failureCallback, arguments);
+
+            //call the generic callback passed into options
+            callIf(optionsCallback, arguments);
+          }
+        })
+      );
+    } else {
       //do a collection find
       
       return new Ext.data.Store(
@@ -95,26 +124,6 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
 
           // proxy:      new this.proxyType(proxyOpts),
           // reader:     this.getReader()
-        })
-      );
-    } else {
-      //do a single find
-     
-      
-      Ext.applyIf(options, {params: conditions});
-
-      Ext.Ajax.request(
-        Ext.apply(options, {
-          callback: function(opts, success, response) {
-            if (success === true) {
-              var instance = new constructor(response.responseText);
-
-              callIf(successCallback, [instance, opts, response]);
-            } else callIf(failureCallback, arguments);
-
-            //call the generic callback passed into options
-            callIf(optionsCallback, arguments);
-          }
         })
       );
     }
@@ -163,6 +172,19 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     }
     
     return data;
+  },
+  
+  /**
+   * Decodes response text received from the server as the result of requesting data for a single record.
+   * By default this expects the data to be in the form {"model_name": {"key": "value", "key2", "value 2"}}
+   * and would return an object like {"key": "value", "key2", "value 2"}
+   * @param {String} responseText The raw response text
+   * @param {Function} constructor The constructor used to construct model instances.  Useful for access to the prototype
+   * @return {Object} Decoded data suitable for use in a model constructor
+   */
+  decodeSingleLoadResponse: function(responseText, constructor) {
+    var tname = constructor.prototype.tableName;
+    return Ext.decode(responseText)[tname];
   },
   
   //private

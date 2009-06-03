@@ -1236,7 +1236,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
   },
   
   /**
-   * Attempts to update an existing instance with new values
+   * Attempts to update an existing instance with new values.  If the update was successful the controller fires
+   * the 'update' event and then shows a default notice to the user (this.showUpdatedNotice()) and calls this.index().
+   * To cancel this default behaviour, return false from any listener on the 'update' event.
    * @param {ExtMVC.Model.Base} instance The existing instance object
    * @param {Object} updates An object containing updates to apply to the instance
    */
@@ -1248,10 +1250,10 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     instance.save({
       scope:   this,
       success: function() {
-        this.showUpdatedNotice();
-        this.index();
-        
-        this.fireEvent('update', instance, updates);
+        if (this.fireEvent('update', instance, updates) !== false) {
+          this.showUpdatedNotice();
+          this.index();          
+        }
       },
       failure: function() {
         this.fireEvent('update-failed', instance, updates);
@@ -1316,16 +1318,26 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * instance, a findById() will be called on this controller's associated model
    */
   edit: function(instance) {
-    //TODO: currently this won't actually accept and ID, only an instance
-    this.render('Edit', {
-      model: this.model,
-      listeners: {
-        scope : this,
-        cancel: this.index,
-        save  : this.update
-      },
-      viewsPackage: this.viewsPackage
-    }).loadRecord(instance);
+    if (instance instanceof Ext.data.Record) {
+      this.render('Edit', {
+        model: this.model,
+        listeners: {
+          scope : this,
+          cancel: this.index,
+          save  : this.update
+        },
+        viewsPackage: this.viewsPackage
+      }).loadRecord(instance);      
+    } else {
+      var id = instance;
+      
+      this.model.find(id, {
+        scope  : this,
+        success: function(instance) {
+          this.edit(instance);
+        }
+      });
+    }
   },
   
   /**
@@ -3408,8 +3420,10 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
    */
   doFind: function(conditions, options, constructor) {
     conditions = conditions || {}; options = options || {};
-    
-    var url = this.findUrl(conditions, constructor);
+      
+    //if primary key is given, perform a single search
+    var single = (conditions.primaryKey !== undefined),
+        url    = this.findUrl(conditions, constructor);
     
     //store references to user callbacks as we need to overwrite them in the request
     var optionsCallback = options.callback, 
@@ -3427,15 +3441,42 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     Ext.applyIf(options, {
       method:  this.readMethod,
       scope:   this,
+      url:     url,
+      headers: {
+        "Content-Type": "application/json"
+      },
       proxy:   new Ext.data.HttpProxy({
         url:     url,
+        
         headers: {
           "Content-Type": "application/json"
         }
       })
     });
     
-    if (conditions.primaryKey == undefined) {
+    if (single) {
+      //do a single find
+      
+      Ext.applyIf(options, {params: conditions});
+      
+      //need to make a local reference here as scope inside the Ext.data.Request block may not be 'this'
+      var decodeFunction = this.decodeSingleLoadResponse;
+       
+      Ext.Ajax.request(
+        Ext.apply(options, {
+          callback: function(opts, success, response) {
+            if (success === true) {
+              var instance = new constructor(decodeFunction(response.responseText, constructor));
+
+              callIf(successCallback, [instance, opts, response]);
+            } else callIf(failureCallback, arguments);
+
+            //call the generic callback passed into options
+            callIf(optionsCallback, arguments);
+          }
+        })
+      );
+    } else {
       //do a collection find
       
       return new Ext.data.Store(
@@ -3446,26 +3487,6 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
 
           // proxy:      new this.proxyType(proxyOpts),
           // reader:     this.getReader()
-        })
-      );
-    } else {
-      //do a single find
-     
-      
-      Ext.applyIf(options, {params: conditions});
-
-      Ext.Ajax.request(
-        Ext.apply(options, {
-          callback: function(opts, success, response) {
-            if (success === true) {
-              var instance = new constructor(response.responseText);
-
-              callIf(successCallback, [instance, opts, response]);
-            } else callIf(failureCallback, arguments);
-
-            //call the generic callback passed into options
-            callIf(optionsCallback, arguments);
-          }
         })
       );
     }
@@ -3514,6 +3535,19 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     }
     
     return data;
+  },
+  
+  /**
+   * Decodes response text received from the server as the result of requesting data for a single record.
+   * By default this expects the data to be in the form {"model_name": {"key": "value", "key2", "value 2"}}
+   * and would return an object like {"key": "value", "key2", "value 2"}
+   * @param {String} responseText The raw response text
+   * @param {Function} constructor The constructor used to construct model instances.  Useful for access to the prototype
+   * @return {Object} Decoded data suitable for use in a model constructor
+   */
+  decodeSingleLoadResponse: function(responseText, constructor) {
+    var tname = constructor.prototype.tableName;
+    return Ext.decode(responseText)[tname];
   },
   
   //private
@@ -3959,6 +3993,19 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
         }
       })
     );
+  },
+  
+  /**
+   * Decodes response text received from the server as the result of requesting data for a single record.
+   * By default this expects the data to be in the form {"model_name": {"key": "value", "key2", "value 2"}}
+   * and would return an object like {"key": "value", "key2", "value 2"}
+   * @param {String} responseText The raw response text
+   * @param {Function} constructor The constructor used to construct model instances.  Useful for access to the prototype
+   * @return {Object} Decoded data suitable for use in a model constructor
+   */
+  decodeSingleLoadResponse: function(responseText, constructor) {
+    var tname = ExtMVC.Inflector.singularize(constructor.prototype.tableName);
+    return Ext.decode(responseText)[tname];
   }
 });
 
@@ -4546,6 +4593,29 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     }
     
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
+    
+    this.initEvents();
+  },
+  
+  /**
+   * Sets up events emitted by this component
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event save
+       * Fired when the user clicks the save button, or presses ctrl + s
+       * @param {Object} values The values entered into the form
+       */
+      'save',
+      
+      /**
+       * @event cancel
+       * Fired when the user clicks the cancel button, or presses the esc key
+       * @param {ExtMVC.Model.Base|Null} instance If editing an existing instance, this is a reference to that instance
+       */
+      'cancel'
+    );
   },
   
   /**
@@ -4634,10 +4704,11 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   },
   
   /**
-   * Called when the cancel button is clicked or ESC pressed.  By default this simply calls Ext.History.back
+   * Called when the cancel button is clicked or ESC pressed. Fires the 'cancel' event.  If this is
+   * an edit form the cancel event will be called with a single argument - the current instance
    */
   onCancel: function() {
-    this.fireEvent('cancel');
+    this.fireEvent('cancel', this.instance);
   }
 });
 
