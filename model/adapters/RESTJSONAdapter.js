@@ -35,5 +35,20 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
   decodeSingleLoadResponse: function(responseText, constructor) {
     var tname = ExtMVC.Inflector.singularize(constructor.prototype.tableName);
     return Ext.decode(responseText)[tname];
+  },
+  
+  /**
+   * Returns configuration data to be used by the DataProxy when loading records. Override to provide your own config
+   * @param {String} url The url the proxy should use. This is typically calculated elsewhere
+   * @return {Object} Configuration for the proxy
+   */
+  buildProxyConfig: function(url) {
+    var defaults = ExtMVC.Model.plugin.adapter.RESTJSONAdapter.superclass.buildProxyConfig.apply(this, arguments);
+    
+    return Ext.apply(defaults, {
+      headers: {
+        "Content-Type": "application/json"
+      }      
+    });
   }
 });

@@ -30,7 +30,6 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       tbar: tbarConfig,
       bbar: bbar,
       
-
       keys: [
         {
           key:     'a',
@@ -134,6 +133,14 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   ignoreColumns: ['password', 'password_confirmation'],
   
   /**
+   * @property useColumns
+   * @type Array
+   * An array of fields to use to generate the column model.  This defaults to undefined, but if added in a 
+   * subclass then these fields are used to make the column model.
+   */
+  useColumns: undefined,
+  
+  /**
    * @property narrowColumns
    * @type Array
    * An array of columns to render at half the average width
@@ -146,6 +153,27 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
    * An array of columns to render at double the average width
    */
   wideColumns:   ['message', 'content', 'description', 'bio', 'body'],
+  
+  /**
+   * @property narrowColumnWidth
+   * @type Number
+   * The width to make columns in the narrowColumns array (defaults to 30)
+   */
+  narrowColumnWidth: 30,
+  
+  /**
+   * @property normalColumnWidth
+   * @type Number
+   * The width to make columns not marked as narrow or wide (defaults to 100)
+   */
+  normalColumnWidth: 100,
+  
+  /**
+   * @property wideColumnWidth
+   * @type Number
+   * The width to make wide columns (defaults to 200)
+   */
+  wideColumnWidth: 200,
   
   /**
    * @property hasTopToolbar
@@ -165,49 +193,70 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
    * Takes a model definition and returns a column array to use for a columnModel
    */
   buildColumns: function(model) {
-    var model       = this.model,
-        proto       = model.prototype,
-        fields      = proto.fields,
-        columns     = [];
-        wideColumns = [];
-    
-    //put any preferred columns at the front
-    fields.each(function(field) {
-      if (this.preferredColumns.indexOf(field.name) > -1) {
-        columns.push(this.buildColumn(field.name));
-      }
-    }, this);
-    
-    //add the rest of the columns to the end
-    fields.each(function(field) {
-      if (this.preferredColumns.indexOf(field.name) == -1 && this.ignoreColumns.indexOf(f.name) == -1) {
-        columns.push(this.buildColumn(field.name));
+    //check to see if GridColumns have been created for this model
+    //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.GridColumns
+    if (this.viewsPackage && this.viewsPackage.GridColumns) {
+      var columns = this.viewsPackage.GridColumns;
+    } else {
+      var fields      = this.getFields(),
+          columns     = [];
+          wideColumns = [];
+      
+      //put any preferred columns at the front
+      Ext.each(fields, function(field) {
+        if (this.preferredColumns.indexOf(field.name) > -1) {
+          columns.push(this.buildColumn(field.name));
+        }
+      }, this);
+
+      //add the rest of the columns to the end
+      Ext.each(fields, function(field) {
+        if (this.preferredColumns.indexOf(field.name) == -1 && this.ignoreColumns.indexOf(field.name) == -1) {
+          columns.push(this.buildColumn(field.name));
+        };
+
+        //if it's been declared as a wide column, add it to the wideColumns array
+        if (this.wideColumns.indexOf(field.name)) {
+          wideColumns.push(field.name);
+        }
+      }, this);
+
+      //add default widths to each
+      for (var i = columns.length - 1; i >= 0; i--){
+        var col = columns[i];
+
+        if (this.narrowColumns.indexOf(col.id) > -1) {
+          //id col is extra short
+          Ext.applyIf(col, { width: this.narrowColumnWidth });
+        } else if(this.wideColumns.indexOf(col.id) > -1) {
+          //we have a wide column
+          Ext.applyIf(col, { width: this.wideColumnWidth });
+        } else {
+          //we have a normal column
+          Ext.applyIf(col, { width: this.normalColumnWidth });
+        }
       };
-      
-      //if it's been declared as a wide column, add it to the wideColumns array
-      if (this.wideColumns.indexOf(field.name)) {
-        wideColumns.push(field.name);
-      }
-    }, this);
-    
-    //add default widths to each
-    var numberOfSegments = columns.length + (2 * wideColumns.length);
-    for (var i = columns.length - 1; i >= 0; i--){
-      var col = columns[i];
-      
-      if (this.narrowColumns.indexOf(col.id) > -1) {
-        //id col is extra short
-        Ext.applyIf(col, { width: 30 });
-      } else if(this.wideColumns.indexOf(col.id) > -1) {
-        //we have a wide column
-        Ext.applyIf(col, { width: 200 });
-      } else {
-        //we have a normal column
-        Ext.applyIf(col, { width: 100 });
-      }
-    };
+    }
     
     return columns;
+  },
+  
+  /**
+   * Returns the array of field names the buildColumns() should use to generate the column model.
+   * This will return this.useColumns if defined, otherwise it will return all fields
+   * @return {Array} The array of field names to use to generate the column model
+   */
+  getFields: function() {
+    if (this.useColumns === undefined) {
+      return this.model.prototype.fields.items;
+    } else {
+      var fields = [];
+      Ext.each(this.useColumns, function(column) {
+        fields.push({name: column});
+      }, this);
+      
+      return fields;
+    }
   },
   
   /**
@@ -228,33 +277,103 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   },
   
   /**
+   * @property hasAddButton
+   * @type Boolean
+   * Defines whether or not there should be an 'Add' button on the top toolbar (defaults to true)
+   */
+  hasAddButton: true,
+  
+  /**
+   * @property hasEditButton
+   * @type Boolean
+   * Defines whether or not there should be a 'Edit' button on the top toolbar (defaults to true)
+   */
+  hasEditButton: true,
+  
+  /**
+   * @property hasDeleteButton
+   * @type Boolean
+   * Defines whether or not there should be a 'Delete' button on the top toolbar (defaults to true)
+   */
+  hasDeleteButton: true,
+  
+  /**
+   * Builds the Add button for the top toolbar. Override to create your own
+   * @param {Object} config An optional config object used to customise the button
+   * @return {Ext.Button} The Add Button
+   */
+  buildAddButton: function(config) {
+    return new Ext.Button(
+      Ext.applyIf(config || {}, {
+        text:    'New ' + this.model.prototype.singularHumanName,
+        scope:   this,
+        iconCls: 'add',
+        handler: this.onAdd
+      }
+    ));
+  },
+  
+  /**
+   * Builds the Edit button for the top toolbar. Override to create your own
+   * @param {Object} config An optional config object used to customise the button
+   * @return {Ext.Button} The Edit button
+   */
+  buildEditButton: function(config) {
+    return new Ext.Button(
+      Ext.applyIf(config || {}, {
+        text:     'Edit selected',
+        scope:    this,
+        iconCls:  'edit',
+        disabled: true,
+        handler:  this.onEdit
+      }
+    ));
+  },
+  
+  /**
+   * Builds the Delete button for the top toolbar. Override to create your own
+   * @param {Object} config An optional config object used to customise the button
+   * @return {Ext.Button} The Delete button
+   */
+  buildDeleteButton: function(config) {
+    return new Ext.Button(
+      Ext.applyIf(config || {}, {
+        text:     'Delete selected',
+        disabled: true,
+        scope:    this,
+        iconCls:  'delete',
+        handler:  this.onDelete
+      }
+    ));
+  },
+  
+  /**
    * Creates Add, Edit and Delete buttons for the top toolbar and sets up listeners to
    * activate/deactivate them as appropriate
    * @return {Array} An array of buttons 
    */
   buildTopToolbar: function() {
-    this.addButton = new Ext.Button({
-      text:    'New ' + this.model.prototype.singularHumanName,
-      scope:   this,
-      iconCls: 'add',
-      handler: this.onAdd
-    });
+    var items = [];
     
-    this.editButton = new Ext.Button({
-      text:     'Edit selected',
-      scope:    this,
-      iconCls:  'edit',
-      disabled: true,
-      handler:  this.onEdit
-    });
+    if (this.hasAddButton === true) {
+      this.addButton = this.buildAddButton();
+      items.push(this.addButton, '-');
+    }
     
-    this.deleteButton = new Ext.Button({
-      text:     'Delete selected',
-      disabled: true,
-      scope:    this,
-      iconCls:  'delete',
-      handler:  this.onDelete
-    });
+    if (this.hasEditButton === true) {
+      this.editButton = this.buildEditButton();
+      items.push(this.editButton, '-');
+    }
+    
+    if (this.hasDeleteButton === true) {
+      this.deleteButton = this.buildDeleteButton();
+      items.push(this.deleteButton, '-');
+    }
+    
+    if (this.hasSearchField === true) {
+      this.searchField = this.buildSearchField();
+      items.push(this.searchField, '-');
+    }
     
     this.getSelectionModel().on('selectionchange', function(selModel) {
       if (selModel.getCount() > 0) {
@@ -264,12 +383,15 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       };
     }, this);
     
-    return [
-      this.addButton,  '-',
-      this.editButton, '-',
-      this.deleteButton
-    ];
+    return items;
   },
+  
+  /**
+   * @property pageSize
+   * @type Number
+   * The pageSize to use in the PagingToolbar bottom Toolbar (defaults to 25)
+   */
+  pageSize: 25,
   
   /**
    * Creates a paging toolbar to be placed at the bottom of this grid
@@ -277,16 +399,97 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
    * @return {Ext.PagingToolbar} The Paging Toolbar
    */
   buildBottomToolbar: function(store) {
-    //Used for getting human-readable names for this model
-    //TODO: this is overkill, shouldn't need to instantiate an object for this...
-    var modelObj = new this.model({});
-    
     return new Ext.PagingToolbar({
       store:       store,
       displayInfo: true,
-      pageSize:    25,
+      pageSize:    this.pageSize,
       emptyMsg:    String.format("No {0} to display", this.model.prototype.pluralHumanName)
     });
+  },
+  
+  /**
+   * @property hasSearchField
+   * @type Boolean
+   * True to add a search input box to the end of the top toolbar (defaults to false)
+   */
+  hasSearchField: false,
+  
+  /**
+   * @property searchParamName
+   * @type String
+   * The name of the param to send as the search variable in the GET request (defaults to 'q')
+   */
+  searchParamName: 'q',
+
+  /**
+   * Builds the search field component which can be added to the top toolbar of a grid
+   * @return {Ext.form.TwinTriggerField} The search field object
+   */
+  buildSearchField: function() {
+    /**
+     * @property searchField
+     * @type Ext.form.TwinTriggerField
+     * The search field that is added to the top toolbar
+     */
+    this.searchField = new Ext.form.TwinTriggerField({
+      width           : 200,
+      validationEvent : false,
+      validateOnBlur  : false,
+      hideTrigger1    : true,
+      onTrigger1Click : this.clearSearchField.createDelegate(this, []),
+      onTrigger2Click : this.onSearch.createDelegate(this, []),
+      
+      trigger1Class   :'x-form-clear-trigger',
+      trigger2Class   :'x-form-search-trigger'
+    });
+    
+    this.searchField.on('specialkey', function(field, e) {
+      if (e.getKey() === e.ESC)   this.clearSearchField(); e.stopEvent();
+      if (e.getKey() === e.ENTER) this.onSearch();
+    }, this);
+    
+    return this.searchField;
+  },
+  
+  /**
+   * Clears the search field in the top toolbar and hides the clear button
+   */
+  clearSearchField: function() {
+    var f = this.searchField;
+    
+    f.el.dom.value = '';
+    f.triggers[0].hide();
+    this.doSearch();
+  },
+  
+  /**
+   * Attached to the search fields trigger2Click and Enter key events. Calls doSearch if the
+   * user has actually entered anything.
+   */
+  onSearch: function() {
+    var f = this.searchField,
+        v = f.getRawValue();
+        
+    if (v.length < 1) {
+      this.clearSearchField();
+    } else {
+      f.triggers[0].show();
+      this.doSearch(v);
+    }
+  },
+  
+  /**
+   * Performs the actual search operation by updating the store bound to this grid
+   * TODO: Move this to the controller if possible (might not be...)
+   * @param {String} value The string to search for
+   */
+  doSearch: function(value) {
+    value = value || this.searchField.getRawValue() || "";
+    
+    var o = {start: 0};
+    this.store.baseParams = this.store.baseParams || {};
+    this.store.baseParams[this.searchParamName] = value;
+    this.store.reload({params:o});
   },
   
   /**

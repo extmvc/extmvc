@@ -34,6 +34,13 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   destroyMethod: 'DELETE',
   
   /**
+   * @property proxyType
+   * @type Function
+   * The type of Data Proxy to use (defaults to Ext.data.HttpProxy)
+   */
+  proxyType: Ext.data.HttpProxy,
+  
+  /**
    * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
    */
   doSave: function(instance, options) {
@@ -62,81 +69,87 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     var single = (conditions.primaryKey !== undefined),
         url    = this.findUrl(conditions, constructor);
     
+    Ext.applyIf(options, {
+      conditions: conditions,
+      scope     : this
+    });
+    
+    var findMethod = single ? this.doSingleFind : this.doCollectionFind;
+    return findMethod.call(this, url, options, constructor);
+  },
+  
+  /**
+   * Performs an HTTP DELETE request using Ext.Ajax.request
+   * @param {ExtMVC.Model.Base} instance The model instance to destroy
+   * @param {Object} options Options object passed to Ext.Ajax.request
+   * @return {Number} The Ajax transaction ID
+   */
+  doDestroy: function(instance, options) {
+    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter destroy');
+    
+    return Ext.Ajax.request(
+      Ext.applyIf(options || {}, {
+        method: this.destroyMethod,
+        url:    this.instanceUrl(instance)
+      })
+    );
+  },
+  
+  /**
+   * Loads a single instance of a model via an Ext.Ajax.request
+   * @param {String} url The url to load from
+   * @param {Object} options Options passed to Ext.Ajax.request
+   * @param {Function} constructor The constructor function used to instantiate the model instance
+   * @return {Number} The transaction ID of the Ext.Ajax.request
+   */
+  doSingleFind: function(url, options, constructor) {
     //store references to user callbacks as we need to overwrite them in the request
     var optionsCallback = options.callback, 
         successCallback = options.success, 
         failureCallback = options.failure;
     
     delete options.callback; delete options.success; delete options.failure;
-
+    
+    //need to make a local reference here as scope inside the Ext.data.Request block may not be 'this'
+    var decodeFunction = this.decodeSingleLoadResponse;
+    
     //helper function to cut down repetition in Ajax request callback
     var callIf = function(callback, args) {
       if (typeof callback == 'function') callback.apply(options.scope, args);
     };
-    
-    //apply some defaults
-    Ext.applyIf(options, {
-      method:  this.readMethod,
-      scope:   this,
-      url:     url,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      proxy:   new Ext.data.HttpProxy({
-        url:     url,
-        
-        headers: {
-          "Content-Type": "application/json"
+     
+    Ext.Ajax.request(
+      Ext.apply(options, {
+        callback: function(opts, success, response) {
+          if (success === true) {
+            var instance = new constructor(decodeFunction(response.responseText, constructor));
+
+            callIf(successCallback, [instance, opts, response]);
+          } else callIf(failureCallback, arguments);
+
+          //call the generic callback passed into options
+          callIf(optionsCallback, arguments);
         }
-      })
-    });
-    
-    if (single) {
-      //do a single find
-      
-      Ext.applyIf(options, {params: conditions});
-      
-      //need to make a local reference here as scope inside the Ext.data.Request block may not be 'this'
-      var decodeFunction = this.decodeSingleLoadResponse;
-       
-      Ext.Ajax.request(
-        Ext.apply(options, {
-          callback: function(opts, success, response) {
-            if (success === true) {
-              var instance = new constructor(decodeFunction(response.responseText, constructor));
-
-              callIf(successCallback, [instance, opts, response]);
-            } else callIf(failureCallback, arguments);
-
-            //call the generic callback passed into options
-            callIf(optionsCallback, arguments);
-          }
-        })
-      );
-    } else {
-      //do a collection find
-      
-      return new Ext.data.Store(
-        Ext.applyIf(options, {
-          autoLoad:   true,
-          remoteSort: false,
-          reader:     constructor.prototype.getReader()
-
-          // proxy:      new this.proxyType(proxyOpts),
-          // reader:     this.getReader()
-        })
-      );
-    }
+      }, this.buildProxyConfig(url))
+    );
   },
   
-  doDestroy: function(instance, options) {
-    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
-    options = options || {};
-    
-    Ext.Ajax.request(
+  /**
+   * Specialised find for dealing with collections. Returns an Ext.data.Store
+   * @param {String} url The url to load the collection from
+   * @param {Object} options Options passed to the Store constructor
+   * @param {Function} constructor The constructor function used to instantiate the model instance
+   * @return {Ext.data.Store} A Store with the appropriate configuration to load this collection
+   */
+  doCollectionFind: function(url, options, constructor) {
+    return new Ext.data.Store(
       Ext.applyIf(options, {
-        method: this.destroyMethod,
-        url:    this.instanceUrl(instance)
+        autoLoad  : true,
+        remoteSort: false,
+        reader    : constructor.prototype.getReader(),
+        proxy     : new this.proxyType(this.buildProxyConfig(url))
+
+        // reader:     this.getReader()
       })
     );
   },
@@ -154,8 +167,24 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     }
   },
   
+  /**
+   * Calculates the REST URL for a given model collection. By default this just returns / followed by the table name
+   * @param {Function} constructor The model constructor function
+   */
   collectionUrl: function(constructor) {
     return String.format("/{0}", constructor.prototype.tableName);
+  },
+  
+  /**
+   * Returns configuration data to be used by the DataProxy when loading records. Override to provide your own config
+   * @param {String} url The url the proxy should use. This is typically calculated elsewhere so must be provided
+   * @return {Object} Configuration for the proxy
+   */
+  buildProxyConfig: function(url) {
+    return {
+      url:    url,
+      method: this.readMethod
+    };
   },
   
   /**

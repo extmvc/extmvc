@@ -1291,7 +1291,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
         'delete': this.destroy,
         'add'   : this.build,
         'edit'  : this.edit
-      }
+      },
+      viewsPackage: this.viewsPackage
     });
   },
   
@@ -3397,6 +3398,13 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   destroyMethod: 'DELETE',
   
   /**
+   * @property proxyType
+   * @type Function
+   * The type of Data Proxy to use (defaults to Ext.data.HttpProxy)
+   */
+  proxyType: Ext.data.HttpProxy,
+  
+  /**
    * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
    */
   doSave: function(instance, options) {
@@ -3425,81 +3433,87 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     var single = (conditions.primaryKey !== undefined),
         url    = this.findUrl(conditions, constructor);
     
+    Ext.applyIf(options, {
+      conditions: conditions,
+      scope     : this
+    });
+    
+    var findMethod = single ? this.doSingleFind : this.doCollectionFind;
+    return findMethod.call(this, url, options, constructor);
+  },
+  
+  /**
+   * Performs an HTTP DELETE request using Ext.Ajax.request
+   * @param {ExtMVC.Model.Base} instance The model instance to destroy
+   * @param {Object} options Options object passed to Ext.Ajax.request
+   * @return {Number} The Ajax transaction ID
+   */
+  doDestroy: function(instance, options) {
+    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter destroy');
+    
+    return Ext.Ajax.request(
+      Ext.applyIf(options || {}, {
+        method: this.destroyMethod,
+        url:    this.instanceUrl(instance)
+      })
+    );
+  },
+  
+  /**
+   * Loads a single instance of a model via an Ext.Ajax.request
+   * @param {String} url The url to load from
+   * @param {Object} options Options passed to Ext.Ajax.request
+   * @param {Function} constructor The constructor function used to instantiate the model instance
+   * @return {Number} The transaction ID of the Ext.Ajax.request
+   */
+  doSingleFind: function(url, options, constructor) {
     //store references to user callbacks as we need to overwrite them in the request
     var optionsCallback = options.callback, 
         successCallback = options.success, 
         failureCallback = options.failure;
     
     delete options.callback; delete options.success; delete options.failure;
-
+    
+    //need to make a local reference here as scope inside the Ext.data.Request block may not be 'this'
+    var decodeFunction = this.decodeSingleLoadResponse;
+    
     //helper function to cut down repetition in Ajax request callback
     var callIf = function(callback, args) {
       if (typeof callback == 'function') callback.apply(options.scope, args);
     };
-    
-    //apply some defaults
-    Ext.applyIf(options, {
-      method:  this.readMethod,
-      scope:   this,
-      url:     url,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      proxy:   new Ext.data.HttpProxy({
-        url:     url,
-        
-        headers: {
-          "Content-Type": "application/json"
+     
+    Ext.Ajax.request(
+      Ext.apply(options, {
+        callback: function(opts, success, response) {
+          if (success === true) {
+            var instance = new constructor(decodeFunction(response.responseText, constructor));
+
+            callIf(successCallback, [instance, opts, response]);
+          } else callIf(failureCallback, arguments);
+
+          //call the generic callback passed into options
+          callIf(optionsCallback, arguments);
         }
-      })
-    });
-    
-    if (single) {
-      //do a single find
-      
-      Ext.applyIf(options, {params: conditions});
-      
-      //need to make a local reference here as scope inside the Ext.data.Request block may not be 'this'
-      var decodeFunction = this.decodeSingleLoadResponse;
-       
-      Ext.Ajax.request(
-        Ext.apply(options, {
-          callback: function(opts, success, response) {
-            if (success === true) {
-              var instance = new constructor(decodeFunction(response.responseText, constructor));
-
-              callIf(successCallback, [instance, opts, response]);
-            } else callIf(failureCallback, arguments);
-
-            //call the generic callback passed into options
-            callIf(optionsCallback, arguments);
-          }
-        })
-      );
-    } else {
-      //do a collection find
-      
-      return new Ext.data.Store(
-        Ext.applyIf(options, {
-          autoLoad:   true,
-          remoteSort: false,
-          reader:     constructor.prototype.getReader()
-
-          // proxy:      new this.proxyType(proxyOpts),
-          // reader:     this.getReader()
-        })
-      );
-    }
+      }, this.buildProxyConfig(url))
+    );
   },
   
-  doDestroy: function(instance, options) {
-    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
-    options = options || {};
-    
-    Ext.Ajax.request(
+  /**
+   * Specialised find for dealing with collections. Returns an Ext.data.Store
+   * @param {String} url The url to load the collection from
+   * @param {Object} options Options passed to the Store constructor
+   * @param {Function} constructor The constructor function used to instantiate the model instance
+   * @return {Ext.data.Store} A Store with the appropriate configuration to load this collection
+   */
+  doCollectionFind: function(url, options, constructor) {
+    return new Ext.data.Store(
       Ext.applyIf(options, {
-        method: this.destroyMethod,
-        url:    this.instanceUrl(instance)
+        autoLoad  : true,
+        remoteSort: false,
+        reader    : constructor.prototype.getReader(),
+        proxy     : new this.proxyType(this.buildProxyConfig(url))
+
+        // reader:     this.getReader()
       })
     );
   },
@@ -3517,8 +3531,24 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     }
   },
   
+  /**
+   * Calculates the REST URL for a given model collection. By default this just returns / followed by the table name
+   * @param {Function} constructor The model constructor function
+   */
   collectionUrl: function(constructor) {
     return String.format("/{0}", constructor.prototype.tableName);
+  },
+  
+  /**
+   * Returns configuration data to be used by the DataProxy when loading records. Override to provide your own config
+   * @param {String} url The url the proxy should use. This is typically calculated elsewhere so must be provided
+   * @return {Object} Configuration for the proxy
+   */
+  buildProxyConfig: function(url) {
+    return {
+      url:    url,
+      method: this.readMethod
+    };
   },
   
   /**
@@ -4006,6 +4036,21 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
   decodeSingleLoadResponse: function(responseText, constructor) {
     var tname = ExtMVC.Inflector.singularize(constructor.prototype.tableName);
     return Ext.decode(responseText)[tname];
+  },
+  
+  /**
+   * Returns configuration data to be used by the DataProxy when loading records. Override to provide your own config
+   * @param {String} url The url the proxy should use. This is typically calculated elsewhere
+   * @return {Object} Configuration for the proxy
+   */
+  buildProxyConfig: function(url) {
+    var defaults = ExtMVC.Model.plugin.adapter.RESTJSONAdapter.superclass.buildProxyConfig.apply(this, arguments);
+    
+    return Ext.apply(defaults, {
+      headers: {
+        "Content-Type": "application/json"
+      }      
+    });
   }
 });
 
@@ -4746,7 +4791,6 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       tbar: tbarConfig,
       bbar: bbar,
       
-
       keys: [
         {
           key:     'a',
@@ -4850,6 +4894,14 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   ignoreColumns: ['password', 'password_confirmation'],
   
   /**
+   * @property useColumns
+   * @type Array
+   * An array of fields to use to generate the column model.  This defaults to undefined, but if added in a 
+   * subclass then these fields are used to make the column model.
+   */
+  useColumns: undefined,
+  
+  /**
    * @property narrowColumns
    * @type Array
    * An array of columns to render at half the average width
@@ -4862,6 +4914,27 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
    * An array of columns to render at double the average width
    */
   wideColumns:   ['message', 'content', 'description', 'bio', 'body'],
+  
+  /**
+   * @property narrowColumnWidth
+   * @type Number
+   * The width to make columns in the narrowColumns array (defaults to 30)
+   */
+  narrowColumnWidth: 30,
+  
+  /**
+   * @property normalColumnWidth
+   * @type Number
+   * The width to make columns not marked as narrow or wide (defaults to 100)
+   */
+  normalColumnWidth: 100,
+  
+  /**
+   * @property wideColumnWidth
+   * @type Number
+   * The width to make wide columns (defaults to 200)
+   */
+  wideColumnWidth: 200,
   
   /**
    * @property hasTopToolbar
@@ -4881,49 +4954,70 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
    * Takes a model definition and returns a column array to use for a columnModel
    */
   buildColumns: function(model) {
-    var model       = this.model,
-        proto       = model.prototype,
-        fields      = proto.fields,
-        columns     = [];
-        wideColumns = [];
-    
-    //put any preferred columns at the front
-    fields.each(function(field) {
-      if (this.preferredColumns.indexOf(field.name) > -1) {
-        columns.push(this.buildColumn(field.name));
-      }
-    }, this);
-    
-    //add the rest of the columns to the end
-    fields.each(function(field) {
-      if (this.preferredColumns.indexOf(field.name) == -1 && this.ignoreColumns.indexOf(f.name) == -1) {
-        columns.push(this.buildColumn(field.name));
+    //check to see if GridColumns have been created for this model
+    //e.g. for a MyApp.models.User model, checks for existence of MyApp.views.users.GridColumns
+    if (this.viewsPackage && this.viewsPackage.GridColumns) {
+      var columns = this.viewsPackage.GridColumns;
+    } else {
+      var fields      = this.getFields(),
+          columns     = [];
+          wideColumns = [];
+      
+      //put any preferred columns at the front
+      Ext.each(fields, function(field) {
+        if (this.preferredColumns.indexOf(field.name) > -1) {
+          columns.push(this.buildColumn(field.name));
+        }
+      }, this);
+
+      //add the rest of the columns to the end
+      Ext.each(fields, function(field) {
+        if (this.preferredColumns.indexOf(field.name) == -1 && this.ignoreColumns.indexOf(field.name) == -1) {
+          columns.push(this.buildColumn(field.name));
+        };
+
+        //if it's been declared as a wide column, add it to the wideColumns array
+        if (this.wideColumns.indexOf(field.name)) {
+          wideColumns.push(field.name);
+        }
+      }, this);
+
+      //add default widths to each
+      for (var i = columns.length - 1; i >= 0; i--){
+        var col = columns[i];
+
+        if (this.narrowColumns.indexOf(col.id) > -1) {
+          //id col is extra short
+          Ext.applyIf(col, { width: this.narrowColumnWidth });
+        } else if(this.wideColumns.indexOf(col.id) > -1) {
+          //we have a wide column
+          Ext.applyIf(col, { width: this.wideColumnWidth });
+        } else {
+          //we have a normal column
+          Ext.applyIf(col, { width: this.normalColumnWidth });
+        }
       };
-      
-      //if it's been declared as a wide column, add it to the wideColumns array
-      if (this.wideColumns.indexOf(field.name)) {
-        wideColumns.push(field.name);
-      }
-    }, this);
-    
-    //add default widths to each
-    var numberOfSegments = columns.length + (2 * wideColumns.length);
-    for (var i = columns.length - 1; i >= 0; i--){
-      var col = columns[i];
-      
-      if (this.narrowColumns.indexOf(col.id) > -1) {
-        //id col is extra short
-        Ext.applyIf(col, { width: 30 });
-      } else if(this.wideColumns.indexOf(col.id) > -1) {
-        //we have a wide column
-        Ext.applyIf(col, { width: 200 });
-      } else {
-        //we have a normal column
-        Ext.applyIf(col, { width: 100 });
-      }
-    };
+    }
     
     return columns;
+  },
+  
+  /**
+   * Returns the array of field names the buildColumns() should use to generate the column model.
+   * This will return this.useColumns if defined, otherwise it will return all fields
+   * @return {Array} The array of field names to use to generate the column model
+   */
+  getFields: function() {
+    if (this.useColumns === undefined) {
+      return this.model.prototype.fields.items;
+    } else {
+      var fields = [];
+      Ext.each(this.useColumns, function(column) {
+        fields.push({name: column});
+      }, this);
+      
+      return fields;
+    }
   },
   
   /**
@@ -4944,33 +5038,103 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   },
   
   /**
+   * @property hasAddButton
+   * @type Boolean
+   * Defines whether or not there should be an 'Add' button on the top toolbar (defaults to true)
+   */
+  hasAddButton: true,
+  
+  /**
+   * @property hasEditButton
+   * @type Boolean
+   * Defines whether or not there should be a 'Edit' button on the top toolbar (defaults to true)
+   */
+  hasEditButton: true,
+  
+  /**
+   * @property hasDeleteButton
+   * @type Boolean
+   * Defines whether or not there should be a 'Delete' button on the top toolbar (defaults to true)
+   */
+  hasDeleteButton: true,
+  
+  /**
+   * Builds the Add button for the top toolbar. Override to create your own
+   * @param {Object} config An optional config object used to customise the button
+   * @return {Ext.Button} The Add Button
+   */
+  buildAddButton: function(config) {
+    return new Ext.Button(
+      Ext.applyIf(config || {}, {
+        text:    'New ' + this.model.prototype.singularHumanName,
+        scope:   this,
+        iconCls: 'add',
+        handler: this.onAdd
+      }
+    ));
+  },
+  
+  /**
+   * Builds the Edit button for the top toolbar. Override to create your own
+   * @param {Object} config An optional config object used to customise the button
+   * @return {Ext.Button} The Edit button
+   */
+  buildEditButton: function(config) {
+    return new Ext.Button(
+      Ext.applyIf(config || {}, {
+        text:     'Edit selected',
+        scope:    this,
+        iconCls:  'edit',
+        disabled: true,
+        handler:  this.onEdit
+      }
+    ));
+  },
+  
+  /**
+   * Builds the Delete button for the top toolbar. Override to create your own
+   * @param {Object} config An optional config object used to customise the button
+   * @return {Ext.Button} The Delete button
+   */
+  buildDeleteButton: function(config) {
+    return new Ext.Button(
+      Ext.applyIf(config || {}, {
+        text:     'Delete selected',
+        disabled: true,
+        scope:    this,
+        iconCls:  'delete',
+        handler:  this.onDelete
+      }
+    ));
+  },
+  
+  /**
    * Creates Add, Edit and Delete buttons for the top toolbar and sets up listeners to
    * activate/deactivate them as appropriate
    * @return {Array} An array of buttons 
    */
   buildTopToolbar: function() {
-    this.addButton = new Ext.Button({
-      text:    'New ' + this.model.prototype.singularHumanName,
-      scope:   this,
-      iconCls: 'add',
-      handler: this.onAdd
-    });
+    var items = [];
     
-    this.editButton = new Ext.Button({
-      text:     'Edit selected',
-      scope:    this,
-      iconCls:  'edit',
-      disabled: true,
-      handler:  this.onEdit
-    });
+    if (this.hasAddButton === true) {
+      this.addButton = this.buildAddButton();
+      items.push(this.addButton, '-');
+    }
     
-    this.deleteButton = new Ext.Button({
-      text:     'Delete selected',
-      disabled: true,
-      scope:    this,
-      iconCls:  'delete',
-      handler:  this.onDelete
-    });
+    if (this.hasEditButton === true) {
+      this.editButton = this.buildEditButton();
+      items.push(this.editButton, '-');
+    }
+    
+    if (this.hasDeleteButton === true) {
+      this.deleteButton = this.buildDeleteButton();
+      items.push(this.deleteButton, '-');
+    }
+    
+    if (this.hasSearchField === true) {
+      this.searchField = this.buildSearchField();
+      items.push(this.searchField, '-');
+    }
     
     this.getSelectionModel().on('selectionchange', function(selModel) {
       if (selModel.getCount() > 0) {
@@ -4980,12 +5144,15 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       };
     }, this);
     
-    return [
-      this.addButton,  '-',
-      this.editButton, '-',
-      this.deleteButton
-    ];
+    return items;
   },
+  
+  /**
+   * @property pageSize
+   * @type Number
+   * The pageSize to use in the PagingToolbar bottom Toolbar (defaults to 25)
+   */
+  pageSize: 25,
   
   /**
    * Creates a paging toolbar to be placed at the bottom of this grid
@@ -4993,16 +5160,97 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
    * @return {Ext.PagingToolbar} The Paging Toolbar
    */
   buildBottomToolbar: function(store) {
-    //Used for getting human-readable names for this model
-    //TODO: this is overkill, shouldn't need to instantiate an object for this...
-    var modelObj = new this.model({});
-    
     return new Ext.PagingToolbar({
       store:       store,
       displayInfo: true,
-      pageSize:    25,
+      pageSize:    this.pageSize,
       emptyMsg:    String.format("No {0} to display", this.model.prototype.pluralHumanName)
     });
+  },
+  
+  /**
+   * @property hasSearchField
+   * @type Boolean
+   * True to add a search input box to the end of the top toolbar (defaults to false)
+   */
+  hasSearchField: false,
+  
+  /**
+   * @property searchParamName
+   * @type String
+   * The name of the param to send as the search variable in the GET request (defaults to 'q')
+   */
+  searchParamName: 'q',
+
+  /**
+   * Builds the search field component which can be added to the top toolbar of a grid
+   * @return {Ext.form.TwinTriggerField} The search field object
+   */
+  buildSearchField: function() {
+    /**
+     * @property searchField
+     * @type Ext.form.TwinTriggerField
+     * The search field that is added to the top toolbar
+     */
+    this.searchField = new Ext.form.TwinTriggerField({
+      width           : 200,
+      validationEvent : false,
+      validateOnBlur  : false,
+      hideTrigger1    : true,
+      onTrigger1Click : this.clearSearchField.createDelegate(this, []),
+      onTrigger2Click : this.onSearch.createDelegate(this, []),
+      
+      trigger1Class   :'x-form-clear-trigger',
+      trigger2Class   :'x-form-search-trigger'
+    });
+    
+    this.searchField.on('specialkey', function(field, e) {
+      if (e.getKey() === e.ESC)   this.clearSearchField(); e.stopEvent();
+      if (e.getKey() === e.ENTER) this.onSearch();
+    }, this);
+    
+    return this.searchField;
+  },
+  
+  /**
+   * Clears the search field in the top toolbar and hides the clear button
+   */
+  clearSearchField: function() {
+    var f = this.searchField;
+    
+    f.el.dom.value = '';
+    f.triggers[0].hide();
+    this.doSearch();
+  },
+  
+  /**
+   * Attached to the search fields trigger2Click and Enter key events. Calls doSearch if the
+   * user has actually entered anything.
+   */
+  onSearch: function() {
+    var f = this.searchField,
+        v = f.getRawValue();
+        
+    if (v.length < 1) {
+      this.clearSearchField();
+    } else {
+      f.triggers[0].show();
+      this.doSearch(v);
+    }
+  },
+  
+  /**
+   * Performs the actual search operation by updating the store bound to this grid
+   * TODO: Move this to the controller if possible (might not be...)
+   * @param {String} value The string to search for
+   */
+  doSearch: function(value) {
+    value = value || this.searchField.getRawValue() || "";
+    
+    var o = {start: 0};
+    this.store.baseParams = this.store.baseParams || {};
+    this.store.baseParams[this.searchParamName] = value;
+    this.store.reload({params:o});
   },
   
   /**

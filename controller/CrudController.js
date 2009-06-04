@@ -107,7 +107,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
         'delete': this.destroy,
         'add'   : this.build,
         'edit'  : this.edit
-      }
+      },
+      viewsPackage: this.viewsPackage
     });
   },
   
