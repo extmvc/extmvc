@@ -94,7 +94,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     });
     
     if (this.controller) {
-      // this.controller.un('delete', this.refreshStore, this);
+      this.controller.un('delete', this.refreshStore, this);
       this.controller.on('delete', this.refreshStore, this);
     }
   },

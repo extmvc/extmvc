@@ -1207,10 +1207,10 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     instance.save({
       scope:   this,
       success: function(instance) {
-        this.showCreatedNotice();
-        this.index();
-        
-        this.fireEvent('create', instance);
+        if(this.fireEvent('create', instance) !== false) {
+          this.showCreatedNotice();
+          this.index();          
+        }
       },
       failure: function(instance) {
         this.fireEvent('create-failed', instance);
@@ -1283,17 +1283,14 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
    */
   index: function() {
-    this.render('Index', {
+    var index = this.render('Index', {
       model     : this.model,
       controller: this,
-      listeners : {
-        scope   : this,
-        'delete': this.destroy,
-        'add'   : this.build,
-        'edit'  : this.edit
-      },
+      listeners : this.getIndexViewListeners(),
       viewsPackage: this.viewsPackage
     });
+    
+    this.fireEvent('index');
   },
   
   /**
@@ -1302,16 +1299,12 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    */
   build: function() {
     this.render('New', {
-      model: this.model,
-      listeners: {
-        scope:  this,
-        cancel: this.index,
-        save:   this.create
-      },
+      model       : this.model,
+      listeners   : this.getBuildViewListeners(),
       viewsPackage: this.viewsPackage
     });
   },
-  
+
   /**
    * @action edit
    * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
@@ -1321,14 +1314,12 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
   edit: function(instance) {
     if (instance instanceof Ext.data.Record) {
       this.render('Edit', {
-        model: this.model,
-        listeners: {
-          scope : this,
-          cancel: this.index,
-          save  : this.update
-        },
+        model       : this.model,
+        listeners   : this.getEditViewListeners(),
         viewsPackage: this.viewsPackage
-      }).loadRecord(instance);      
+      }).loadRecord(instance);
+      
+      this.fireEvent('edit', instance);
     } else {
       var id = instance;
       
@@ -1339,6 +1330,46 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
         }
       });
     }
+  },
+  
+  /**
+   * Returns a listeners object passed to the Index view when rendered inside the index action. This contains 
+   * default listeners, but can be overridden in subclasses to provide custom behaviour
+   * @return {Object} The listeners object
+   */
+  getIndexViewListeners: function() {
+    return {
+      scope   : this,
+      'delete': this.destroy,
+      'add'   : this.build,
+      'edit'  : this.edit
+    };
+  },
+  
+  /**
+   * Returns a listeners object passed to the Edit view when rendered inside the edit action. This contains 
+   * default listeners, but can be overridden in subclasses to provide custom behaviour
+   * @return {Object} The listeners object
+   */
+  getEditViewListeners: function() {
+    return {
+      scope : this,
+      cancel: this.index,
+      save  : this.update
+    };
+  },
+  
+  /**
+   * Returns a listeners object passed to the New view when rendered inside the build action. This contains 
+   * default listeners, but can be overridden in subclasses to provide custom behaviour
+   * @return {Object} The listeners object
+   */
+  getBuildViewListeners: function() {
+    return {
+      scope:  this,
+      cancel: this.index,
+      save:   this.create
+    };
   },
   
   /**
@@ -1423,15 +1454,15 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
       /**
        * @event index
        * Fired when an instances collection has been loaded from the database
-       * @param {Ext.data.Store} instances An Ext.data.Store containing the instances retrieved
        */
       'index',
       
       /**
-       * @event index-failed
-       * Fired when an error was encountered while trying to load the instances from the database
+       * @event edit
+       * Fired when an instance is being edited
+       * @param {ExtMVC.Model.Base} instance The instance being edited
        */
-      'index-failed'
+      'edit'
     );
   },
   
@@ -4855,7 +4886,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     });
     
     if (this.controller) {
-      // this.controller.un('delete', this.refreshStore, this);
+      this.controller.un('delete', this.refreshStore, this);
       this.controller.on('delete', this.refreshStore, this);
     }
   },
