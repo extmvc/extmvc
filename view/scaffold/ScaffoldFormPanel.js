@@ -51,6 +51,29 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
     
     this.initEvents();
+    this.initListeners();
+  },
+  
+  /**
+   * Sets up any listeners on related objects. By default this just listens to update-failed and create-failed
+   * events on the related controller and marks fields as invalid as appropriate
+   */
+  initListeners: function() {
+    if (this.controller) {
+      this.controller.on({
+        scope          : this,
+        'create-failed': this.showErrorsFromInstance,
+        'update-failed': this.showErrorsFromInstance
+      });
+    }
+  },
+  
+  /**
+   * Reads errors from a model instance and marks the relevant fields as invalid
+   * @param {ExtMVC.Model.Base} instance The model instance
+   */
+  showErrorsFromInstance: function(instance) {
+    this.getForm().markInvalid(instance.errors.forForm());
   },
   
   /**

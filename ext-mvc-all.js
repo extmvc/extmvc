@@ -1212,8 +1212,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
           this.index();          
         }
       },
-      failure: function(instance) {
-        this.fireEvent('create-failed', instance);
+      failure: function(i) {
+        this.fireEvent('create-failed', i);
       }
     });
   },
@@ -1284,9 +1284,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    */
   index: function() {
     var index = this.render('Index', {
-      model     : this.model,
-      controller: this,
-      listeners : this.getIndexViewListeners(),
+      model       : this.model,
+      controller  : this,
+      listeners   : this.getIndexViewListeners(),
       viewsPackage: this.viewsPackage
     });
     
@@ -1300,6 +1300,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
   build: function() {
     this.render('New', {
       model       : this.model,
+      controller  : this,
       listeners   : this.getBuildViewListeners(),
       viewsPackage: this.viewsPackage
     });
@@ -1315,6 +1316,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     if (instance instanceof Ext.data.Record) {
       this.render('Edit', {
         model       : this.model,
+        controller  : this.controller,
         listeners   : this.getEditViewListeners(),
         viewsPackage: this.viewsPackage
       }).loadRecord(instance);
@@ -3077,7 +3079,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
         } else {
           //couldn't save
           if (typeof options.failure == 'function') {
-            return options.failure.call(options.scope || this, options);
+            return options.failure.call(options.scope || this, this);
           };
         };
       },
@@ -4671,6 +4673,29 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
     
     this.initEvents();
+    this.initListeners();
+  },
+  
+  /**
+   * Sets up any listeners on related objects. By default this just listens to update-failed and create-failed
+   * events on the related controller and marks fields as invalid as appropriate
+   */
+  initListeners: function() {
+    if (this.controller) {
+      this.controller.on({
+        scope          : this,
+        'create-failed': this.showErrorsFromInstance,
+        'update-failed': this.showErrorsFromInstance
+      });
+    }
+  },
+  
+  /**
+   * Reads errors from a model instance and marks the relevant fields as invalid
+   * @param {ExtMVC.Model.Base} instance The model instance
+   */
+  showErrorsFromInstance: function(instance) {
+    this.getForm().markInvalid(instance.errors.forForm());
   },
   
   /**

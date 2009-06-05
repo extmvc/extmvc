@@ -28,8 +28,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
           this.index();          
         }
       },
-      failure: function(instance) {
-        this.fireEvent('create-failed', instance);
+      failure: function(i) {
+        this.fireEvent('create-failed', i);
       }
     });
   },
@@ -100,9 +100,9 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    */
   index: function() {
     var index = this.render('Index', {
-      model     : this.model,
-      controller: this,
-      listeners : this.getIndexViewListeners(),
+      model       : this.model,
+      controller  : this,
+      listeners   : this.getIndexViewListeners(),
       viewsPackage: this.viewsPackage
     });
     
@@ -116,6 +116,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
   build: function() {
     this.render('New', {
       model       : this.model,
+      controller  : this,
       listeners   : this.getBuildViewListeners(),
       viewsPackage: this.viewsPackage
     });
@@ -131,6 +132,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     if (instance instanceof Ext.data.Record) {
       this.render('Edit', {
         model       : this.model,
+        controller  : this.controller,
         listeners   : this.getEditViewListeners(),
         viewsPackage: this.viewsPackage
       }).loadRecord(instance);

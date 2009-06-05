@@ -79,7 +79,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
         } else {
           //couldn't save
           if (typeof options.failure == 'function') {
-            return options.failure.call(options.scope || this, options);
+            return options.failure.call(options.scope || this, this);
           };
         };
       },
