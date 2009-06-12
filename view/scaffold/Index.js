@@ -269,9 +269,9 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     if (typeof(cfg) == 'string') {cfg = {name: cfg};}
     
     return Ext.applyIf(cfg, {
-      id:        cfg.name,
-      header:    cfg.name.replace(/_/g, " ").titleize(),
-      sortable:  true,
+      id       : cfg.name,
+      header   : cfg.name.replace(/_/g, " ").titleize(),
+      sortable : true,
       dataIndex: cfg.name
     });
   },

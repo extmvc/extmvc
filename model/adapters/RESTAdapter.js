@@ -135,6 +135,16 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   },
   
   /**
+   * @property storeConfig
+   * @type Object
+   * Default properties assigned to the Ext.data.Store used in find requests
+   */
+  storeConfig: {
+    autoLoad  : true,
+    remoteSort: false
+  },
+  
+  /**
    * Specialised find for dealing with collections. Returns an Ext.data.Store
    * @param {String} url The url to load the collection from
    * @param {Object} options Options passed to the Store constructor
@@ -142,14 +152,12 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
    * @return {Ext.data.Store} A Store with the appropriate configuration to load this collection
    */
   doCollectionFind: function(url, options, constructor) {
+    Ext.applyIf(options, this.storeConfig);
+    
     return new Ext.data.Store(
       Ext.applyIf(options, {
-        autoLoad  : true,
-        remoteSort: false,
         reader    : constructor.prototype.getReader(),
         proxy     : new this.proxyType(this.buildProxyConfig(url))
-
-        // reader:     this.getReader()
       })
     );
   },
