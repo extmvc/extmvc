@@ -3464,7 +3464,7 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
       
     //if primary key is given, perform a single search
     var single = (conditions.primaryKey !== undefined),
-        url    = this.findUrl(conditions, constructor);
+        url    = options.url || this.findUrl(conditions, constructor);
     
     Ext.applyIf(options, {
       conditions: conditions,
@@ -3550,6 +3550,12 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
    */
   doCollectionFind: function(url, options, constructor) {
     Ext.applyIf(options, this.storeConfig);
+    
+    if (options.conditions != undefined) {
+      Ext.applyIf(options, {
+        baseParams: options.conditions
+      });
+    }
     
     return new Ext.data.Store(
       Ext.applyIf(options, {
