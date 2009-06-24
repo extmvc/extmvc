@@ -107,6 +107,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     });
     
     this.fireEvent('index');
+    
+    return index;
   },
   
   /**
@@ -132,7 +134,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     if (instance instanceof Ext.data.Record) {
       this.render('Edit', {
         model       : this.model,
-        controller  : this.controller,
+        controller  : this,
         listeners   : this.getEditViewListeners(),
         viewsPackage: this.viewsPackage
       }).loadRecord(instance);
@@ -159,7 +161,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     return {
       scope   : this,
       'delete': this.destroy,
-      'add'   : this.build,
+      'new'   : this.build,
       'edit'  : this.edit
     };
   },

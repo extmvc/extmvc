@@ -1172,7 +1172,7 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   renderViaAddTo: function(component) {
     if (this.addTo != undefined) {
       this.addTo.removeAll();
-      this.addTo.doLayout();
+      this.addTo.doLayout();        
       
       this.addTo.add(component);
       this.addTo.doLayout();
@@ -1291,6 +1291,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     });
     
     this.fireEvent('index');
+    
+    return index;
   },
   
   /**
@@ -1316,7 +1318,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     if (instance instanceof Ext.data.Record) {
       this.render('Edit', {
         model       : this.model,
-        controller  : this.controller,
+        controller  : this,
         listeners   : this.getEditViewListeners(),
         viewsPackage: this.viewsPackage
       }).loadRecord(instance);
@@ -1343,7 +1345,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     return {
       scope   : this,
       'delete': this.destroy,
-      'add'   : this.build,
+      'new'   : this.build,
       'edit'  : this.edit
     };
   },
@@ -4900,10 +4902,10 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       'edit',
       
       /**
-       * @event add
+       * @event new
        * Fired when the user wishes to add a new record
        */
-      'add',
+      'new',
       
       /**
        * @event delete
@@ -5208,9 +5210,11 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     
     this.getSelectionModel().on('selectionchange', function(selModel) {
       if (selModel.getCount() > 0) {
-         this.deleteButton.enable();  this.editButton.enable();
+        if (this.deleteButton != undefined) this.deleteButton.enable();
+        if (this.editButton   != undefined) this.editButton.enable();
       } else {
-        this.deleteButton.disable(); this.editButton.disable();
+        if (this.deleteButton != undefined) this.deleteButton.disable();
+        if (this.editButton   != undefined) this.editButton.disable();
       };
     }, this);
     
@@ -5327,7 +5331,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
    * Called when the add button is pressed, or when the 'a' key is pressed.  By default this will simply fire the 'add' event
    */
   onAdd: function() {
-    this.fireEvent('add');
+    this.fireEvent('new');
   },
   
   /**

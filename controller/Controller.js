@@ -104,7 +104,7 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   renderViaAddTo: function(component) {
     if (this.addTo != undefined) {
       this.addTo.removeAll();
-      this.addTo.doLayout();
+      this.addTo.doLayout();        
       
       this.addTo.add(component);
       this.addTo.doLayout();
