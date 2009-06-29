@@ -47,13 +47,41 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
     if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
     options = options || {};
     
+    var successFn = options.success || Ext.emptyFn,
+        failureFn = options.failure || Ext.emptyFn;
+        
+    delete options.success; delete options.failure;
+    
     Ext.Ajax.request(
-      Ext.applyIf(options, {
-        url:    this.instanceUrl(instance),
-        method: instance.newRecord() ? this.createMethod : this.updateMethod,
-        params: this.buildPostData(instance)
-      })
+      Ext.apply({
+        url    : this.instanceUrl(instance),
+        method : instance.newRecord() ? this.createMethod : this.updateMethod,
+        params : this.buildPostData(instance),
+        
+        success: function(instance, userCallback, scope) {
+          scope = scope || this;
+          
+          return function(response, options) {
+            var jsonPath = instance.modelName.underscore(),
+                jsonData = Ext.decode(response.responseText)[jsonPath];
+            
+            for (var key in jsonData) {
+              instance.set(key, jsonData[key]);
+            }
+            
+            userCallback.call(this, instance);
+          };
+        }(instance, successFn, options.scope)
+      }, options)
     );
+  },
+  
+  /**
+   * Callback for save AJAX request. By default this reads server response data and populates the instance
+   * if the request was successful, adds errors if not
+   */
+  afterSave: function() {
+    
   },
   
   /**

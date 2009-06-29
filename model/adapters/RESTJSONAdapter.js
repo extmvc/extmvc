@@ -12,16 +12,14 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
   doSave: function(instance, options) {
     if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
     
-    Ext.Ajax.request(
-      Ext.applyIf(options || {}, {
-        url:      this.instanceUrl(instance),
-        method:   instance.newRecord() ? this.createMethod : this.updateMethod,
-        jsonData: instance.data,
-        headers:  {
-          "Content-Type": "application/json"
-        }
-      })
-    );
+    Ext.applyIf(options || {}, {
+      jsonData: instance.data,
+      headers:  {
+        "Content-Type": "application/json"
+      }
+    });
+    
+    ExtMVC.Model.plugin.adapter.RESTJSONAdapter.superclass.doSave.apply(this, arguments);
   },
   
   /**

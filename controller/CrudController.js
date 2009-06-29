@@ -25,7 +25,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
       success: function(instance) {
         if(this.fireEvent('create', instance) !== false) {
           this.showCreatedNotice();
-          this.index();          
+          this.index();
         }
       },
       failure: function(i) {

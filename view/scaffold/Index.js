@@ -93,10 +93,18 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       'dblclick': this.onEdit
     });
     
-    if (this.controller) {
-      this.controller.un('delete', this.refreshStore, this);
+    if (this.controller != undefined) {
       this.controller.on('delete', this.refreshStore, this);
     }
+  },
+  
+  //removes any controller listeners added by initListeners
+  destroy: function() {
+    if (this.controller != undefined) {
+      this.controller.un('delete', this.refreshStore, this);
+    }
+    
+    ExtMVC.view.scaffold.Index.superclass.destroy.apply(this, arguments);
   },
 
   /**
