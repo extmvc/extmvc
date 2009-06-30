@@ -1206,15 +1206,8 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
 
     instance.save({
       scope:   this,
-      success: function(instance) {
-        if(this.fireEvent('create', instance) !== false) {
-          this.showCreatedNotice();
-          this.index();
-        }
-      },
-      failure: function(i) {
-        this.fireEvent('create-failed', i);
-      }
+      success: this.onCreateSuccess,
+      failure: this.onCreateFailure
     });
   },
   
@@ -1249,14 +1242,11 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     
     instance.save({
       scope:   this,
-      success: function() {
-        if (this.fireEvent('update', instance, updates) !== false) {
-          this.showUpdatedNotice();
-          this.index();          
-        }
+      success: function(instance) {
+        this.onUpdateSuccess(instance, updates);
       },
       failure: function() {
-        this.fireEvent('update-failed', instance, updates);
+        this.onUpdateFailure(instance, updates);
       }
     });
   },
@@ -1392,6 +1382,48 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
     this.showNotice(String.format("{0} successfully updated", this.model.prototype.singularHumanName));    
   },
   
+  /**
+   * Called after a successful update. By default this calls showUpdatedNotice and then this.index()
+   * @param {ExtMVC.Model.Base} instance The newly updated instance
+   * @param {Object} updates The updates that were made
+   */
+  onCreateSuccess: function(instance) {
+    if(this.fireEvent('create', instance) !== false) {
+      this.showCreatedNotice();
+      this.index();
+    }
+  },
+  
+  /**
+   * Called after an unsuccessful update. By default this simply fires the 'update-failed' event
+   * @param {ExtMVC.Model.Base} instance The instance that could not be updated
+   * @param {Object} updates The updates that were attempted to be made
+   */
+  onCreateFailure: function(instance) {
+    this.fireEvent('create-failed', instance);
+  },
+  
+  /**
+   * Called after a successful update. By default this calls showUpdatedNotice and then this.index()
+   * @param {ExtMVC.Model.Base} instance The newly updated instance
+   * @param {Object} updates The updates that were made
+   */
+  onUpdateSuccess: function(instance) {
+    if (this.fireEvent('update', instance, updates) !== false) {
+      this.showUpdatedNotice();
+      this.index();          
+    }
+  },
+  
+  /**
+   * Called after an unsuccessful update. By default this simply fires the 'update-failed' event
+   * @param {ExtMVC.Model.Base} instance The instance that could not be updated
+   * @param {Object} updates The updates that were attempted to be made
+   */
+  onUpdateFailure: function(instance, updates) {
+    this.fireEvent('update-failed', instance, updates);
+  },
+   
   /**
    * Sets up events emitted by the CRUD Controller's actions
    */
