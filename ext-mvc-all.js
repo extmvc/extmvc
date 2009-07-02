@@ -1408,7 +1408,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * @param {ExtMVC.Model.Base} instance The newly updated instance
    * @param {Object} updates The updates that were made
    */
-  onUpdateSuccess: function(instance) {
+  onUpdateSuccess: function(instance, updates) {
     if (this.fireEvent('update', instance, updates) !== false) {
       this.showUpdatedNotice();
       this.index();          
@@ -4124,7 +4124,8 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
     
     Ext.applyIf(options || {}, {
       jsonData: instance.data,
-      headers:  {
+      params  : {}, //ensures that params aren't appended to the end of the url
+      headers : {
         "Content-Type": "application/json"
       }
     });
@@ -4905,7 +4906,9 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     this.controller = this.controller || config.controller;
     
     //we can't put these in applyIf block below as the functions are executed immediately
-    config.columns = config.columns || this.buildColumns(this.model);
+    if (config.columns == undefined && config.colModel == undefined && config.cm == undefined) {
+      config.columns = this.buildColumns(this.model);
+    }
     config.store   = config.store   || this.model.find();
     
     var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;

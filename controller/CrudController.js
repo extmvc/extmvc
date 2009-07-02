@@ -224,7 +224,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * @param {ExtMVC.Model.Base} instance The newly updated instance
    * @param {Object} updates The updates that were made
    */
-  onUpdateSuccess: function(instance) {
+  onUpdateSuccess: function(instance, updates) {
     if (this.fireEvent('update', instance, updates) !== false) {
       this.showUpdatedNotice();
       this.index();          

@@ -14,7 +14,8 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
     
     Ext.applyIf(options || {}, {
       jsonData: instance.data,
-      headers:  {
+      params  : {}, //ensures that params aren't appended to the end of the url
+      headers : {
         "Content-Type": "application/json"
       }
     });

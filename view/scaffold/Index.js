@@ -14,7 +14,9 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     this.controller = this.controller || config.controller;
     
     //we can't put these in applyIf block below as the functions are executed immediately
-    config.columns = config.columns || this.buildColumns(this.model);
+    if (config.columns == undefined && config.colModel == undefined && config.cm == undefined) {
+      config.columns = this.buildColumns(this.model);
+    }
     config.store   = config.store   || this.model.find();
     
     var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
