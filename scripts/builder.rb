@@ -76,7 +76,6 @@ module ExtMVC
                "lib/Inflector.js", "lib/Array.js", "lib/String.js", "lib/Router.js", "lib/Route.js", "lib/Dependencies.js",
                "controller/Controller.js", "controller/CrudController.js", "os/OS.js", 
                "model/Model.js", "model/Base.js",
-               "model/associations/Association.js",
                "model/adapters/AbstractAdapter.js", "model/adapters/RESTAdapter.js",  "model/adapters/RESTJSONAdapter.js",
                "model/validations/Validations.js", "model/validations/Errors.js", "model/validations/Plugin.js",
                "os/viewportbuilder/ViewportBuilderManager.js", "os/viewportbuilder/ViewportBuilder.js", 

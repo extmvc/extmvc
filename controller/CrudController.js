@@ -1,5 +1,5 @@
 /**
- * @class ExtMVC.controller.CrudController
+ * @class ExtMVC.CrudController
  * @extends ExtMVC.Controller
  * An extension of Controller which provides the generic CRUD actions
  */

@@ -1,5 +1,5 @@
 /**
- * ExtMVC.OS
+ * @class ExtMVC.OS
  * @extends ExtMVC.Controller
  * Specialised ExtMVC.Controller intended to create and manage generic Operating System
  * components (e.g. not elements specific to a single Application within the OS)

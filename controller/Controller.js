@@ -1,5 +1,5 @@
 /**
- * ExtMVC.Controller
+ * @class ExtMVC.Controller
  * @extends Ext.util.Observable
  * Controller base class
  */

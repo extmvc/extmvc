@@ -2,10 +2,7 @@
  * @class ExtMVC.Model.Base
  * A set of properties and functions which are applied to all ExtMVC.Models when they are defined
  */
-ExtMVC.Model.Base = function() { 
-  //any code in here will be run only once - when Base gets added to Record's prototype
-  //this will NOT be run every time a Model is defined or instantiated
-};
+ExtMVC.Model.Base = function() {};
  
 ExtMVC.Model.Base.prototype = {
   
@@ -59,6 +56,7 @@ ExtMVC.Model.Base.prototype = {
 
 
 /**
+ * @ignore
  * Add the above Base methods and properties to the Ext.data.Record prototype. This means all Record instances
  * will have MVC models methods, even if not instantiated by an MVC-defined model constructor
  */
