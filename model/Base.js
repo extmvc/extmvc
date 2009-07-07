@@ -3,7 +3,7 @@
  * A set of properties and functions which are applied to all ExtMVC.Models when they are defined
  */
 ExtMVC.Model.Base = function() {};
- 
+
 ExtMVC.Model.Base.prototype = {
   
   /**

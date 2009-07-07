@@ -1,4 +1,5 @@
 /**
+ * @class ExtMVC
  * Initialise package and set version
  */
 ExtMVC = Ext.extend(Ext.util.Observable, {
@@ -1792,7 +1793,7 @@ Ext.reg('os', ExtMVC.OS);
 // ExtMVC.getOS = ExtMVC.OS.getOS();
 
 /**
- * @class Ext.Model
+ * @class ExtMVC.Model
  * @extends Object
  * Manages the definition and creation of model classes
  */
@@ -2053,7 +2054,7 @@ Ext.ns('ExtMVC.Model.plugin');
  * A set of properties and functions which are applied to all ExtMVC.Models when they are defined
  */
 ExtMVC.Model.Base = function() {};
- 
+
 ExtMVC.Model.Base.prototype = {
   
   /**
@@ -2752,7 +2753,10 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
   }
 });
 
+Ext.ns('ExtMVC.Model.plugin.validation');
+
 /**
+ * @ignore
  * The Validation classes themselves are defined here.
  * Subclass ExtMVC.Model.plugin.validation.AbstractValidation to create your own validations
  */

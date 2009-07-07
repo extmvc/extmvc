@@ -1,4 +1,7 @@
+Ext.ns('ExtMVC.Model.plugin.validation');
+
 /**
+ * @ignore
  * The Validation classes themselves are defined here.
  * Subclass ExtMVC.Model.plugin.validation.AbstractValidation to create your own validations
  */

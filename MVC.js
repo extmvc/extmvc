@@ -1,4 +1,5 @@
 /**
+ * @class ExtMVC
  * Initialise package and set version
  */
 ExtMVC = Ext.extend(Ext.util.Observable, {

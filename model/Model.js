@@ -1,5 +1,5 @@
 /**
- * @class Ext.Model
+ * @class ExtMVC.Model
  * @extends Object
  * Manages the definition and creation of model classes
  */
