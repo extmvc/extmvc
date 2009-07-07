@@ -1524,299 +1524,6 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
   }
 });
 
-
-Ext.ns('ExtMVC.plugin.CrudController');
-
-(function() {
-  var c = ExtMVC.plugin.CrudController;
-  
-  /**
-   * Adds default CRUD (Create, Read, Update, Delete) to this controller.
-   * This is currently injected into Controller's prototype, so a simple call to this.actsAsCrudController()
-   * with the following params sets everything up. It adds the following actions:
-   * 
-   * new() - by default displays the view called 'new' in this controller's view namespace
-   * edit() - displays the 'edit' view and loads the model whose id is in your os.params.id
-   * create(form) - takes an Ext.form.BasicForm and attempts to create + save a new model object with it
-   * update(form) - takes a BasicForm and attempts to update an existing object with it (again using os.params.id)
-   * delete(id, store) - takes an ID, deletes it and optionally refreshes a store
-   * 
-   * It does not overwrite any existing action already defined under one of those names.
-   *
-   * Override any of the default methods like this:
-   * 
-   * this.actsAsCrudController, MyNamespace.models.MyModel, {
-   *   onUpdateFailure: function() {... your custom onUpdateFailure behaviour ...}
-   * });
-   *
-   * @param {ExtMVC.Model} model The model to provide CRUD support for
-   * @return {ExtMVC.Controller} The controller, now with addition actions and methods
-   */
-  c.registerActions = function(model, overrides) {
-    Ext.apply(this, overrides, c.defaultFunctions);
-    
-    this.addEvents(
-      /**
-       * @event findsuccess
-       * Fires after a successful load has taken place (applies to Edit forms)
-       * @param {ExtMVC.Model} modelObj The instantiated model object found by the lookup
-       */
-      'findsuccess',
-      
-      /**
-       * @event findfailure
-       * Fires if the model instance could not be found
-       */
-      'findfailure'
-    );
-    
-    /**
-     * @property model
-     * @type ExtMVC.Model
-     * Holds a reference to the model this controller provides CRUD support for
-     */
-    this.model = model;
-    
-    if (!this.model) {
-      throw new Error("You must provide a model to this.actsAsCrudController().  " +
-                      "Pass it as the first argument to actsAsCrudController or set " + 
-                      "'this.model = YourModel' before calling actsAsCrudController.");
-    };
-    
-    /**
-     * @action new 
-     * Renders the new form for this model
-     */
-    this.registerAction('new', function() {
-      this.form = this.renderView('new');
-    }, {overwrite: false});
-    
-    /**
-     * @action edit 
-     * Renders the edit form and loads the model data into it
-     */
-    this.registerAction('edit', function() {
-      this.form = this.renderView('edit');
-      this.form.el.mask('Loading...', 'x-mask-loading');
-      
-      this.loadForm(this.form);
-    }, {overwrite: false});
-    
-    /**
-     * @action create 
-     * Creates a new model instance, displays errors if required and redirects to index
-     */
-    this.registerAction('create', function(form) {
-      form.el.mask('Saving...', 'x-mask-loading');
-      this.onCreate(form);
-    }, {overwrite: false});
-    
-    /**
-     * @action update
-     * Updates an existing model instance, displays errors if required and redirects to index
-     */
-    this.registerAction('update', function(form) {
-      form.el.mask('Saving...', 'x-mask-loading');
-      this.onUpdate(form);
-    }, {overwrite: false});
-    
-    /**
-     * @action delete 
-     * Deletes a given model instance
-     */
-    this.registerAction('delete', function(id, store) {
-      var id = id || this.os.params.id;
-      if (id) {
-        var u = new this.model({id: id});
-        u.destroy({
-          scope:   this,
-          success: this.ondeleteSuccess.createDelegate(this, [store]),
-          failure: this.ondeleteFailure
-        });
-      };
-    }, {overwrite: false});
-  };
-  
-  c.defaultFunctions = {
-    
-    /**
-     * @property modelObj
-     * @type ExtMVC.Model/Null
-     * Reference to the model being edited in this form.  Is set once loaded by the adapter
-     */
-    modelObj: null,
-    
-    /**
-     * @property loadUrl
-     * @type String/Null
-     * If your form needs to load from a non-standard url, override this (should be very rare).
-     * Defaults to null, which lets the model choose which url to load from
-     */
-    loadUrl: null,
-    
-    /**
-     * @property saveUrl
-     * @type String
-     * If your form needs to save to a non-standard url, override this (should be very rare).
-     * Defaults to null, which lets the model choose which url to save to
-     */
-    saveUrl: null,
-  
-    /**
-     * Loads the form with model data
-     * @param {Ext.form.FormPanel} form a reference to the form into which to load the data
-     */
-    loadForm: function(form) {
-      this.model.findById(this.os.params.id, {
-        scope:    this,
-        url:      this.loadUrl,
-        success:  this.onFindSuccess,
-        failure:  this.onFindFailure,
-        callback: form.el.unmask.createDelegate(form.el)
-      });
-    },
-    
-    /**
-     * Fires after successful find of the model.  Loads data into the form
-     * @param {ExtMVC.Model} modelObj The found model object
-     */
-    onFindSuccess: function(modelObj) {
-      this.editModelObj = modelObj;
-      this.form.getForm().loadRecord(modelObj);
-      
-      this.fireEvent('findsuccess', modelObj);
-    },
-    
-    /**
-     * Fires if the model object could not be loaded for whatever reason.
-     * By default it offers the user to try again or go back
-     */
-    onFindFailure: function() {
-      this.fireEvent('findfailure');
-      Ext.Msg.show({
-        title:   'Load Failed',
-        msg:     'The item could not be loaded',
-        buttons: {yes: 'Try again', no: 'Back'},
-        scope:   this,
-        fn:      function(btn) { btn == 'yes' ? this.loadForm() : Ext.History.back(); }
-      });
-    },
-    
-    /**
-     * Called when the save button on an edit form is pressed.  By default this will load the model object with the form values,
-     * then call save() on the model object.  Override onCreateSuccess and onCreateFailure to update success and failure callbacks
-     * @param {Ext.form.BasicForm} form A reference to the FormPanel
-     */
-    onCreate: function(form) {
-      this.newModelObj = new this.model({});
-      
-      this.onSave(form, this.newModelObj, {
-        success:  this.onCreateSuccess,
-        failure:  this.onCreateFailure
-      });
-    },
-    
-    /**
-     * Called when the save button on an edit form is pressed.  By default this will load the model object with the form values,
-     * then call save() on the model object.  Override onUpdateSuccess and onUpdateFailure to update success and failure callbacks
-     * @param {Ext.form.BasicForm} form A reference to the FormPanel
-     */
-    onUpdate: function(form) {
-      this.onSave(form, this.editModelObj, {
-        success:  this.onUpdateSuccess,
-        failure:  this.onUpdateFailure
-      });
-    },
-    
-    /**
-     * Used by both onCreate and onUpdate.  Don't override this unless you understand what you're doing
-     */
-    onSave: function(form, model, options) {
-      //add a saving mask
-      form.el.mask('Saving...', 'x-mask-loading');
-      
-      /**
-       * Updates the model (which also saves it).  Uses success and failure options passed in from
-       * one of onUpdate or onCreate, depending on which one called this
-       */
-      model.update(form.getValues(), Ext.apply({}, options, {
-        scope:    this,
-        url:      this.saveUrl,
-        callback: function() {form.el.unmask();}
-      }));
-    },
-    
-    /**
-     * Called after a successful save.  By default will redirect to the model's index page
-     * @param {Object} response The response object from the server
-     */
-    onSaveSuccess: function(response) {
-      this.os.router.redirectTo(Ext.apply({}, { action: 'index' }, this.os.params));
-    },
-    
-    /**
-     * Called after successful item creation.  By default this just first onSaveSuccess
-     */
-    onCreateSuccess: function() {this.onSaveSuccess();},
-    
-    /**
-     * Called after successful item update.  By default this just first onSaveSuccess
-     */
-    onUpdateSuccess: function() {this.onSaveSuccess();},
-    
-    /**
-     * Called after save fails on create.  By default this will parse server errors and display them on the form
-     * @param {Object} response the response object from the server (should be containing errors)
-     */
-    onCreateFailure: function(modelObj, response) {
-      this.addErrorMessages(modelObj, response);
-    },
-    
-    /**
-     * Called after save fails on update.  By default this will parse server errors and display them on the form
-     * @param {Object} response the response object from the server (should be containing errors)
-     */
-    onUpdateFailure: function(modelObj, response) {
-      this.addErrorMessages(modelObj, response);
-    },
-    
-    /**
-     * Adds server errors to the model and form fields. Private.
-     * @ignore
-     */
-    addErrorMessages: function(modelObj, response) {
-      this.form.getForm().clearInvalid();
-      this.form.getForm().markInvalid(modelObj.errors.forForm());
-    },
-    
-    /**
-     * Called after an item has been successfully deleteed (deleted).  By default this reloads the grid's store
-     * @param {Ext.data.Store} store The Ext.data.Store to reload after deletion
-     */
-    ondeleteSuccess: function(store) {
-      if (store) store.reload();
-    },
-    
-    /**
-     * Called after an delete attempt was made on a model instance, but the attempt failed.  By default this shows
-     * a MessageBox alert informing the user
-     */
-    ondeleteFailure: function(paramName) {
-      Ext.Msg.alert(
-        'Delete Failed',
-        'Sorry, something went wrong when trying to delete that item.  Please try again'
-      );
-    }
-  };
-  
-  /**
-   * Define a method on Controller to enable this.actsAsCrudController(this) within a
-   * controller constructor function
-   */
-  ExtMVC.Controller.prototype.actsAsCrudController = c.registerActions;
-  
-})();
-
 /**
  * ExtMVC.OS
  * @extends ExtMVC.Controller
@@ -2683,7 +2390,7 @@ Ext.ns('ExtMVC.Model.plugin');
 // Ext.ns('ExtMVC.Model.Adapter', 'ExtMVC.Model.Validation');
 
 /**
- * @class Ext.Model.Base
+ * @class ExtMVC.Model.Base
  * A set of properties and functions which are applied to all ExtMVC.Models when they are defined
  */
 ExtMVC.Model.Base = function() { 
@@ -2748,289 +2455,196 @@ ExtMVC.Model.Base.prototype = {
  */
 Ext.apply(Ext.data.Record.prototype, new ExtMVC.Model.Base());
 
-(function() {
-  ExtMVC.Model.plugin.association = (function() {
+ExtMVC.Model.plugin.association = {
+  /**
+   * This function is called every time a model is created via ExtMVC.Model.create
+   * (*NOT* when a model instance is instantiated). Here we initialize associations
+   * on this model.
+   */
+  initialize: function(model) {
+    var proto = model.prototype,
+        assoc = ExtMVC.Model.plugin.association;
     
-    return {
-      /**
-       * This function is called every time a model is created via ExtMVC.Model.create
-       * (*NOT* when a model instance is instantiated). Here we initialize associations
-       * on this model.
-       */
-      initialize: function(model) {
-        var proto = model.prototype,
-            assoc = ExtMVC.Model.plugin.association;
-        
-        this.resolveDependencies(model);
-        
-        if (proto.hasMany) {
-          Ext.each(this.parseParams(proto.hasMany, 'HasMany'), function(params) {
-            this.define(assoc.HasMany, model, params);
-          }, this);
-        }
-        
-        if (proto.belongsTo) {
-          Ext.each(this.parseParams(proto.belongsTo, 'BelongsTo'), function(params) {
-            this.define(assoc.BelongsTo, model, params);
-          }, this);
-        }
-      },
+    this.resolveDependencies(model);
+    
+    if (proto.hasMany) {
+      Ext.each(this.parseParams(proto.hasMany, 'HasMany'), function(params) {
+        this.define(assoc.HasMany, model, params);
+      }, this);
+    }
+    
+    if (proto.belongsTo) {
+      Ext.each(this.parseParams(proto.belongsTo, 'BelongsTo'), function(params) {
+        this.define(assoc.BelongsTo, model, params);
+      }, this);
+    }
+  },
+  
+  /**
+   * @property dependencies
+   * @type ExtMVC.lib.Dependencies
+   * Dependencies class to manage associations on currently undefined models
+   */
+  dependencies: new ExtMVC.lib.Dependencies(),
+  
+  /**
+   * Defines a new association between two models.  If both models have already been created,
+   * the association is created immediately, otherwise it is deferred until both models have been created
+   * You should never have to call this manually...
+   * @param {Function} constructor The Association constructor to use (one of BelongsTo or HasMany)
+   * @param {ExtMVC.model.Base} model The model which owns the association
+   * @param {Object} params Association params such as associationName and associatedClass
+   */
+  define: function(constructor, model, params) {
+    var modelNS         = ExtMVC.Model.modelNamespace,
+        associatedClass = params.associatedClass,
+        modelName       = model.prototype.modelName;
+    
+    if (typeof modelNS[associatedClass] == 'function') {
+      //create the model now
+      this.create.call(this, constructor, modelName, params);
+    } else {
+      //create the model later
+      params.associationConstructor = constructor;
+      this.dependencies.add(associatedClass, modelName, params);
+    }
+  },
+  
+  /**
+   * Creates an association once both models in question have been created
+   * @param {Function} constructor The association constructor (should be HasMany or BelongsTo function)
+   * @param {String} modelName The name of the model on which the association is to be defined
+   * @param {Object} params Parameters for the association, containing at least the following properties:
+   */
+  create: function(constructor, modelName, params) {
+    var modelNS         = ExtMVC.Model.modelNamespace,
+        model           = modelNS[modelName],
+        associatedModel = modelNS[params.associatedClass],
+        associationName = params.associationName;
+    
+    model.prototype[associationName] = new constructor(model, associatedModel, params);
+  },
+  
+  /**
+   * This is called immediately by initialize().  Associations are often specified on models that haven't
+   * been created yet, so we keep a list of dependent associations which are to be defined as soon as the
+   * model has been created.  This method is called with the Model constructor function, looks up any associations
+   * that couldn't previously be defined (as this model did not yet exist), and creates them no
+   * @param {ExtMVC.Model.Base} model The newly created model
+   */
+  resolveDependencies: function(model) {
+    var dependents = this.dependencies.get(model.prototype.modelName);
+    
+    Ext.each(dependents || [], function(dependent) {
+      var constructor = dependent.config.associationConstructor;
+      delete dependent.config.associationConstructor;
       
-      /**
-       * @property dependencies
-       * @type ExtMVC.lib.Dependencies
-       * Dependencies class to manage associations on currently undefined models
-       */
-      dependencies: new ExtMVC.lib.Dependencies(),
+      this.create(constructor, dependent.name, dependent.config);
+    }, this);
+  },
+  
+  /**
+   * Parses belongsTo and hasMany params into a unified format
+   * @param {Mixed} params String, Object or Array
+   * @param {String} associationType BelongsTo or HasMany - decides how to generate the default association name
+   * @return {Array} An array of normalized params objects
+   */
+  parseParams: function(params, associationType) {
+    var results         = [],
+        associationType = associationType || 'BelongsTo',
+        inflectMethod   = associationType == 'BelongsTo' ? 'singularize' : 'pluralize';
+            
+    /**
+     * We're either passed a string, an object, or an array containing one or more
+     * of each...
+     */
+    if (Ext.isArray(params)) {
+      Ext.each(params, function(association) {
+        results.concat(this.parseParams(association));
+      }, this);
+      return results;
       
-      /**
-       * Defines a new association between two models.  If both models have already been created,
-       * the association is created immediately, otherwise it is deferred until both models have been created
-       * You should never have to call this manually...
-       * @param {Function} constructor The Association constructor to use (one of BelongsTo or HasMany)
-       * @param {ExtMVC.model.Base} model The model which owns the association
-       * @param {Object} params Association params such as associationName and associatedClass
-       */
-      define: function(constructor, model, params) {
-        var modelNS         = ExtMVC.Model.modelNamespace,
-            associatedClass = params.associatedClass,
-            modelName       = model.prototype.modelName;
-        
-        if (typeof modelNS[associatedClass] == 'function') {
-          //create the model now
-          this.create.call(this, constructor, modelName, params);
-        } else {
-          //create the model later
-          params.associationConstructor = constructor;
-          this.dependencies.add(associatedClass, modelName, params);
-        }
-      },
-      
-      /**
-       * Creates an association once both models in question have been created
-       * @param {Function} constructor The association constructor (should be HasMany or BelongsTo function)
-       * @param {String} modelName The name of the model on which the association is to be defined
-       * @param {Object} params Parameters for the association, containing at least the following properties:
-       */
-      create: function(constructor, modelName, params) {
-        var modelNS         = ExtMVC.Model.modelNamespace,
-            model           = modelNS[modelName],
-            associatedModel = modelNS[params.associatedClass],
-            associationName = params.associationName;
-        
-        model.prototype[associationName] = new constructor(model, associatedModel, params);
-      },
-      
-      /**
-       * This is called immediately by initialize().  Associations are often specified on models that haven't
-       * been created yet, so we keep a list of dependent associations which are to be defined as soon as the
-       * model has been created.  This method is called with the Model constructor function, looks up any associations
-       * that couldn't previously be defined (as this model did not yet exist), and creates them no
-       * @param {ExtMVC.Model.Base} model The newly created model
-       */
-      resolveDependencies: function(model) {
-        var dependents = this.dependencies.get(model.prototype.modelName);
-        
-        Ext.each(dependents || [], function(dependent) {
-          var constructor = dependent.config.associationConstructor;
-          delete dependent.config.associationConstructor;
-          
-          this.create(constructor, dependent.name, dependent.config);
-        }, this);
-      },
-      
-      /**
-       * Parses belongsTo and hasMany params into a unified format
-       * @param {Mixed} params String, Object or Array
-       * @param {String} associationType BelongsTo or HasMany - decides how to generate the default association name
-       * @return {Array} An array of normalized params objects
-       */
-      parseParams: function(params, associationType) {
-        var results         = [],
-            associationType = associationType || 'BelongsTo',
-            inflectMethod   = associationType == 'BelongsTo' ? 'singularize' : 'pluralize';
-                
-        /**
-         * We're either passed a string, an object, or an array containing one or more
-         * of each...
-         */
-        if (Ext.isArray(params)) {
-          Ext.each(params, function(association) {
-            results.concat(this.parseParams(association));
-          }, this);
-          return results;
-          
-        } else {
-          if (typeof params == 'string') {
-            params = {associatedClass: params};
-          }
-          
-          var assocClass = params.associatedClass,
-              assocName  = typeof assocClass == 'function'
-                         ? ExtMVC.Inflector[inflectMethod](assocClass.prototype.modelName)
-                         : ExtMVC.Inflector[inflectMethod](assocClass);
-          
-          Ext.applyIf(params, {
-            extend:          {},
-            associationName: assocName
-          });
-          
-          results.push(params);
-        }
-        
-        return results;
+    } else {
+      if (typeof params == 'string') {
+        params = {associatedClass: params};
       }
-    };
-  })();
-  
-  var A = ExtMVC.Model.plugin.association;
-  
-  /**
-   * @class ExtMVC.Model.plugin.association.Base
-   * Association Base class which provides basic functionality for other Association classes to build upon
-   * Don't use directly - instead use the HasMany or BelongsTo classes.
-   */
-  A.Base = function(ownerClass, associatedClass, config) {
-    config = config || {};
+      
+      var assocClass = params.associatedClass,
+          assocName  = typeof assocClass == 'function'
+                     ? ExtMVC.Inflector[inflectMethod](assocClass.prototype.modelName)
+                     : ExtMVC.Inflector[inflectMethod](assocClass);
+      
+      Ext.applyIf(params, {
+        extend:          {},
+        associationName: assocName
+      });
+      
+      results.push(params);
+    }
     
-    this.ownerClass = ownerClass;
-    this.associatedClass = associatedClass;
-    
-    Ext.apply(this, config.extend || {});
-    this.initialConfig = config;
-    
-    this.initialize();
-  };
+    return results;
+  }
+};
 
-  A.Base.prototype = {
-    /**
-     * Sets up default values for foreignKey
-     */
-    initialize: Ext.emptyFn
-  };
+var A = ExtMVC.Model.plugin.association;
+
+/**
+ * @class ExtMVC.Model.plugin.association.Base
+ * Association Base class which provides basic functionality for other Association classes to build upon
+ * Don't use directly - instead use the HasMany or BelongsTo classes.
+ */
+ExtMVC.Model.plugin.association.Base = function(ownerClass, associatedClass, config) {
+  config = config || {};
+  
+  this.ownerClass = ownerClass;
+  this.associatedClass = associatedClass;
+  
+  Ext.apply(this, config.extend || {});
+  this.initialConfig = config;
+  
+  this.initialize();
+};
+
+ExtMVC.Model.plugin.association.Base.prototype = {
+  /**
+   * Sets up default values for foreignKey
+   */
+  initialize: Ext.emptyFn
+};
+
+/**
+ * @class ExtMVC.Model.plugin.association.BelongsTo
+ * @extends ExtMVC.Model.plugin.association.Base
+ * A belongsTo association
+ */
+ExtMVC.Model.plugin.association.BelongsTo = Ext.extend(ExtMVC.Model.plugin.association.Base, {
+  initialize: function() {
+    Ext.apply(this, {
+      name:       ExtMVC.Inflector.singularize(this.associatedClass.prototype.tableName),
+      foreignKey: this.associatedClass.prototype.foreignKeyName
+    });
+  }
+});
+
+/**
+ * @class ExtMVC.Model.plugin.association.HasMany
+ * @extends ExtMVC.Model.plugin.association.Base
+ * A hasMany association
+ */
+ExtMVC.Model.plugin.association.HasMany = Ext.extend(ExtMVC.Model.plugin.association.Base, {
   
   /**
-   * @class A.BelongsTo
-   * @extends A.Base
-   * A belongsTo association
+   * Set up default values for name etc
    */
-  A.BelongsTo = Ext.extend(A.Base, {
-    initialize: function() {
-      Ext.apply(this, {
-        name:       ExtMVC.Inflector.singularize(this.associatedClass.prototype.tableName),
-        foreignKey: this.associatedClass.prototype.foreignKeyName
-      });
-    }
-  });
-  
-  /**
-   * @class A.HasMany
-   * @extends A.Base
-   * A hasMany association
-   */
-  A.HasMany = Ext.extend(A.Base, {
-    
-    /**
-     * Set up default values for name etc
-     */
-    initialize: function() {
-      Ext.apply(this, {
-        name:       this.associatedClass.prototype.tableName,
-        foreignKey: this.ownerClass.prototype.foreignKeyName
-      });
-    }
-  });
-})();
+  initialize: function() {
+    Ext.apply(this, {
+      name:       this.associatedClass.prototype.tableName,
+      foreignKey: this.ownerClass.prototype.foreignKeyName
+    });
+  }
+});
 
 ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.association);
-
-/**
- * Method  Collection Individual
- * create  yes        yes  (but different)
- * build   yes        yes
- * find    yes        no
- * loaded  yes        yes  (but different)
- * count   yes        no
- * destroy yes        yes  (but different)
- */
-
-/**
- * Method  HasMany BelongsTo
- * create  yes     no
- * build   yes     no
- * destroy yes     yes
- * find    yes     yes
- */
-
-/**
- * User.find(1, {
- *   success: function(user) {
- *     //on belongs to associations
- *     user.group.destroy();
- *     user.group.find({success: function(group) {}});
- *     user.group.set(someGroupInstance); //someGroupInstance must be a saved record (e.g. have an ID)
- * 
- *     //on has many associations
- *     user.posts.destroy(1);
- *     user.posts.find({id: 1, conditions: [{field: 'title', comparator: '=', value: 'some title'}]}, options);
- *     user.posts.create(data, options)
- *     user.posts.build(data)
- *   }
- * };
- */
-
-// ExtMVC.Model.define('User', {
-//   fields:  [],
-//   belongsTo: "Group",
-//   hasMany: [{
-//     name:       'posts',
-//     className:  'Post',
-//     foreignKey: 'user_id',
-//     
-//     extend: {
-//       //some functions
-//     }
-//   }]
-// });
-// 
-// user.posts.find(1, {
-//   success: function() {},
-//   failure: function() {}
-// });
-// 
-// user.posts.create({}, {
-//   success: function() {},
-//   failure: function() {}
-// });
-// 
-// user.posts.build({});
-// 
-// user.posts.loaded();
-// user.posts.count();
-// user.posts.destroy(1);
-// 
-// ExtMVC.Model.define('Post', {
-//   fields:    [],
-//   belongsTo: [{
-//     name:       'user',
-//     className:  'User',
-//     foreignKey: 'user_id',
-//     
-//     extend: {
-//       //some functions
-//     }
-//   }],
-//   hasMany: 'Comment'
-// });
-// 
-// post.user.find();
-// post.user.loaded();
-// post.user.destroy();
-// 
-// ExtMVC.Model.define('Comment', {
-//   fields:    [],
-//   belongsTo: "Post"
-// });
 
 ExtMVC.Model.plugin.adapter = (function() {
   return {
@@ -3341,93 +2955,6 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
 //     destroy: Ext.emptyFn
 //   }
 // };
-// 
-// /**
-//  * Methods adding url data mapping
-//  */
-// ExtMVC.Model.AbstractAdapter = {
-//   /**
-//    * Set up the model for use with Active Resource.  Add various url-related properties to the model
-//    */
-//   initAdapter: function() {
-//     Ext.applyIf(this, {
-//       urlNamespace: '/admin',
-//       urlExtension: '.ext_json',
-//       urlName:      ExtMVC.Model.urlizeName(this.modelName)
-//     });
-//   },
-//   
-//   /**
-//    * Saves this record.  Performs validations first unless you pass false as the single argument
-//    */
-//   save: function(performValidations) {
-//     var performValidations = performValidations || true;
-//     
-//     console.log("saving model");
-//   },
-//   
-//   destroy: function(config) {
-//     var config = config || {};
-//     
-//     console.log("destroying model");
-//   },
-//   
-//   /**
-//    * Loads this record with data from the given ID
-//    * @param {Number} id The unique ID of the record to load the record data with
-//    * @param {Boolean} asynchronous False to load the record synchronously (defaults to true)
-//    */
-//   load: function(id, asynchronous) {
-//     var asynchronous = asynchronous || true;
-//     
-//     console.log("loading model");
-//   },
-//   
-//   /**
-//    * URL to retrieve a JSON representation of this model from
-//    */
-//   singleDataUrl : function(record_or_id) {
-//     return this.namespacedUrl(String.format("{0}/{1}", this.urlName, this.data.id));
-//   },
-//   
-//   /**
-//    * URL to retrieve a JSON representation of the collection of this model from
-//    * This would typically return the first page of results (see {@link #collectionStore})
-//    */
-//   collectionDataUrl : function() {
-//     return this.namespacedUrl(this.urlName);
-//   },
-// 
-//   /**
-//    * URL to retrieve a tree representation of this model from (in JSON format)
-//    * This is used when populating most of the trees in ExtMVC, though
-//    * only applies to models which can be representated as trees
-//    */
-//   treeUrl: function() {
-//     return this.namespacedUrl(String.format("{0}/tree", this.urlName));
-//   },
-//   
-//   /**
-//    * URL to post details of a drag/drop reorder operation to.  When reordering a tree
-//    * for a given model, this url is called immediately after the drag event with the
-//    * new configuration
-//    * TODO: Provide more info/an example here
-//    */
-//   treeReorderUrl: function() {
-//     return this.namespacedUrl(String.format("{0}/reorder/{1}", this.urlName, this.data.id));
-//   },
-//   
-//   /**
-//    * Provides a namespaced url for a generic url segment.  Wraps the segment in this.urlNamespace and this.urlExtension
-//    * @param {String} url The url to wrap
-//    * @returns {String} The namespaced URL
-//    */
-//   namespacedUrl: function(url) {
-//     return(String.format("{0}/{1}{2}", this.urlNamespace, url, this.urlExtension));
-//   }
-// };
-// 
-// // ExtMVC.Model.registerAdapter('REST', ExtMVC.Model.AbstractAdapter);
 
 /**
  * @class ExtMVC.Model.plugin.adapter.RESTAdapter
@@ -3705,409 +3232,6 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   }
 });
 
-
-// Ext.ns('ExtMVC.Model.Adapter');
-// 
-// (function() {
-//   var A = ExtMVC.Model.Adapter;
-//   
-//   A.REST = {
-//     initialize: function(model) {
-//       // console.log('initialising REST adapter');
-//       
-//       A.Abstract.initialize(model);
-//     },
-//     
-//     classMethods: {
-//       /**
-//        * Generic find method, accepts many forms:
-//        * find(10, opts)      // equivalent to findById(10, opts)
-//        * find('all', opts)   // equivalent to findAll(opts)
-//        * find('first', opts) // equivalent to findById(1, opts)
-//        */
-//       find: function(what, options) {
-//         var id;
-//         if (id = parseInt(what, 10)) {
-//           return this.findById(id, options);
-//         };
-//         
-//         switch(what) {
-//           case 'first': return this.findById(1, options);
-//           default     : return this.findAll(options);
-//         }
-//       },
-//       
-//       /**
-//        * Shortcut for findByField('id', 1, {})
-//        */
-//       findById: function(id, options) {
-//         // return this.findByField('id', id, options);
-//         var options = options || {};
-//         
-//         // TODO
-//         // Old code before below fix
-//         // Ext.applyIf(options, {
-//         //   url: this.singleDataUrl(id)
-//         // });
-//         
-//         // This needs to be done as url is set as 'null' in
-//         // crudcontroller.js line 133.
-//         // this is temp n00b hack which teh master can fix. can't use apply either.
-//         if (options.url == null) {
-//           options.url = this.singleDataUrl(id);
-//         };
-//         
-//         return this.performFindRequest(options);
-//       },
-//           
-//       /**
-//        * Performs a custom find on a given field and value pair.  e.g.:
-//        * User.findByField('email', 'adama@bsg.net') creates the following request:
-//        * GET /users?email=adama@bsg.net
-//        * And creates an array of User objects based on the server's response
-//        * @param {String} fieldName The name of the field to search on
-//        * @param {String/Number} matcher The field value to search for
-//        * @param {Object} options An object which should contain at least a success function, which will
-//        * be passed an array of instantiated model objects
-//        */
-//       findByField: function(fieldName, matcher, options) {
-//         var fieldName = fieldName || 'id';
-//         var options   = options || {};
-//         
-//         options.conditions = options.conditions || [];
-//         options.conditions.push({key: fieldName, value: matcher, comparator: '='});
-//                 
-//         return this.performFindRequest(options);
-//       },
-//       
-//       findAll: function(options) {
-//         var options = options || {};
-//         
-//         var url = options.url ? this.namespacedUrl(options.url) : this.collectionDataUrl();
-//         
-//         var proxyOpts = {};
-//         Ext.apply(proxyOpts, this.proxyConfig, {
-//           url:    url,
-//           method: "GET"
-//         });
-//         
-//         return new Ext.data.Store(
-//           Ext.applyIf(options, {
-//             autoLoad:   true,
-//             remoteSort: false,
-//             proxy:      new this.proxyType(proxyOpts),
-//             reader:     this.getReader()
-//           })
-//         );
-//       },
-//       
-//       /**
-//        * Private, internal methods below here.  Not expected to be useful by anything else but
-//        * are left public for now just in case
-//        */
-//        
-//       /**
-//        * Underlying function which handles all find requests.  Private
-//        */
-//       performFindRequest: function(options) {
-//         var options = options || {};
-//         Ext.applyIf(options, {
-//           scope:   this,
-//           url:     this.collectionDataUrl(),
-//           method:  'GET',
-//           success: Ext.emptyFn,
-//           failure: Ext.emptyFn
-//         });
-//         
-//         //keep a handle on user-defined callbacks
-//         var callbacks = {
-//           successFn: options.success,
-//           failureFn: options.failure
-//         };
-//         
-//         // FIXME fix scope issue
-//         // For some reason the scope isnt correct on this?
-//         // cant figure out why. scope is set on the applyIf block so it should work..
-//         var scope = this;
-//         
-//         options.success = function(response, opts) {
-//           scope.parseSingleLoadResponse(response, opts, callbacks);
-//         };
-//         
-//         /**
-//          * Build params variable from condition options.  Params should always be a string here
-//          * as we're dealing in GET requests only for a find
-//          */
-//         var params = options.params || '';
-//         if (options.conditions && options.conditions[0]) {
-//           for (var i=0; i < options.conditions.length; i++) {
-//             var cond = options.conditions[i];
-//             params += String.format("{0}{1}{2}", cond['key'], (cond['comparator'] || '='), cond['value']);
-//           };
-//           
-//           delete options.conditions;
-//         };
-//         options.params = params;
-// 
-//         return Ext.Ajax.request(options);
-//       },
-//       
-//       /**
-//        * @property urlExtension
-//        * @type String
-//        * Extension appended to the end of all generated urls (e.g. '.js').  Defaults to blank
-//        */
-//       urlExtension: '',
-// 
-//       /**
-//        * @property urlNamespace
-//        * @type String
-//        * Default url namespace prepended to all generated urls (e.g. '/admin').  Defaults to blank
-//        */
-//       urlNamespace: '',
-//       
-//       /**
-//        * @property port
-//        * @type Number
-//        * The web server port to contact (defaults to 80).  Requires host to be set also
-//        */
-//       port: 80,
-//       
-//       /**
-//        * @property host
-//        * @type String
-//        * The hostname of the server to contact (defaults to an empty string)
-//        */
-//       host: "",
-//       
-//       /**
-//        * @property proxyType
-//        * @type Function
-//        * A reference to the DataProxy implementation to use for this model (Defaults to Ext.data.HttpProxy)
-//        */
-//       proxyType: Ext.data.HttpProxy,
-//       
-//       /**
-//        * @property proxyConfig
-//        * @type Object
-//        * Config to pass to the DataProxy when it is created (e.g. use this to set callbackParam on ScriptTagProxy, or similar)
-//        */
-//       proxyConfig: {},
-//       
-//       /**
-//        * Called as the 'success' method to any single find operation (e.g. findById).
-//        * The default implementation will parse the response into a model instance and then fire your own success of failure
-//        * functions as provided to findById.  You can override this if you need to do anything different here, for example
-//        * if you are loading via a script tag proxy with a callback containing the response
-//        * @param {String} response The raw text of the response
-//        * @param {Object} options The options that were passed to the Ext.Ajax.request
-//        * @param {Object} callbacks An object containing a success function and a failure function, which should be called as appropriate
-//        */
-//       parseSingleLoadResponse: function(response, options, callbacks) {
-//         var m = this.getReader().read(response);
-//         if (m && m.records[0]) {
-//           m.records[0].newRecord = false;
-//           callbacks.successFn.call(options.scope, m.records[0]);
-//         } else {
-//           callbacks.failureFn.call(options.scope, response);
-//         };
-//       },
-//       
-//       /**
-//        * URL to retrieve a JSON representation of this model from
-//        */
-//       singleDataUrl : function(id) {
-//         return this.namespacedUrl(String.format("{0}/{1}", this.urlName, id));
-//       },
-//   
-//       /**
-//        * URL to retrieve a JSON representation of the collection of this model from
-//        * This would typically return the first page of results (see {@link #collectionStore})
-//        */
-//       collectionDataUrl : function() {
-//         return this.namespacedUrl(this.urlName);
-//       },
-//   
-//       /**
-//        * URL to retrieve a tree representation of this model from (in JSON format)
-//        * This is used when populating most of the trees in ExtMVC, though
-//        * only applies to models which can be representated as trees
-//        */
-//       treeUrl: function() {
-//         return this.namespacedUrl(String.format("{0}/tree", this.urlName));
-//       },
-//   
-//       /**
-//        * URL to post details of a drag/drop reorder operation to.  When reordering a tree
-//        * for a given model, this url is called immediately after the drag event with the
-//        * new configuration
-//        * TODO: Provide more info/an example here
-//        */
-//       treeReorderUrl: function() {
-//         return this.namespacedUrl(String.format("{0}/reorder/{1}", this.urlName, this.data.id));
-//       },
-//   
-//       /**
-//        * Provides a namespaced url for a generic url segment.  Wraps the segment in this.urlNamespace and this.urlExtension
-//        * @param {String} url The url to wrap
-//        * @returns {String} The namespaced URL
-//        */
-//       namespacedUrl: function(url) {
-//         url = url.replace(/^\//, ""); //remove any leading slashes
-//         return(String.format("{0}{1}/{2}{3}", this.hostName(), this.urlNamespace, url, this.urlExtension));
-//       },
-//       
-//       /**
-//        * Builds the hostname if host and optionally port are set
-//        * @return {String} The host name including port, if different from port 80
-//        */
-//       hostName: function() {
-//         var p = this.port == 80 ? '' : this.port.toString();
-//         
-//         if (this.host == "") {
-//           return "";
-//         } else {
-//           return this.port == 80 ? this.host : String.format("{0}:{1}", this.host, this.port);
-//         };
-//       }
-//     },
-//     
-//     instanceMethods: {
-//       /**
-//        * Saves this model instance to the server.
-//        * @param {Object} options An object passed through to Ext.Ajax.request.  The success option is a special case,
-//        * and is called with the newly instantiated model instead of the usual (response, options) signature
-//        */
-//       save: function(options) {
-//         var options = options || {};
-//         
-//         if (options.performValidations === true) {
-//           //TODO: tie in validations here
-//         };
-//         
-//         //keep a reference to this record for use in the success and failure functions below
-//         var record = this;
-//         
-//         //set a _method param to fake a PUT request (used by Rails)
-//         var params = options.params || this.namespaceFields();
-//         if (!this.newRecord) { params["_method"] = 'put'; }
-//         delete options.params;
-//         
-//         //if the user passes success and/or failure functions, keep a reference to them to allow us to do some pre-processing
-//         var userSuccessFunction = options.success || Ext.emptyFn;
-//         var userFailureFunction = options.failure || Ext.emptyFn;
-//         delete options.success; delete options.failure;
-//         
-//         //function to call if Ext.Ajax.request is successful
-//         options.success = function(response) {
-//           //definitely not a new record any more
-//           record.newRecord = false;
-//           
-//           userSuccessFunction.call(options.scope || record, record, response);
-//         };
-//         
-//         //function to call if Ext.Ajax.request fails
-//         options.failure = function(response) {
-//           //parse any errors sent back from the server
-//           record.readErrors(response.responseText);
-//           
-//           userFailureFunction.call(options.scope || record, record, response);
-//         };
-//         
-//         //do this here as the scope in the block below is not always going to be 'this'
-//         var url = this.url();
-//         
-//         Ext.applyIf(options, {
-//           // url:     url, url == null sometimes so this doesnt work
-//           method:  'POST',
-//           params:  params
-//         });
-//         
-//         //fix for the above
-//         if (options.url == null) {
-//           options.url = url;
-//         };
-//         
-//         Ext.Ajax.request(options);
-//       },
-//       
-//       /**
-//        * Updates the model instance and saves it.  Use setValues({... new attrs ...}) to change attributes without saving
-//        * @param {Object} updatedAttributes An object with any updated attributes to apply to this instance
-//        * @param {Object} saveOptions An object with save options, such as url, callback, success, failure etc.  Passed straight through to save()
-//        */
-//       update: function(updatedAttributes, saveOptions) {
-//         updatedAttributes = updatedAttributes || {};
-//         saveOptions = saveOptions || {};
-//         
-//         this.setValues(updatedAttributes);
-//         this.save(saveOptions);
-//       },
-//       
-//       reload: function() {
-//         console.log('reloading');
-//       },
-//       
-//       destroy: function(options) {
-//         var options = options || {};
-//         
-//         Ext.Ajax.request(
-//           Ext.applyIf(options, {
-//             url:    this.url(),
-//             method: 'post',
-//             params: "_method=delete"
-//           })
-//         );
-//       },
-//       
-//       /**
-//        * Namespaces fields within the modelName string, taking into account mappings.  For example, a model like:
-//        * 
-//        * modelName: 'user',
-//        * fields: [
-//        *   {name: 'first_name', type: 'string'},
-//        *   {name: 'last_name',  type: 'string', mapping: 'last'}
-//        * ]
-//        * 
-//        * Will be decoded to an object like:
-//        * 
-//        * {
-//        *   'user[first_name]': //whatever is in this.data.first_name
-//        *   'user[last]':       //whatever is in this.data.last_name
-//        * }
-//        *
-//        * Note especially that the mapping is used in the key where present.  This is to ensure that mappings work both
-//        * ways, so in the example above the server is sending a key called last, which we convert into last_name.  When we
-//        * send data back to the server, we convert last_name back to last.
-//        */
-//       namespaceFields: function() {
-//         var fields    = this.fields;
-//         var namespace = this.modelName;
-//         
-//         var nsfields = {};
-//         
-//         for (var i=0; i < fields.length; i++) {
-//           var item = fields.items[i];
-//           
-//           //don't send virtual fields back to the server
-//           if (item.virtual) {continue;}
-//           
-//           nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), item.mapping || item.name)] = this.data[item.name];
-//         };
-//         
-//         //not sure why we ever needed this... 
-//         // for (f in fields) {
-//         //   nsfields[String.format("{0}[{1}]", namespace.toLowerCase(), this.data[f.name])] = fields.items[f];
-//         // }
-//         
-//         return nsfields;
-//       }
-//     }
-//   };
-// })();
-// 
-// ExtMVC.Model.AdapterManager.register('REST', ExtMVC.Model.Adapter.REST);
-
 /**
  * @class ExtMVC.Model.plugin.adapter.RESTJSONAdapter
  * @extends ExtMVC.Model.plugin.adapter.RESTAdapter
@@ -4164,250 +3288,243 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
 
 /**
  * The Validation classes themselves are defined here.
- * Subclass ExtMVC.Model.validation.AbstractValidation to create your own validations
+ * Subclass ExtMVC.Model.plugin.validation.AbstractValidation to create your own validations
  */
-
-Ext.ns('ExtMVC.Model.validation');
-
-(function() {
-  //local reference to save my fingers, object lookups (maybe?) and # bytes
-  var V = ExtMVC.Model.validation;
-  
-  /**
-   * @class ExtMVC.Model.validation.AbstractValidation
-   * Base class for all validations - don't use this directly but use a subclass
-   */
-  V.AbstractValidation = function(ownerClass, field, config) {
-    this.ownerClass = ownerClass;
-    this.field = field;
-    
-    Ext.apply(this, config);
-  };
-
-  V.AbstractValidation.prototype = {
-    /**
-     * Returns the current value of the field to which this validation applies
-     * @param {ExtMVC.Model.Base} instance The model instance to get the value from
-     * @return {Mixed} The current value of the field
-     */
-    getValue: function(instance) {
-      return instance.get(this.field);
-    },
-    
-    /**
-     * Empty function which must be overridden by a validation subclass. Make your function return
-     * true if the validation passes, false otherwise
-     * @return {Boolean} True if this validation passes
-     */
-    isValid: function(instance) {
-      return true;
-    }
-  };
-  
-  /**
-   * @class ExtMVC.model.validation.ValidatesPresenceOf
-   * @extends ExtMVC.model.validation.AbstractValidation
-   * Ensures that a field is present
-   */
-  V.ValidatesPresenceOf = Ext.extend(V.AbstractValidation, {
-    /**
-     * @property message
-     * @type String
-     * The textual message returned if this validation didn't pass
-     */
-    message: 'must be present',
-    
-    /**
-     * Returns true if the field is an object or a non-empty string
-     * @return {Boolean} True if the field is present
-     */
-    isValid: function(instance) {
-      var value = this.getValue(instance),
-          valid = false;
-      
-      switch(typeof value) {
-        case 'object': if (value != null)     valid = true; break;
-        case 'string': if (value.length != 0) valid = true; break;
-      };
-      
-      return valid;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesLengthOf
-   * @extends V.AbstractValidation
-   * Returns true if the field is within the length bounds imposed.
-   */
-  V.ValidatesLengthOf = Ext.extend(V.AbstractValidation, {
-    
-    /**
-     * @property tooShortMessage
-     * @type String
-     * The message returned if this field was too short
-     */
-    tooShortMessage: 'is too short',
-    
-    /**
-     * @property tooLongMessage
-     * @type String
-     * The message returned if this field was too long
-     */
-    tooLongMessage: 'is too long',
-    
-    message: '',
-  
-    /**
-     * Tests that the mimimum and maximum length of this field are met.
-     * Intended to be used on strings and arrays
-     * @return {Boolean} True if the conditions are met
-     */
-    isValid: function(instance) {
-      var value = this.getValue(instance);
-      
-      if (typeof value == 'undefined') return true;
-          
-      if (this.minimum && value.length < this.minimum) {
-        this.message = this.tooShortMessage;
-        return false;
-      }
-      
-      if (this.maximum & value.length > this.maximum) {
-        this.message = this.tooLongMessage;
-        return false;
-      }
-      
-      return true;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesNumericalityOf
-   * @extends V.AbstractValidation
-   * Ensures that the field is a number
-   */
-  V.ValidatesNumericalityOf = Ext.extend(V.AbstractValidation, {
-    /**
-     * @property message
-     * @type String
-     * The message returned if this field is not a number
-     */
-    message: 'must be a number',
-    
-    /**
-     * Returns true if the typeof this field is a number
-     * @return {Boolean} True if this is a number
-     */
-    isValid: function(instance) {
-      return 'number' == typeof this.getValue(instance);
-    }
-  });
-  
-  /**
-   * @class V.ValidatesInclusionOf
-   * @extends V.AbstractValidation
-   * Ensures that the field is one of the allowed values
-   */
-  V.ValidatesInclusionOf = Ext.extend(V.AbstractValidation, {
-  
- 
-    /**
-     * Override Abstract constructor to build the validation message
-     */
-    constructor: function(m, f, config) {
-      //set up defaults
-      config = config || {};
-      Ext.applyIf(config, { allowed: [] });
-      
-      V.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
-      
-      Ext.applyIf(this, {
-        message: 'must be one of ' + this.allowed.toSentence('or')
-      });
-    },
-    
-    /**
-     * Returns true if the value of this field is one of those specified in this.allowed
-     * @return {Boolean} True if the field's value is allowed
-     */
-    isValid: function(instance) {
-      var value = this.getValue(instance);
-      
-      for (var i=0; i < this.allowed.length; i++) {
-        if (this.allowed[i] == value) return true;
-      };
-      
-      return false;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesExclusionOf
-   * @extends V.AbstractValidation
-   * Ensures that the field is not one of the allowed values
-   */
-  V.ValidatesExclusionOf = Ext.extend(V.AbstractValidation, {
-  
-    /**
-     * Override Abstract constructor to build the validation message
-     */
-    constructor: function(m, f, config) {
-      //set up defaults
-      config = config || {};
-      Ext.applyIf(config, { disallowed: [] });
-      
-      V.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
-      
-      Ext.applyIf(this, {
-        message: 'must not be ' + this.disallowed.toSentence('or')
-      });
-    },
-    
-    /**
-     * Returns true if the value of this field is one of those specified in this.allowed
-     * @return {Boolean} True if the field's value is allowed
-     */
-    isValid: function(instance) {
-      var value = this.getValue(instance),
-          valid = true;
-      
-      for (var i=0; i < this.disallowed.length; i++) {
-        if (this.disallowed[i] == value) valid = false;
-      };
-      
-      return valid;
-    }
-  });
-  
-  /**
-   * @class V.ValidatesFormatOf
-   * @extends V.AbstractValidation
-   * Ensures that the field matches the given regular expression
-   */
-  V.ValidatesFormatOf = Ext.extend(V.AbstractValidation, {
-    
-    /**
-     * @property message
-     * @type String
-     * The default message to return if this validation does not pass
-     */
-    message: 'is invalid',
-    
-    /**
-     * Returns true if the value of this field matches the suppled regular expression
-     * @return {Boolean} True if the field's value matches
-     */
-    isValid: function(instance) {
-      return this.regex.test(this.getValue(instance));
-    }
-  });
-})();
 
 /**
- * @class ExtMVC.Model.validation.Errors
+ * @class ExtMVC.Model.plugin.validation.AbstractValidation
+ * Base class for all validations - don't use this directly but use a subclass
+ */
+ExtMVC.Model.plugin.validation.AbstractValidation = function(ownerClass, field, config) {
+  this.ownerClass = ownerClass;
+  this.field = field;
+  
+  Ext.apply(this, config);
+};
+
+ExtMVC.Model.plugin.validation.AbstractValidation.prototype = {
+  /**
+   * Returns the current value of the field to which this validation applies
+   * @param {ExtMVC.Model.Base} instance The model instance to get the value from
+   * @return {Mixed} The current value of the field
+   */
+  getValue: function(instance) {
+    return instance.get(this.field);
+  },
+  
+  /**
+   * Empty function which must be overridden by a validation subclass. Make your function return
+   * true if the validation passes, false otherwise
+   * @return {Boolean} True if this validation passes
+   */
+  isValid: function(instance) {
+    return true;
+  }
+};
+
+/**
+ * @class ExtMVC.Model.plugin.validation.ValidatesPresenceOf
+ * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * Ensures that a field is present
+ */
+ExtMVC.Model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+  /**
+   * @property message
+   * @type String
+   * The textual message returned if this validation didn't pass
+   */
+  message: 'must be present',
+  
+  /**
+   * Returns true if the field is an object or a non-empty string
+   * @return {Boolean} True if the field is present
+   */
+  isValid: function(instance) {
+    var value = this.getValue(instance),
+        valid = false;
+    
+    switch(typeof value) {
+      case 'object': if (value != null)     valid = true; break;
+      case 'string': if (value.length != 0) valid = true; break;
+    };
+    
+    return valid;
+  }
+});
+
+/**
+ * @class ExtMVC.Model.plugin.validation.ValidatesLengthOf
+ * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * Returns true if the field is within the length bounds imposed.
+ */
+ExtMVC.Model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+  
+  /**
+   * @property tooShortMessage
+   * @type String
+   * The message returned if this field was too short
+   */
+  tooShortMessage: 'is too short',
+  
+  /**
+   * @property tooLongMessage
+   * @type String
+   * The message returned if this field was too long
+   */
+  tooLongMessage: 'is too long',
+  
+  message: '',
+
+  /**
+   * Tests that the mimimum and maximum length of this field are met.
+   * Intended to be used on strings and arrays
+   * @return {Boolean} True if the conditions are met
+   */
+  isValid: function(instance) {
+    var value = this.getValue(instance);
+    
+    if (typeof value == 'undefined') return true;
+        
+    if (this.minimum && value.length < this.minimum) {
+      this.message = this.tooShortMessage;
+      return false;
+    }
+    
+    if (this.maximum & value.length > this.maximum) {
+      this.message = this.tooLongMessage;
+      return false;
+    }
+    
+    return true;
+  }
+});
+
+/**
+ * @class ExtMVC.Model.plugin.validation.ValidatesNumericalityOf
+ * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * Ensures that the field is a number
+ */
+ExtMVC.Model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+  /**
+   * @property message
+   * @type String
+   * The message returned if this field is not a number
+   */
+  message: 'must be a number',
+  
+  /**
+   * Returns true if the typeof this field is a number
+   * @return {Boolean} True if this is a number
+   */
+  isValid: function(instance) {
+    return 'number' == typeof this.getValue(instance);
+  }
+});
+
+/**
+ * @class ExtMVC.Model.plugin.validation.ValidatesInclusionOf
+ * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * Ensures that the field is one of the allowed values
+ */
+ExtMVC.Model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+
+
+  /**
+   * Override Abstract constructor to build the validation message
+   */
+  constructor: function(m, f, config) {
+    //set up defaults
+    config = config || {};
+    Ext.applyIf(config, { allowed: [] });
+    
+    ExtMVC.Model.plugin.validation.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
+    
+    Ext.applyIf(this, {
+      message: 'must be one of ' + this.allowed.toSentence('or')
+    });
+  },
+  
+  /**
+   * Returns true if the value of this field is one of those specified in this.allowed
+   * @return {Boolean} True if the field's value is allowed
+   */
+  isValid: function(instance) {
+    var value = this.getValue(instance);
+    
+    for (var i=0; i < this.allowed.length; i++) {
+      if (this.allowed[i] == value) return true;
+    };
+    
+    return false;
+  }
+});
+
+/**
+ * @class ExtMVC.Model.plugin.validation.ValidatesExclusionOf
+ * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * Ensures that the field is not one of the allowed values
+ */
+ExtMVC.Model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+
+  /**
+   * Override Abstract constructor to build the validation message
+   */
+  constructor: function(m, f, config) {
+    //set up defaults
+    config = config || {};
+    Ext.applyIf(config, { disallowed: [] });
+    
+    ExtMVC.Model.plugin.validation.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
+    
+    Ext.applyIf(this, {
+      message: 'must not be ' + this.disallowed.toSentence('or')
+    });
+  },
+  
+  /**
+   * Returns true if the value of this field is one of those specified in this.allowed
+   * @return {Boolean} True if the field's value is allowed
+   */
+  isValid: function(instance) {
+    var value = this.getValue(instance),
+        valid = true;
+    
+    for (var i=0; i < this.disallowed.length; i++) {
+      if (this.disallowed[i] == value) valid = false;
+    };
+    
+    return valid;
+  }
+});
+
+/**
+ * @class ExtMVC.Model.plugin.validation.ValidatesFormatOf
+ * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * Ensures that the field matches the given regular expression
+ */
+ExtMVC.Model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+  
+  /**
+   * @property message
+   * @type String
+   * The default message to return if this validation does not pass
+   */
+  message: 'is invalid',
+  
+  /**
+   * Returns true if the value of this field matches the suppled regular expression
+   * @return {Boolean} True if the field's value matches
+   */
+  isValid: function(instance) {
+    return this.regex.test(this.getValue(instance));
+  }
+});
+
+/**
+ * @class ExtMVC.Model.plugin.validation.Errors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-ExtMVC.Model.validation.Errors = function() {
+ExtMVC.Model.plugin.validation.Errors = function() {
   /**
    * @property errors
    * @type Object
@@ -4416,7 +3533,7 @@ ExtMVC.Model.validation.Errors = function() {
   this.all = {};
 };
 
-ExtMVC.Model.validation.Errors.prototype = {
+ExtMVC.Model.plugin.validation.Errors.prototype = {
   
   /**
    * Returns an errors object suitable for applying to a form via BasicForm's markInvalid() method
@@ -4509,146 +3626,141 @@ ExtMVC.Model.validation.Errors.prototype = {
   }
 };
 
-Ext.ns('ExtMVC.Model.validation');
-
 /**
  * This is the Validation plugin definition, which mixes in validation.Errors
  * and some other functions into a model prototype
  */
-(function() {
-  var V = ExtMVC.Model.validation;
-  
-  /**
-   * Overrides Ext.data.Record's isValid() function.
-   * We apply this to Record's prototype as there is no need to define it per model or instance
-   */
-  Ext.apply(Ext.data.Record.prototype, {
-    isValid: function() {
-      if (this.validations) {
-        if (!this.errors) this.errors = new ExtMVC.Model.validations.Errors();
-        
-        this.errors.clear();
-        
-        //test each validation, add to errors if any fail
-        Ext.each(this.validations, function(validation) {
-          if (!validation.isValid(this)) {
-            this.errors.add(validation.field, validation.message);
-          };
-        }, this);
-      };
+
+/**
+ * Overrides Ext.data.Record's isValid() function.
+ * We apply this to Record's prototype as there is no need to define it per model or instance
+ */
+Ext.apply(Ext.data.Record.prototype, {
+  isValid: function() {
+    if (this.validations) {
+      if (!this.errors) this.errors = new ExtMVC.Model.plugin.validations.Errors();
       
-      return this.errors.isValid();
-    }
-  });
-  
-  /**
-   * FIXME: This is possibly the most horrendous hack ever. I'm so sorry :(
-   * 
-   * The basic problem is that we need to add an errors object to every Record instance,
-   * which means we need to hook into the constructor somehow.  Sadly everything I tried
-   * to overload the constructor directly failed, so this horrific hack has been done instead
-   */
-  (function() {
-    var oldPrototype       = Ext.data.Record.prototype,
-        oldConstructor     = Ext.data.Record,
-        oldFunctionMethods = {};
-
-    for (var method in Ext.data.Record) {
-      oldFunctionMethods[method] = Ext.data.Record[method];
-    }
-
-    Ext.data.Record = function(data, id) {
-      oldConstructor.apply(this, arguments);
-
-      this.errors = new ExtMVC.Model.validation.Errors();
-    };
-
-    for (var method in oldFunctionMethods) {
-      Ext.data.Record[method] = oldFunctionMethods[method];
-    }
-  })();
-  /**
-   * Again, I'm really sorry :(
-   */
-  
-  /**
-   * @class ExtMVC.Model.validation.Plugin
-   */
-  V.Plugin = {
-    /**
-     * Initializes this plugin for a given model.  This is called every time a model is *created*
-     * via ExtMVC.Model.create, not when a model object is *instantiated*
-     * @param {ExtMVC.Model} model The model to initialize the plugin for
-     */
-    initialize: function(model) {
-      this.model = model;
+      this.errors.clear();
       
-      Ext.apply(model.prototype, {
-        /**
-         * @property validations
-         * @type Array
-         * An array of all validations performed on this model
-         */
-        validations: this.parseValidations()
-      });
-    },
-    
-    /**
-     * Parses a defined model's prototype for validation declarations and creates validation instances
-     * @return {Array} An Array of validation objects
-     */
-    parseValidations: function() {
-      var validations = [];
-      
-      for (var validation in ExtMVC.Model.validation) {
-        if (/^validate/.test(validation.toLowerCase())) {
-          
-          //for each validation type defined on ExtMVC.Model.validation, check to see if we are using
-          //it in on our model
-          for (var modelKey in this.model.prototype) {
-            if (modelKey.toLowerCase() == validation.toLowerCase()) {
-              //this validation is being used by the model, so add it now
-              var validationConstructor = ExtMVC.Model.validation[validation],
-                  validationOptions     = this.model.prototype[modelKey];
-              
-              if (!Ext.isArray(validationOptions)) {
-                validationOptions = [validationOptions];
-              };
-              
-              Ext.each(validationOptions, function(options) {
-                validations.push(this.buildValidation(validationConstructor, options));
-              }, this);
-            };
-          }
+      //test each validation, add to errors if any fail
+      Ext.each(this.validations, function(validation) {
+        if (!validation.isValid(this)) {
+          this.errors.add(validation.field, validation.message);
         };
-      }
-      
-      return validations;
-    },
+      }, this);
+    };
     
-    /**
-     * Creates a new Validation object based on the passed constructor and options
-     * @param {Function} validation The validation constructor function
-     * @param {Object|String} options A fieldname string, or config object
-     * @return {ExtMVC.Model.validation.AbstractValidation} The validation instance
-     */
-    buildValidation: function(validation, options) {
-      var field, config = {};
-      
-      if ('string' == typeof options) {
-        field = options;
-      } else {
-        field = options.field;
-        delete options.field;
-        config = options;
-      }
-      
-      return new validation(this.model, field, config);
-    }
+    return this.errors.isValid();
+  }
+});
+
+/**
+ * FIXME: This is possibly the most horrendous hack ever. I'm so sorry :(
+ * 
+ * The basic problem is that we need to add an errors object to every Record instance,
+ * which means we need to hook into the constructor somehow.  Sadly everything I tried
+ * to overload the constructor directly failed, so this horrific hack has been done instead
+ */
+(function() {
+  var oldPrototype       = Ext.data.Record.prototype,
+      oldConstructor     = Ext.data.Record,
+      oldFunctionMethods = {};
+
+  for (var method in Ext.data.Record) {
+    oldFunctionMethods[method] = Ext.data.Record[method];
+  }
+
+  Ext.data.Record = function(data, id) {
+    oldConstructor.apply(this, arguments);
+
+    this.errors = new ExtMVC.Model.plugin.validation.Errors();
   };
-  
-  ExtMVC.Model.addPlugin(V.Plugin);
+
+  for (var method in oldFunctionMethods) {
+    Ext.data.Record[method] = oldFunctionMethods[method];
+  }
 })();
+/**
+ * Again, I'm really sorry :(
+ */
+
+/**
+ * @class ExtMVC.Model.plugin.validation.Plugin
+ */
+ExtMVC.Model.plugin.validation.Plugin = {
+  /**
+   * Initializes this plugin for a given model.  This is called every time a model is *created*
+   * via ExtMVC.Model.create, not when a model object is *instantiated*
+   * @param {ExtMVC.Model} model The model to initialize the plugin for
+   */
+  initialize: function(model) {
+    this.model = model;
+    
+    Ext.apply(model.prototype, {
+      /**
+       * @property validations
+       * @type Array
+       * An array of all validations performed on this model
+       */
+      validations: this.parseValidations()
+    });
+  },
+  
+  /**
+   * Parses a defined model's prototype for validation declarations and creates validation instances
+   * @return {Array} An Array of validation objects
+   */
+  parseValidations: function() {
+    var validations = [];
+    
+    for (var validation in ExtMVC.Model.plugin.validation) {
+      if (/^validate/.test(validation.toLowerCase())) {
+        
+        //for each validation type defined on ExtMVC.Model.plugin.validation, check to see if we are using
+        //it in on our model
+        for (var modelKey in this.model.prototype) {
+          if (modelKey.toLowerCase() == validation.toLowerCase()) {
+            //this validation is being used by the model, so add it now
+            var validationConstructor = ExtMVC.Model.plugin.validation[validation],
+                validationOptions     = this.model.prototype[modelKey];
+            
+            if (!Ext.isArray(validationOptions)) {
+              validationOptions = [validationOptions];
+            };
+            
+            Ext.each(validationOptions, function(options) {
+              validations.push(this.buildValidation(validationConstructor, options));
+            }, this);
+          };
+        }
+      };
+    }
+    
+    return validations;
+  },
+  
+  /**
+   * Creates a new Validation object based on the passed constructor and options
+   * @param {Function} validation The validation constructor function
+   * @param {Object|String} options A fieldname string, or config object
+   * @return {ExtMVC.Model.plugin.validation.AbstractValidation} The validation instance
+   */
+  buildValidation: function(validation, options) {
+    var field, config = {};
+    
+    if ('string' == typeof options) {
+      field = options;
+    } else {
+      field = options.field;
+      delete options.field;
+      config = options;
+    }
+    
+    return new validation(this.model, field, config);
+  }
+};
+
+ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.validation.Plugin);
 
 /**
  * A simple manager for registering and retrieving named ViewportBuilders
