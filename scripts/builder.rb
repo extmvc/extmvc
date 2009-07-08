@@ -87,6 +87,11 @@ module ExtMVC
       self.minify_file(concatenated_filename)
     end
     
+    # Builds documentation
+    def self.docs
+      system("java -jar vendor/ext-doc/ext-doc.jar -p config/build.xml -o docs -t vendor/ext-doc/template/ext/template.xml -verbose")
+    end
+    
     private
     # Returns an array of all JavaScript files included by the given HTML file
     def self.js_files_in_html filename
