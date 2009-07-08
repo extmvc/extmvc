@@ -67,18 +67,3 @@ If you are changing Ext MVC files and need to build Ext MVC itself, use:
 
 Again run from the app root directory.  Like with ruby script/build auto, mvc_auto automatically rebuilds whenever
 any Ext MVC file is changed.
-
-
-== Upgrading
-
-To upgrade an app after upgrading MVC itself, do the following:
-
-=== From 0.6a1 to 0.6b1
-
-1. Change all occurences of ExtMVC.Model to ExtMVC.model
-2. Change all occurences of ExtMVC.Controller to ExtMVC.controller.Controller
-3. Change all occurences of ExtMVC.CrudController to ExtMVC.controller.CrudController
-
-
-4. TODO : change all occurences of ExtMVC.Route to ExtMVC.router.Route
-5. TODO : change all occurences of ExtMVC.Router to ExtMVC.router.Router

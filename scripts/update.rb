@@ -10,7 +10,22 @@ module ExtMVC
       def initialize
         [:build, :generate, :info, :setup, :stats].each do |script|
           self.send("ensure_#{script}")
-        end        
+        end
+        
+        # Updates from 0.6a1 to 0.6b1... this is a bit shit :(
+        changes      = [
+          {:old => 'ExtMVC.Model',          :new => 'ExtMVC.model'},
+          {:old => 'ExtMVC.Controller',     :new => 'ExtMVC.controller.Controller'},
+          {:old => 'ExtMVC.CrudController', :new => 'ExtMVC.controller.CrudController'},
+          {:old => 'ExtMVC.Route',          :new => 'ExtMVC.router.Route'},
+          {:old => 'ExtMVC.Router',         :new => 'ExtMVC.router.Router'}
+        ]
+        
+        changes.each do |pair|
+          system("find ./app/**/*.js | xargs perl -wi -pe 's/#{pair[:old]}/#{pair[:new]}/g'")
+          system("find ./config/*js | xargs perl -wi -pe 's/#{pair[:old]}/#{pair[:new]}/g'")
+        end
+        # End updates from 0.6a1 to 0.6b... it's still shit
       end
       
       def ensure_build

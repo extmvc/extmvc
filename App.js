@@ -118,15 +118,16 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * Add routes using this.router.connect
    */
   initializeRouter: function() {
-    if (this.router) {return;}
-    this.router = new ExtMVC.Router();
-    ExtMVC.Router.defineRoutes(this.router);
+    if (this.router == undefined) {
+      this.router = new ExtMVC.router.Router();
+      ExtMVC.router.Router.defineRoutes(this.router);
+    }
   },
   
   /**
    * @property name
    * @type String
-   * The name to namespace this application under (e.g. 'MyApp').  If set,  the appropriate subnamespaces are created automatically
+   * The name to namespace this application under (e.g. 'MyApp').  If set, the appropriate subnamespaces are created automatically
    */
   name: undefined,
   

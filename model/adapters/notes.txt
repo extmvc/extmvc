@@ -1,0 +1,42 @@
+/**
+ * Method  Collection Individual
+ * create  yes        yes  (but different)
+ * build   yes        yes  (might be different)
+ * find    yes        no
+ * loaded  yes        no
+ * count   yes        no
+ * destroy yes        yes  (but different)
+ */
+
+
+// ExtMVC.model.Adapter.Abstract = {
+//   initialize: function(model) {
+//     
+//   },
+//   
+//   classMethods: {
+//     find: function(options) {
+//       
+//     },
+//     
+//     findById: function(id, options) {
+//       return this.findByField('id', id, options);
+//     },
+//     
+//     findByField: function(fieldName, matcher, options) {
+//       
+//     },
+//     
+//     findAll: function(options) {
+//       
+//     }
+//   },
+//   
+//   instanceMethods: {
+//     save:    Ext.emptyFn,
+//     
+//     reload:  Ext.emptyFn,
+//     
+//     destroy: Ext.emptyFn
+//   }
+// };

@@ -166,9 +166,10 @@ Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
    * Add routes using this.router.connect
    */
   initializeRouter: function() {
-    if (this.router) {return;}
-    this.router = new ExtMVC.Router();
-    ExtMVC.Router.defineRoutes(this.router);
+    if (this.router == undefined) {
+      this.router = new ExtMVC.router.Router();
+      ExtMVC.Router.defineRoutes(this.router);
+    }
   },
   
   /**

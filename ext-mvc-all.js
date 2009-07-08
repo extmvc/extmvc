@@ -148,7 +148,7 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 
 ExtMVC = new ExtMVC();
 
-Ext.ns('ExtMVC.model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');
+Ext.ns('ExtMVC.router', 'ExtMVC.plugin', 'ExtMVC.controller', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');
 
 /**
  * @class ExtMVC.App
@@ -270,15 +270,16 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * Add routes using this.router.connect
    */
   initializeRouter: function() {
-    if (this.router) {return;}
-    this.router = new ExtMVC.Router();
-    ExtMVC.Router.defineRoutes(this.router);
+    if (this.router == undefined) {
+      this.router = new ExtMVC.router.Router();
+      ExtMVC.router.Router.defineRoutes(this.router);
+    }
   },
   
   /**
    * @property name
    * @type String
-   * The name to namespace this application under (e.g. 'MyApp').  If set,  the appropriate subnamespaces are created automatically
+   * The name to namespace this application under (e.g. 'MyApp').  If set, the appropriate subnamespaces are created automatically
    */
   name: undefined,
   
@@ -649,10 +650,10 @@ ExtMVC.router.Router.prototype = {
    * Adds a new route to the collection.  Routes are given priority in the order they are added
    * @param {String} re The regular expression-style string to match (e.g. ":controller/:action/:id")
    * @param {Object} additional_params Any additional options which will be returned along with the match elements if the route matches
-   * @return {ExtMVC.Route} The newly created route object
+   * @return {ExtMVC.router.Route} The newly created route object
    */
   connect: function(re, additional_params) {
-    var route = new ExtMVC.Route(re, additional_params);
+    var route = new ExtMVC.router.Route(re, additional_params);
     this.mappings.push(route);
     
     return route;
@@ -887,8 +888,6 @@ ExtMVC.router.Router.defineRoutes = function(map) {
   map.connect(":controller/:action");
   map.connect(":controller/:action/:id");
 };
-
-Ext.ns('ExtMVC.router');
 
 /**
  * @class ExtMVC.router.Route
@@ -1534,526 +1533,257 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
 });
 
 /**
- * @class ExtMVC.OS
- * @extends ExtMVC.Controller
- * Specialised ExtMVC.Controller intended to create and manage generic Operating System
- * components (e.g. not elements specific to a single Application within the OS)
- * When an OS is instantiated, ExtMVC.OS.getOS() is defined and returns the OS instance
- */
-ExtMVC.OS = function(config) {
-  ExtMVC.OS.superclass.constructor.call(this, config);
-  
-  this.addEvents(
-    /**
-     * @event beforelaunch
-     * Fires before this application launches
-     * @param {ExtMVC.Application} this The application about to be launched
-     */
-    'beforelaunch',
-    
-    /**
-     * @event launch
-     * Fires after the application has been launched
-     * @param {ExtMVC.Application} this The application which has been launched
-     */
-    'launch'
-  );
-  
-  this.initialiseNamespaces();
-  
-  var os = this;
-  ExtMVC.OS.getOS = function() {return os;};
-};
-Ext.extend(ExtMVC.OS, ExtMVC.Controller, {
-  /**
-   * Registers a controller for use with this OS.  The controller is instantiated lazily
-   * when needed, through the use of this.getController('MyController')
-   * @param {String} controllerName A string name for this controller, used as a key to reference this controller with this.getController
-   * @param {Function} controllerClass A reference to the controller class, which is later instantiated lazily
-   */
-  registerController: function(controllerName, controllerClass) {
-    this.controllers[controllerName] = controllerClass;
-  },
-
-  /**
-   * Returns a controller instance for the given controller name.
-   * Instantiates the controller first if it has not yet been instantiated.
-   * @param {String} controllerName The registered name of the controller to get
-   * @return {Object} The controller instance, or null if not found
-   */
-  getController: function(controllerName) {
-    var c = this.controllers[controllerName];
-    if (c) {
-      //instantiate the controller first, if required
-      if (typeof c === 'function') {
-        this.controllers[controllerName] = new this.controllers[controllerName]();
-      };
-      return this.controllers[controllerName];
-    } else {
-      return null;
-    };
-  },
-  
-  /**
-   * @property controllers
-   * When this.registerController('application', MyApp.ApplicationController) is called,
-   * the ApplicationController class is registered here under the 'application' key.
-   * When this.getController('application') is called, it checks here to see if the 
-   * controller has been instantiated yet.  If it has, it is returned.  If not it is
-   * instantiated, then returned.
-   */
-  controllers: {},
-  
-  /**
-   * Launches this application
-   */
-  launch: function() {
-    if (this.fireEvent('beforelaunch', this)) {
-      this.initializeRouter();
-      this.initializeViewport();
-      
-      if (this.usesHistory) { this.initialiseHistory(); }      
-      
-      this.onLaunch();
-      this.fireEvent('launch', this);
-    };
-  },
-  
-  /**
-   * @property usesHistory
-   * @type Boolean
-   * True to automatically create required DOM elements for Ext.History,
-   * sets up a listener on Ext.History's change event to fire this.handleHistoryChange. 
-   * False by default
-   */
-  usesHistory: false,
-  
-  /**
-   * @prop dispatchHistoryOnLoad
-   * @type Boolean
-   * If usesHistory is true and dispatchHistoryOnLoad is also true, the OS will attempt to match
-   * any string currently after the # in the url and dispatch to it
-   */
-  dispatchHistoryOnLoad: true,
-  
-  /**
-   * @property viewportBuilder
-   * @type String
-   * The type of viewport to construct (can be any registered with ExtMVC.ViewportBuilderManager)
-   */
-  viewportBuilder: 'leftmenu',
-  
-  /**
-   * Config object which is passed made available to the ViewportBuilder
-   */
-  viewportBuilderConfig: {},
-  
-  /**
-   * Called just before onLaunch.  Runs the ExtMVC.ViewportBuilder
-   * specified in this.viewportBuilder.
-   * Override this to create your own viewport instead of using a builder
-   */
-  initializeViewport: function() {
-    var builder = ExtMVC.ViewportBuilderManager.find(this.viewportBuilder);
-    if (builder) {
-      builder.build(this);
-    };
-  },
-  
-  /**
-   * @property params
-   * @type Object
-   * An object containing the most current parameters (usually decoded from a url using this.router)
-   * e.g. {controller: 'index', action: 'welcome', id: 10}
-   */
-  params: {},
-  
-  /**
-   * Dispatches a request to a registered controller. 
-   * @param {Object} dispatchConfig A config object which should look something like this:
-   * {controller: 'MyController', action: 'index'}, where 'MyController' is the key for a controller
-   * which has been registered to the controller.  If action is not specified, it defaults to 'index'
-   * @param {Object} scope The scope in which to fire the event (defaults to the OS)
-   * @param {Array} args An array of arguments which are passed to the controller action.
-   */
-  dispatch: function(dispatchConfig, scope, args) {
-    var dispatchConfig = dispatchConfig || {};
-    Ext.applyIf(dispatchConfig, {
-      action: 'index'
-    });
-    
-    this.params = dispatchConfig;
-    
-    var c;
-    if (c = this.getController(dispatchConfig.controller)) {
-      c.fireAction(dispatchConfig.action, scope || c, args || []);
-    };
-  },
-  
-  /**
-   * Override this to perform custom processing between the beforelaunch and
-   * launch events
-   */
-  onLaunch: Ext.emptyFn,
-  
-  /**
-   * Sets up a Router instance.  This is called automatically before onLaunch()
-   * Add routes using this.router.connect
-   */
-  initializeRouter: function() {
-    if (this.router) {return;}
-    this.router = new ExtMVC.Router();
-    ExtMVC.Router.defineRoutes(this.router);
-  },
-  
-  /**
-   * @property name
-   * @type String
-   * The name to namespace this application under (e.g. 'MyApp').  If set,  the appropriate subnamespaces are created automatically
-   */
-  name: undefined,
-  
-  /**
-   * Uses Ext.namespace to create packages view controllers, models and views
-   * E.g. if name = 'Blog' or this.name = 'Blog', this is the same as:
-   * Ext.ns('Blog', 'Blog.controllers', 'Blog.models', 'Blog.views')
-   */
-  initialiseNamespaces: function(name) {
-    var name = name || this.name;
-    if (name) {
-      Ext.ns(name, name + '.controllers', name + '.models', name + '.views');
-    };
-  },
-  
-  /**
-   * Creates the necessary DOM elements required for Ext.History to manage state
-   * Sets up listeners on Ext.History's change event to fire the dispatch() action in the normal way.
-   * This is not called automatically as not all applications will need it
-   */
-  initialiseHistory: function() {
-    this.historyForm = Ext.getBody().createChild({
-      tag:    'form',
-      action: '#',
-      cls:    'x-hidden',
-      id:     'history-form',
-      children: [
-        {
-          tag: 'div',
-          children: [
-            {
-              tag:  'input',
-              id:   'x-history-field',
-              type: 'hidden'
-            },
-            {
-              tag: 'iframe',
-              id:  'x-history-frame'
-            }
-          ]
-        }
-      ]
-    });
-    
-    //initialize History management.  Fire a dispatch event if a hash url is present and startup
-    //dispatch is requested
-    if (this.dispatchHistoryOnLoad) {
-      Ext.History.init(function(history) {
-        var hash   = document.location.hash.replace("#", "");
-        var params = this.router.recognise(hash);
-        if (params) {this.dispatch(params);}
-      }, this);
-    } else {
-      Ext.History.init();
-    }
-    
-    Ext.History.on('change', this.handleHistoryChange, this);
-  },
-  
-  /**
-   * Takes a history token (anything after the # in the url), consults the router and dispatches
-   * to the appropriate controller and action if a match was found
-   * @param {String} token The url token (e.g. the token would be cont/act/id for a url like mydomain.com/#cont/act/id)
-   */
-  handleHistoryChange: function(token) {
-    var match = this.router.recognise(token);
-    
-    if (match) {
-      this.dispatch(match, null, [{url: token}]);
-    };
-  },
-  
-  /**
-   * Simple convenience function to change the document title whenever this view is displayed
-   * @param {Ext.Component} view The view (Ext.Panel subclass normally) to listen to show/activate events on
-   * @param {String} title The string to change the document title to (defaults to view.initialConfig.title)
-   */
-  setsTitle: function(view, title) {
-    var title = title || view.title || view.initialConfig ? view.initialConfig.title : null;
-    if (title) {
-      view.on('show',     function() {document.title = title;});
-      view.on('activate', function() {document.title = title;});
-    };
-  }
-});
-
-Ext.reg('os', ExtMVC.OS);
-
-// ExtMVC.getOS = ExtMVC.OS.getOS();
-
-/**
  * @class ExtMVC.model
  * @extends Object
  * Manages the definition and creation of model classes
  */
-ExtMVC.model = function() {
-  return {
-    /**
-     * @property pendingCreation
-     * @type Object
-     * An object of model creation configurations awaiting definition because their dependency model(s) have not yet
-     * been defined. e.g. {'User': [{name: 'SuperUser', config: someConfigObject}, {name: 'AdminUser', config: anotherCfgObj}]}
-     * signifies that SuperUser and AdminUser should be defined as soon as User has been defined
-     */
-    pendingCreation: {},
+ExtMVC.model = {
+  /**
+   * @property pendingCreation
+   * @type Object
+   * An object of model creation configurations awaiting definition because their dependency model(s) have not yet
+   * been defined. e.g. {'User': [{name: 'SuperUser', config: someConfigObject}, {name: 'AdminUser', config: anotherCfgObj}]}
+   * signifies that SuperUser and AdminUser should be defined as soon as User has been defined
+   */
+  pendingCreation: {},
+  
+  /**
+   * Returns an array of any Model subclasses waiting for this model to be defined
+   * @param {String} modelName The dependency model name to check against
+   * @return {Array} An array of model definitions (e.g. [{name: 'MyModel', config: someObject}])
+   */
+  getModelsPendingDefinitionOf: function(modelName) {
+    return this.pendingCreation[modelName] || [];
+  },
+  
+  /**
+   * Adds a model definition to the pendingCreation object if it is waiting for another model to be defined first
+   * @param {String} dependencyModelName The name of another model which must be created before this one
+   * @param {String} dependentModelName The name of the new model to be defined after its dependency
+   * @param {Object} config The new model's config object, as sent to ExtMVC.model.define
+   */
+  setModelPendingDefinitionOf: function(dependencyModelName, dependentModelName, config) {
+    var arr = this.pendingCreation[dependencyModelName] || [];
     
-    /**
-     * Returns an array of any Model subclasses waiting for this model to be defined
-     * @param {String} modelName The dependency model name to check against
-     * @return {Array} An array of model definitions (e.g. [{name: 'MyModel', config: someObject}])
-     */
-    getModelsPendingDefinitionOf: function(modelName) {
-      return this.pendingCreation[modelName] || [];
-    },
+    arr.push({name: dependentModelName, config: config});
     
-    /**
-     * Adds a model definition to the pendingCreation object if it is waiting for another model to be defined first
-     * @param {String} dependencyModelName The name of another model which must be created before this one
-     * @param {String} dependentModelName The name of the new model to be defined after its dependency
-     * @param {Object} config The new model's config object, as sent to ExtMVC.model.define
-     */
-    setModelPendingDefinitionOf: function(dependencyModelName, dependentModelName, config) {
-      var arr = this.pendingCreation[dependencyModelName] || [];
-      
-      arr.push({name: dependentModelName, config: config});
-      
-      this.pendingCreation[dependencyModelName] = arr;
-    },
-    
-    /**
-     * @property strictMode
-     * @type Boolean
-     * Throws errors rather than return false when performing operations such as overwriting existing models
-     * Defaults to false
-     */
-    strictMode: false,
-    
-    /**
-     * @property modelNamespace
-     * @type Object
-     * The object into which Models are defined.  This defaults to window, meaning calls to ExtMVC.model.create
-     * will create models globally scoped unless this is modified.  Setting this instead to MyApp.models would 
-     * mean that a model called 'User' would be defined as MyApp.models.User instead
-     */
-    modelNamespace: window,
+    this.pendingCreation[dependencyModelName] = arr;
+  },
+  
+  /**
+   * @property strictMode
+   * @type Boolean
+   * Throws errors rather than return false when performing operations such as overwriting existing models
+   * Defaults to false
+   */
+  strictMode: false,
+  
+  /**
+   * @property modelNamespace
+   * @type Object
+   * The object into which Models are defined.  This defaults to window, meaning calls to ExtMVC.model.create
+   * will create models globally scoped unless this is modified.  Setting this instead to MyApp.models would 
+   * mean that a model called 'User' would be defined as MyApp.models.User instead
+   */
+  modelNamespace: window,
 
-    /**
-     * Sets a model up for creation.  If this model doesn't extend any other Models that haven't been defined yet
-     * it is returned immediately, otherwise it is placed into a queue and defined as soon as its dependency models
-     * are in place. Example:
-     * 
-     * ExtMVC.model.define('MyApp.models.MyModel', {
-     *   fields: [
-     *     {name: 'title',     type: 'string'},
-     *     {name: 'price',     type: 'number'},
-     *     {name: 'available', type: 'bool'}
-     *   ],
-     *   
-     *   //Adds tax to the price field
-     *   calculatePrice: function() {
-     *     return this.data.price * 1.15;
-     *   },
-     * 
-     *   classMethods: {
-     *     findAvailable: function() {
-     *       //some logic to find all available MyModel's
-     *     }
-     *   }
-     * });
-     * 
-     * var m = new MyApp.models.MyModel({title: 'Test', available: true, price: 100});
-     * m.calculatePrice(); // => 115
-     * MyApp.models.MyModel.findAvailable(); // => Returns as defined above
-     *
-     * @param {String} modelName The name of the model to create (e.g. 'User')
-     * @param {Object} extensions An object containing field definitions and any extension methods to add to this model
-     * @return {ExtMVC.model.Base/Null} The newly defined model constructor, or null if the model can't be defined yet
-     */
-    define: function(modelName, extensions) {
-      var createNow  = true,
-          extensions = extensions || {};
-      
-      if (typeof extensions.extend != 'undefined') {
-        var superclass = this.modelNamespace[extensions.extend];
-        if (typeof superclass == 'undefined') {
-          //the model we're extending hasn't been created yet
-          createNow = false;
-          this.setModelPendingDefinitionOf(extensions.extend, modelName, extensions);
-        };
-      };
-      
-      if (createNow) this.create.apply(this, arguments);
-    },
+  /**
+   * Sets a model up for creation.  If this model doesn't extend any other Models that haven't been defined yet
+   * it is returned immediately, otherwise it is placed into a queue and defined as soon as its dependency models
+   * are in place. Example:
+   * 
+   * ExtMVC.model.define('MyApp.models.MyModel', {
+   *   fields: [
+   *     {name: 'title',     type: 'string'},
+   *     {name: 'price',     type: 'number'},
+   *     {name: 'available', type: 'bool'}
+   *   ],
+   *   
+   *   //Adds tax to the price field
+   *   calculatePrice: function() {
+   *     return this.data.price * 1.15;
+   *   },
+   * 
+   *   classMethods: {
+   *     findAvailable: function() {
+   *       //some logic to find all available MyModel's
+   *     }
+   *   }
+   * });
+   * 
+   * var m = new MyApp.models.MyModel({title: 'Test', available: true, price: 100});
+   * m.calculatePrice(); // => 115
+   * MyApp.models.MyModel.findAvailable(); // => Returns as defined above
+   *
+   * @param {String} modelName The name of the model to create (e.g. 'User')
+   * @param {Object} extensions An object containing field definitions and any extension methods to add to this model
+   * @return {ExtMVC.model.Base/Null} The newly defined model constructor, or null if the model can't be defined yet
+   */
+  define: function(modelName, extensions) {
+    var createNow  = true,
+        extensions = extensions || {};
     
-    /**
-     * @ignore
-     * Creates a new ExtMVC.model.Base subclass and sets up all fields, instance and class methods.
-     * Don't use this directly unless you know what you're doing - use define instead (with the same arguments)
-     * 
-     * @param {String} modelName The full model name to define, including namespace (e.g. 'MyApp.models.MyModel')
-     * @param {Object} extensions An object containing field definitions and any extension methods to add to this model
-     */
-    create: function(modelName, extensions) {
-      extensions = extensions || {};
-      
-      //check that this model has not already been defined
-      if (this.isAlreadyDefined(modelName)) {
-        if (this.strictMode) throw new Error(modelName + ' is already defined');
-        return false;
-      }
-      
-      //get a handle on the super class model if extending (this will be undefined if we are not extending another model)
-      var superclassModel = this.modelNamespace[extensions.extend];
-      
-      var fields = this.buildFields(extensions.fields, superclassModel);
-      delete extensions.fields;
-      
-      //create the base Ext.data.Record, which we'll extend in a moment, and assign it to our model namespace
-      var model = this.modelNamespace[modelName] = Ext.data.Record.create(fields);
-      
-      //separate out any methods meant to operate at class level
-      var classMethods = extensions.classMethods || {};
-      delete extensions.classMethods;
-      
-      //extend our new record firstly with Model.Base, then apply any user extensions
-      Ext.apply(model.prototype, extensions);
-      
-      //if we're extending another model, add class and instance methods now
-      if (typeof superclassModel != 'undefined') {
-        Ext.applyIf(classMethods, superclassModel);
-        Ext.applyIf(model.prototype, superclassModel.prototype);
+    if (typeof extensions.extend != 'undefined') {
+      var superclass = this.modelNamespace[extensions.extend];
+      if (typeof superclass == 'undefined') {
+        //the model we're extending hasn't been created yet
+        createNow = false;
+        this.setModelPendingDefinitionOf(extensions.extend, modelName, extensions);
       };
-      
-      //set up the various string names associated with this model
-      model.prototype.modelName = modelName;
-      this.setupNames(model);
+    };
+    
+    if (createNow) this.create.apply(this, arguments);
+  },
+  
+  /**
+   * @ignore
+   * Creates a new ExtMVC.model.Base subclass and sets up all fields, instance and class methods.
+   * Don't use this directly unless you know what you're doing - use define instead (with the same arguments)
+   * 
+   * @param {String} modelName The full model name to define, including namespace (e.g. 'MyApp.models.MyModel')
+   * @param {Object} extensions An object containing field definitions and any extension methods to add to this model
+   */
+  create: function(modelName, extensions) {
+    extensions = extensions || {};
+    
+    //check that this model has not already been defined
+    if (this.isAlreadyDefined(modelName)) {
+      if (this.strictMode) throw new Error(modelName + ' is already defined');
+      return false;
+    }
+    
+    //get a handle on the super class model if extending (this will be undefined if we are not extending another model)
+    var superclassModel = this.modelNamespace[extensions.extend];
+    
+    var fields = this.buildFields(extensions.fields, superclassModel);
+    delete extensions.fields;
+    
+    //create the base Ext.data.Record, which we'll extend in a moment, and assign it to our model namespace
+    var model = this.modelNamespace[modelName] = Ext.data.Record.create(fields);
+    
+    //separate out any methods meant to operate at class level
+    var classMethods = extensions.classMethods || {};
+    delete extensions.classMethods;
+    
+    //extend our new record firstly with Model.Base, then apply any user extensions
+    Ext.apply(model.prototype, extensions);
+    
+    //if we're extending another model, add class and instance methods now
+    if (typeof superclassModel != 'undefined') {
+      Ext.applyIf(classMethods, superclassModel);
+      Ext.applyIf(model.prototype, superclassModel.prototype);
+    };
+    
+    //set up the various string names associated with this model
+    model.prototype.modelName = modelName;
+    this.setupNames(model);
 
-      //add any class methods to the class level
-      for (methodName in classMethods) {
-        if (methodName != 'prototype') model[methodName] = classMethods[methodName];
-      };
+    //add any class methods to the class level
+    for (methodName in classMethods) {
+      if (methodName != 'prototype') model[methodName] = classMethods[methodName];
+    };
 
-      this.initializePlugins(model);
-      this.afterCreate(modelName);
-    },
+    this.initializePlugins(model);
+    this.afterCreate(modelName);
+  },
+  
+  /**
+   * @ignore
+   * Creates any other models that were waiting for this one to be created. Do not override this
+   * unless you really know what you are doing...
+   * @param {String} modelName The name of the model that was just created
+   */
+  afterCreate: function(modelName) {
+    var awaiting = this.getModelsPendingDefinitionOf(modelName);
+    if (awaiting) {
+      Ext.each(awaiting, function(obj) {
+        this.create(obj.name, obj.config);
+      }, this);
+    };
+  },
+  
+  /**
+   * Checks if a given model name has already been defined, or is awaiting creation.
+   * @param {String} modelName the name of the new model to check
+   * @return {Boolean} True if the model has already been defined somewhere
+   */
+  isAlreadyDefined: function(modelName) {
+    if (typeof this.modelNamespace[modelName] != "undefined") return true;
     
-    /**
-     * @ignore
-     * Creates any other models that were waiting for this one to be created. Do not override this
-     * unless you really know what you are doing...
-     * @param {String} modelName The name of the model that was just created
-     */
-    afterCreate: function(modelName) {
-      var awaiting = this.getModelsPendingDefinitionOf(modelName);
-      if (awaiting) {
-        Ext.each(awaiting, function(obj) {
-          this.create(obj.name, obj.config);
-        }, this);
-      };
-    },
+    var found = false;
     
-    /**
-     * Checks if a given model name has already been defined, or is awaiting creation.
-     * @param {String} modelName the name of the new model to check
-     * @return {Boolean} True if the model has already been defined somewhere
-     */
-    isAlreadyDefined: function(modelName) {
-      if (typeof this.modelNamespace[modelName] != "undefined") return true;
-      
-      var found = false;
-      
-      //check that this model is not awaiting creation
-      for (superclass in this.pendingCreation) {
-        var subclasses = this.pendingCreation[superclass];
-        Ext.each(subclasses, function(s) {
-          if (s.name == modelName) found = true;
-        }, this);
-      }
-      
-      return found;
-    },
-    
-    /**
-     * @ignore
-     * Builds an array of fields for this model, adding fields from the super class if present
-     */
-    buildFields: function(subclassFields, superclass) {
-      subclassFields = subclassFields || [];
-      
-      var fields = new Ext.util.MixedCollection(false, function(field) { return field.name; });
-      fields.addAll(subclassFields);
-      
-      if (typeof superclass != 'undefined') {
-        superclass.prototype.fields.each(function(field) {
-          if (typeof fields.get(field.name) == 'undefined') fields.add(field);
-        });
-      };
-      
-      return fields.items;
-    },
-    
-    /**
-     * Sets up the various names required by this model, such as tableName, humanName etc
-     * @param {Object} model The model to set up names on
-     * @return {Object} The model, decorated with names
-     */
-    setupNames: function(model) {
-      var p = model.prototype,
-          i = ExtMVC.Inflector;
-      
-      Ext.applyIf(model.prototype, {
-        tableName        : i.pluralize(p.modelName.underscore()),
-        foreignKeyName   : i.singularize(p.modelName.underscore()) + '_id',
-        singularHumanName: p.modelName.humanize().titleize(),
-        pluralHumanName  : i.pluralize(p.modelName.humanize().titleize())
-      });
-    },
-    
-    /**
-     * @property plugins
-     * @type Array
-     * An array containing all plugin constructor functions - these get applied at model creation time
-     */
-    plugins: [],
-    
-    /**
-     * Makes Model aware of a new plugin.  All plugins defined here will be initialized when a model is created
-     * @param {Function} plugin The plugin object
-     */
-    addPlugin: function(plugin) {
-      this.plugins.push(plugin);
-    },
-    
-    /**
-     * Runs each plugin's initialize method with a newly created model constructor
-     * @param {ExtMVC.model} model The model to initialize the plugin with
-     */
-    initializePlugins: function(model) {
-      Ext.each(this.plugins, function(plugin) {
-        plugin.initialize(model);
+    //check that this model is not awaiting creation
+    for (superclass in this.pendingCreation) {
+      var subclasses = this.pendingCreation[superclass];
+      Ext.each(subclasses, function(s) {
+        if (s.name == modelName) found = true;
       }, this);
     }
-  };
-}();
+    
+    return found;
+  },
+  
+  /**
+   * @ignore
+   * Builds an array of fields for this model, adding fields from the super class if present
+   */
+  buildFields: function(subclassFields, superclass) {
+    subclassFields = subclassFields || [];
+    
+    var fields = new Ext.util.MixedCollection(false, function(field) { return field.name; });
+    fields.addAll(subclassFields);
+    
+    if (typeof superclass != 'undefined') {
+      superclass.prototype.fields.each(function(field) {
+        if (typeof fields.get(field.name) == 'undefined') fields.add(field);
+      });
+    };
+    
+    return fields.items;
+  },
+  
+  /**
+   * Sets up the various names required by this model, such as tableName, humanName etc
+   * @param {Object} model The model to set up names on
+   * @return {Object} The model, decorated with names
+   */
+  setupNames: function(model) {
+    var p = model.prototype,
+        i = ExtMVC.Inflector;
+    
+    Ext.applyIf(model.prototype, {
+      tableName        : i.pluralize(p.modelName.underscore()),
+      foreignKeyName   : i.singularize(p.modelName.underscore()) + '_id',
+      singularHumanName: p.modelName.humanize().titleize(),
+      pluralHumanName  : i.pluralize(p.modelName.humanize().titleize())
+    });
+  },
+  
+  /**
+   * @property plugins
+   * @type Array
+   * An array containing all plugin constructor functions - these get applied at model creation time
+   */
+  plugins: [],
+  
+  /**
+   * Makes Model aware of a new plugin.  All plugins defined here will be initialized when a model is created
+   * @param {Function} plugin The plugin object
+   */
+  addPlugin: function(plugin) {
+    this.plugins.push(plugin);
+  },
+  
+  /**
+   * Runs each plugin's initialize method with a newly created model constructor
+   * @param {ExtMVC.model} model The model to initialize the plugin with
+   */
+  initializePlugins: function(model) {
+    Ext.each(this.plugins, function(plugin) {
+      plugin.initialize(model);
+    }, this);
+  }
+};
 
 Ext.ns('ExtMVC.model.plugin');
 
@@ -2387,49 +2117,6 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     };
   }
 };
-
-/**
- * Method  Collection Individual
- * create  yes        yes  (but different)
- * build   yes        yes  (might be different)
- * find    yes        no
- * loaded  yes        no
- * count   yes        no
- * destroy yes        yes  (but different)
- */
-
-
-// ExtMVC.model.Adapter.Abstract = {
-//   initialize: function(model) {
-//     
-//   },
-//   
-//   classMethods: {
-//     find: function(options) {
-//       
-//     },
-//     
-//     findById: function(id, options) {
-//       return this.findByField('id', id, options);
-//     },
-//     
-//     findByField: function(fieldName, matcher, options) {
-//       
-//     },
-//     
-//     findAll: function(options) {
-//       
-//     }
-//   },
-//   
-//   instanceMethods: {
-//     save:    Ext.emptyFn,
-//     
-//     reload:  Ext.emptyFn,
-//     
-//     destroy: Ext.emptyFn
-//   }
-// };
 
 /**
  * @class ExtMVC.model.plugin.adapter.RESTAdapter
