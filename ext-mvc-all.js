@@ -522,6 +522,7 @@ Array.prototype.toSentence = function(connector) {
 };
 
 /**
+ * @string
  * @returns A capitalized string (e.g. "some test sentence" becomes "Some test sentence")
  * @type String
  */
@@ -591,38 +592,10 @@ String.prototype.toCurrency = function(symbol) {
 };
 
 /**
- * Old versions.  Not sure if we should be augmenting String like the above so have left this for reference
+ * @class ExtMVC.Router
+ * @extends Object
+ * TODO: [DOCS] Give a good description of the Router
  */
-
-// /**
-//  * @param {String} str A string to be capitalized
-//  * @returns A capitalized string (e.g. "some test sentence" becomes "Some test sentence")
-//  * @type String
-//  */
-// String.capitalize = function(str) {
-//   return str.charAt(0).toUpperCase() + str.substr(1).toLowerCase();
-// };
-// 
-// /**
-//  * @param {String} str A string to be turned into title case
-//  * @returns The string in Title Case (e.g. "some test sentence" becomes "Some Test Sentence")
-//  * @type String
-//  */
-// String.titleize = function(str) {
-//   return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
-// };
-// 
-// /**
-//  * Takes any string and de-underscores and uppercases it
-//  * e.g. long_underscored_string => LongUnderscoredString
-//  */
-// String.camelize = function(class_name_string) {
-//   return String.titleize(class_name_string.replace(/_/g, " ")).replace(/ /g, "");
-// 
-//   // this feels nicer, sadly no collect function (yet) though
-//   // class_name_string.split("_").collect(function(e) {return String.capitalize(e)}).join("");
-// };
-
 ExtMVC.Router = function() {};
 ExtMVC.Router.prototype = {
   
@@ -884,8 +857,9 @@ ExtMVC.Router.defineRoutes = function(map) {
 };
 
 /**
- * 
- * 
+ * @class ExtMVC.Route
+ * @extends Object
+ * TODO: [DOCS] Rewrite this horrible nonsense
  */
 ExtMVC.Route = function(mappingString, options) {
   this.mappingString = mappingString;
@@ -1068,11 +1042,11 @@ ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
 });
 
 /**
- * @class ExtMVC.Controller
+ * @class ExtMVC.controller.Controller
  * @extends Ext.util.Observable
  * Controller base class
  */
-ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
+ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
   
   /**
    * @property name
@@ -1093,7 +1067,7 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   },
   
   constructor: function(config) {
-    ExtMVC.Controller.superclass.constructor.apply(this, arguments);
+    ExtMVC.controller.Controller.superclass.constructor.apply(this, arguments);
     
     Ext.apply(this, config || {});
     
@@ -1181,14 +1155,14 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   }
 });
 
-Ext.reg('controller', ExtMVC.Controller); 
+Ext.reg('controller', ExtMVC.controller.Controller); 
 
 /**
- * @class ExtMVC.CrudController
- * @extends ExtMVC.Controller
+ * @class ExtMVC.controller.CrudController
+ * @extends ExtMVC.controller.Controller
  * An extension of Controller which provides the generic CRUD actions
  */
-ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
+ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @property model
    * @type Function/Null
@@ -1510,7 +1484,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * @return {Function} A reference to the custom view, or the scaffold fallback
    */
   getViewClass: function(viewName) {
-    var userView = ExtMVC.CrudController.superclass.getViewClass.call(this, viewName);
+    var userView = ExtMVC.controller.CrudController.superclass.getViewClass.call(this, viewName);
     
     return (userView == undefined) ? this.scaffoldViewName(viewName) : userView;
   },

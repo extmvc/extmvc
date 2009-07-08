@@ -1,9 +1,9 @@
 /**
- * @class ExtMVC.CrudController
- * @extends ExtMVC.Controller
+ * @class ExtMVC.controller.CrudController
+ * @extends ExtMVC.controller.Controller
  * An extension of Controller which provides the generic CRUD actions
  */
-ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
+ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @property model
    * @type Function/Null
@@ -325,7 +325,7 @@ ExtMVC.CrudController = Ext.extend(ExtMVC.Controller, {
    * @return {Function} A reference to the custom view, or the scaffold fallback
    */
   getViewClass: function(viewName) {
-    var userView = ExtMVC.CrudController.superclass.getViewClass.call(this, viewName);
+    var userView = ExtMVC.controller.CrudController.superclass.getViewClass.call(this, viewName);
     
     return (userView == undefined) ? this.scaffoldViewName(viewName) : userView;
   },

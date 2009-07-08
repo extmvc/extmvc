@@ -1,3 +1,6 @@
+/**
+ * @class ExtMVC.Model.plugin.association
+ */
 ExtMVC.Model.plugin.association = {
   /**
    * This function is called every time a model is created via ExtMVC.Model.create
@@ -128,8 +131,6 @@ ExtMVC.Model.plugin.association = {
     return results;
   }
 };
-
-var A = ExtMVC.Model.plugin.association;
 
 /**
  * @class ExtMVC.Model.plugin.association.Base

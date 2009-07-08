@@ -1,9 +1,9 @@
 /**
- * @class ExtMVC.Controller
+ * @class ExtMVC.controller.Controller
  * @extends Ext.util.Observable
  * Controller base class
  */
-ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
+ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
   
   /**
    * @property name
@@ -24,7 +24,7 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   },
   
   constructor: function(config) {
-    ExtMVC.Controller.superclass.constructor.apply(this, arguments);
+    ExtMVC.controller.Controller.superclass.constructor.apply(this, arguments);
     
     Ext.apply(this, config || {});
     
@@ -112,4 +112,4 @@ ExtMVC.Controller = Ext.extend(Ext.util.Observable, {
   }
 });
 
-Ext.reg('controller', ExtMVC.Controller); 
+Ext.reg('controller', ExtMVC.controller.Controller); 
