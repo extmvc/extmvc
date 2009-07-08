@@ -31,7 +31,14 @@ ExtMVC.model.define("SomeModel", {
 </code></pre>
  * 
  * Most validations will allow an array to be passed to set the validation up on more than one field (e.g.
- * see the validatesPresenceOf declaration above).
+ * see the validatesPresenceOf declaration above). If only a string is provided it is assume to be the field name.
+ * The following are all equivalent:
+<pre><code>
+validatesPresenceOf: "title"
+validatesPresenceOf: ["title"]
+validatesPresenceOf: {field: "title"}
+validatesPresenceOf: [{field: "title"}]
+</code></pre>
  * 
  * <h2>Running validations</h2>
  * This plugin overrides ExtMVC.model.Base's usual isValid() function to provide feedback from the validations:

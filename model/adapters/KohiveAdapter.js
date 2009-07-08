@@ -1,5 +1,7 @@
 /**
  * Data adapter to map Kohive models to the various Kohive urls
+ * @class ExtMVC.model.KohiveAdapter
+ * @ignore
  */
 ExtMVC.model.KohiveAdapter = {
   
@@ -36,7 +38,7 @@ ExtMVC.model.KohiveAdapter = {
         
         // Call the original success function
         optionsSuccess();
-      }
+      };
       
       /**
        * Failure method which is called when the Ajax request fails
@@ -44,7 +46,7 @@ ExtMVC.model.KohiveAdapter = {
        */
       var failure = function(response){
         console.log('Failure');
-      }
+      };
       
       // Overwrite old success and failure methods
       options.success = success;

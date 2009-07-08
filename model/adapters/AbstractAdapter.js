@@ -1,19 +1,21 @@
-ExtMVC.model.plugin.adapter = (function() {
-  return {
-    initialize: function(model) {
-      var adapter = new this.RESTJSONAdapter();
-      
-      Ext.override(Ext.data.Record, adapter.instanceMethods());
-      Ext.apply(model, adapter.classMethods());
-      
-      //associations are optional so only add them if they are present
-      try {
-        Ext.override(ExtMVC.model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
-        Ext.override(ExtMVC.model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
-      } catch(e) {};
-    }
-  };
-})();
+/**
+ * @class ExtMVC.model.plugin.adapter
+ * @ignore
+ */
+ExtMVC.model.plugin.adapter = {
+  initialize: function(model) {
+    var adapter = new this.RESTJSONAdapter();
+    
+    Ext.override(Ext.data.Record, adapter.instanceMethods());
+    Ext.apply(model, adapter.classMethods());
+    
+    //associations are optional so only add them if they are present
+    try {
+      Ext.override(ExtMVC.model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
+      Ext.override(ExtMVC.model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
+    } catch(e) {};
+  }
+};
 
 ExtMVC.model.addPlugin(ExtMVC.model.plugin.adapter);
 
@@ -69,6 +71,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Attempts to save this instance
+       * @member ExtMVC.model.Base
        * @param {Object} options Options (see collectionMethods.create for arguments)
        */
       save: function(options) {
@@ -86,6 +89,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Attempts to destroy this instance (asynchronously)
+       * @member ExtMVC.model.Base
        * @param {Object} options Options to pass to the destroy command (see collectionMethods.create for args)
        */
       destroy: function(options) {
@@ -94,6 +98,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Updates selected fields with new values and saves straight away
+       * @member ExtMVC.model.Base
        * @param {Object} data The fields to update with new values
        * @param {Object} options Options (see collectionMethods.create for arguments)
        */
@@ -104,6 +109,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Returns true if this instance has been loaded from backend storage or has only been instantiated
+       * @member ExtMVC.model.Base
        * @return {Boolean} True if loaded from the server
        */
       loaded: function() {
@@ -175,10 +181,19 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
    */
   hasManyAssociationMethods: function() {
     return {
+      /**
+       * @member ExtMVC.model.plugin.association.HasMany
+       * @ignore (member doesn't seem to work for properties)
+       * @property adapter
+       * @type ExtMVC.model.plugin.adapter.Abstract
+       * A reference to the adapter attached to this association. Useful if you need to dip down to a lower
+       * level than the methods inside HasMany provide
+       */
       adapter: this,
     
       /**
        * Attempts to create and save a new instance of this model
+       * @member ExtMVC.model.plugin.association.HasMany
        * @param {Object} data The data to use in creating and saving an instance of this model
        * @param {Object} options Options object:
        * * skipValidation - set to true to bypass validation before saving (defaults to false)
@@ -196,6 +211,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Builds a new model on this collection but does not save it
+       * @member ExtMVC.model.plugin.association.HasMany
        * @param {Object} data The data to use in creating and saving an instance of this model
        * @return {Object} The new model instance
        */
@@ -205,6 +221,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Finds the given related model on a relationship
+       * @member ExtMVC.model.plugin.association.HasMany
        * @param {Number|String} id The unique identifier for this model.
        */
       find: function(id) {
@@ -213,6 +230,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Returns true if this association has been fully loaded yet
+       * @member ExtMVC.model.plugin.association.HasMany
        * @return {Boolean} True if this association has been loaded yet
        */
       loaded: function() {
@@ -221,6 +239,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Issues a destroy (delete) command to delete the appropriate related object by ID
+       * @member ExtMVC.model.plugin.association.HasMany
        * @param {Number|String} id The ID of the associated model to delete
        */
       destroy: function(id) {
@@ -236,10 +255,19 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
    */
   belongsToAssociationMethods: function() {
     return {
+      /**
+       * @member ExtMVC.model.plugin.association.BelongsTo
+       * @ignore (member doesn't seem to work for properties)
+       * @property adapter
+       * @type ExtMVC.model.plugin.adapter.Abstract
+       * A reference to the adapter attached to this association. Useful if you need to dip down to a lower
+       * level than the methods inside BelongsTo provide
+       */
       adapter: this,
       
       /**
        * Finds the given related model on a relationship
+       * @member ExtMVC.model.plugin.association.BelongsTo
        * @param {Number|String} id The unique identifier for this model.
        */
       find: function(id) {
@@ -248,6 +276,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Returns true if this association has been fully loaded yet
+       * @member ExtMVC.model.plugin.association.BelongsTo
        * @return {Boolean} True if this association has been loaded yet
        */
       loaded: function() {
@@ -256,6 +285,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
     
       /**
        * Issues a destroy (delete) command to delete the appropriate related object by ID
+       * @member ExtMVC.model.plugin.association.BelongsTo
        * @param {Number|String} id The ID of the associated model to delete
        */
       destroy: function(id) {
