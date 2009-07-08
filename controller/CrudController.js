@@ -1,7 +1,57 @@
 /**
  * @class ExtMVC.controller.CrudController
  * @extends ExtMVC.controller.Controller
- * An extension of Controller which provides the generic CRUD actions
+ * <h1>CRUD Controller</h1>
+ * <p>The CRUD Controller is an extension of Controller which provides the generic CRUD actions (Create, Read, Update and Delete).
+ * Although CRUD Controller provides sensible default options for most cases, it is also highly extensible. Here's an example for
+ * managing CRUD operations on a fictional 'Page' model in our app. Note that the name and model are the only required properties
+ * for a CRUD controller with default behaviour:</p>
+<pre><code>
+MyApp.controllers.PagesController = Ext.extend(ExtMVC.controller.CrudController, {
+  //the name of the controller (see {@link ExtMVC.controller.Controller})
+  name : 'pages',
+  
+  //The model that this controller will be providing CRUD services for
+  model: MyApp.models.Page,
+  
+  //override the default behaviour that occurs when the 'create' action was successfully completed
+  onCreateSuccess: function(instance) {
+    alert('new Page successfully created!');
+  },
+  
+  //override the listeners that are attached to the Index view. The Index view is usually an instance of
+  //{@link ExtMVC.view.scaffold.Index} or a subclass of it.
+  getIndexViewListeners: function() {
+    return {
+      scope : this,
+      'edit': function(instance) {
+        alert('inside the Index view (usually a scaffold grid), the user wants to edit an instance');
+      }
+    };
+  },
+  
+  //provide our own implementation for destroy
+  destroy: function(instance) {
+    alert('user wants to destroy an instance');
+  }
+});
+</code></pre>
+ * 
+ * <p>The 3 CRUD Controller methods that take action are create, update and destroy<p>
+ * <p>The 3 CRUD Controller methods that render views are index, new and edit</p>
+ * <p>By default, CRUD Controllers render the scaffolding views, which provide sensible default views.
+ * The index action renders a {@link ExtMVC.view.scaffold.Index Scaffold Grid}, edit renders a 
+ * {@link ExtMVC.view.scaffold.Edit Scaffold Edit Form} and new renders a {@link ExtMVC.view.scaffold.New Scaffold New Form}</p>
+ * <p>To make CRUD controller render a customised view instead of the scaffold, simply define the relevant view and ensure it is
+ * available within your code. For example, if you want to show a customised Ext.Panel instead of the Scaffold Grid on index,
+ * simply define:</p>
+<pre><code>
+MyApp.views.pages.Index = Ext.extend(Ext.Panel, {
+  title: 'My Specialised Index view - replaces the scaffold grid'
+});
+</code></pre>
+ * <p>The same applies with Edit and New classes within the appropriate views namespace. See more on view namespaces in
+ * {@link ExtMVC.controller.Controller Controller}.</p>
  */
 ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
@@ -13,7 +63,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   model: null,
 
   /**
-   * @action create
    * Attempts to create a new instance of this controller's associated model
    * @param {Object} data A fields object (e.g. {title: 'My instance'})
    */
@@ -28,7 +77,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
   
   /**
-   * @action read
    * Attempts to find (read) a single model instance by ID
    * @param {Number} id The Id of the instance to read
    */
@@ -68,24 +116,18 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
   
   /**
-   * @action destroy
-   * Attempts to delete an existing instance
+   * Attempts to delete0 an existing instance
    * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
   destroy: function(instance) {
     instance.destroy({
       scope:   this,
-      success: function() {
-        this.fireEvent('delete', instance);
-      },
-      failure: function() {
-        this.fireEvent('delete-failed', instance);
-      }
+      success: this.onDestroySuccess,
+      failure: this.onDestroyFailure
     });
   },
   
   /**
-   * @action index
    * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
    */
   index: function() {
@@ -102,7 +144,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
   
   /**
-   * @action build
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
   build: function() {
@@ -115,7 +156,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
 
   /**
-   * @action edit
    * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
    * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.model.Base
    * instance, a findById() will be called on this controller's associated model
@@ -239,7 +279,25 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   onUpdateFailure: function(instance, updates) {
     this.fireEvent('update-failed', instance, updates);
   },
-   
+  
+  /**
+   * Called after successful destruction of a model instance. By default simply fires the 'delete' event
+   * with the instance as a single argument
+   * @param {ExtMVC.model.Base} instance The instane that was just destroyed
+   */
+  onDestroySuccess: function(instance) {
+    this.fireEvent('delete', instance);
+  },
+  
+  /**
+   * Called after unsuccessful destruction of a model instance. By default simply fires the 'delete-failed' event
+   * with the instance as a single argument
+   * @param {ExtMVC.model.Base} instance The instance that could not be destroyed
+   */
+  onDestroyFailure: function(instance) {
+    this.fireEvent('delete-failed', instance);
+  },
+  
   /**
    * Sets up events emitted by the CRUD Controller's actions
    */

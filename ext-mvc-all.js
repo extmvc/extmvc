@@ -1,10 +1,10 @@
 /**
  * @class ExtMVC
- * Initialise package and set version
+ * ExtMVC 
  * @singleton
  */
 ExtMVC = Ext.extend(Ext.util.Observable, {
-  version: "0.6a1",
+  version: "0.6b1",
   
   constructor: function() {
     ExtMVC.superclass.constructor.apply(this, arguments);
@@ -1071,7 +1071,106 @@ ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
 /**
  * @class ExtMVC.controller.Controller
  * @extends Ext.util.Observable
- * Controller base class
+ * <h1>Controllers in Ext MVC</h1>
+ * <p>Controllers are the glue that stick applications together. They listen to events emitted by the UI as the user
+ * clicks interface elements, and take actions as appropriate. The relevant action may be to create or save a model
+ * instance, to render another view, to perform AJAX requests, or any other action.</p>
+ * 
+ * <p>Controllers should be kept skinny as far as possible - receive an event, then hand any processing off to the 
+ * appropriate model. This ensures we can keep the code as DRY as possible and makes refactoring easier.</p>
+ * 
+ * <h2>Example Controller</h2>
+ * Here is a simple example controller which renders a couple of views and listens to events:
+<pre><code>
+//simple controller which manages the Page model within our application
+MyApp.controllers.PagesController = Ext.extend(ExtMVC.controller.Controller, {
+  name: 'pages',
+
+  //renders the 'Index' template and sets up listeners
+  index: function() {
+    this.render('Index', {
+      listeners: {
+        scope   : this,
+        'edit'  : this.edit,
+        'delete': this.destroy
+      }
+    });
+  },
+
+  //renders the 'Edit' template (let's say it's a FormPanel), and loads the instance
+  edit: function(instance) {
+    this.render('Edit', {
+      listeners: {
+        scope  : this,
+        save   : this.update,
+        cancel : function() {
+          alert("You cancelled the update!");
+        }
+      }
+    }).loadRecord(instance);
+  },
+
+  //when the 'delete' event is fired by our 'Index' template (see the index action), this method is called.
+  //In this fictional example, we assume that the templates 'delete' event was called with the single argument
+  //of the Page instance the user wishes to destroy
+  destroy: function(instance) {
+    instance.destroy({
+      success: function() {
+        alert("The Page was deleted");
+        //at this point we might render another page for the user to look at
+      },
+      failure: function() {
+        alert('Curses! The Page could not be deleted');
+      }
+    });
+  },
+
+  //when the 'save' event is fired by our 'Edit' template, this method is called.
+  //Again, we assume that our template fired the event with the Page instance, and also an object with updates
+  update: function(instance, updates) {
+    //this applies the updates to the model instance and saves
+    instance.update(updates, {
+      success: function(updatedInstance) {
+        alert('Success! It saved');
+        //at this point we might render another page for the user to look at
+      },
+      failure: function(updatedInstance) {
+        alert('Darn it. Did not save');
+
+        //here we're firing the controller's update-failed event, which the view can pick up on
+        //The view can simply listen to our Pages controller and add errors from this instance to the form
+        //using form.markInvalid(instance.errors.forForm())
+        this.fireEvent('update-failed', instance);
+      };
+    });
+  },
+
+   //Sets up events emitted by this controller. Controllers are expected to fire events, so this method is called
+   //automatically when a controller is instantiated. Don't forget to call super here
+  initEvents: function() {
+    this.addEvents(
+      //this event will be fired when the controller can't update a Page instance
+      'update-failed'
+    );
+
+    MyApp.controllers.PagesController.superclass.initEvents.apply(this, arguments);
+  }
+})
+</code></pre>
+ * Note that many of the methods above are provided by the {@link ExtMVC.controller.CrudController CrudController}
+ * 
+ * <h2>Rendering Views</h2>
+ * Each controller can automatically render view classes inside its views package. In the Pages controller above the
+ * views package is MyApp.views.pages - the application itself is called MyApp, and the 'pages' segment comes from the
+ * controller's 'name' property
+ * <br />
+ * <br />
+ * In the example above, the line: <pre><code>this.render('Edit', {})</code></pre> will automatically find the
+ * MyApp.views.pages.Edit class, with the second argument to this.render being a config argument passed to the view's constructor.
+ * 
+ * <br />
+ * <h4>Rendering strategies</h4>
+ * Not all applications will render views in the same way
  */
 ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
   
@@ -1106,23 +1205,21 @@ ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
    * Sets up events emitted by this controller. This defaults to an empty function and is
    * called automatically when the controller is constructed so can simply be overridden
    */
-  initEvents: Ext.emptyFn,
+  initEvents: function() {},
   
   /**
    * Sets up events this controller listens to, and the actions the controller should take
    * when each event is received.  This defaults to an empty function and is called when
    * the controller is constructed so can simply be overridden
    */
-  initListeners: Ext.emptyFn,
+  initListeners: function() {},
   
   /**
    * Shows the user a notification message. Usually used to inform user of a successful save, deletion, etc
    * This is an empty function which you must implement yourself
    * @param {String} notice The string notice to display
    */
-  showNotice: function(notice) {
-    console.log(notice);
-  },
+  showNotice: function(notice) {},
   
   /**
    * Returns the view class registered for the given view name, or null
@@ -1187,7 +1284,57 @@ Ext.reg('controller', ExtMVC.controller.Controller);
 /**
  * @class ExtMVC.controller.CrudController
  * @extends ExtMVC.controller.Controller
- * An extension of Controller which provides the generic CRUD actions
+ * <h1>CRUD Controller</h1>
+ * <p>The CRUD Controller is an extension of Controller which provides the generic CRUD actions (Create, Read, Update and Delete).
+ * Although CRUD Controller provides sensible default options for most cases, it is also highly extensible. Here's an example for
+ * managing CRUD operations on a fictional 'Page' model in our app. Note that the name and model are the only required properties
+ * for a CRUD controller with default behaviour:</p>
+<pre><code>
+MyApp.controllers.PagesController = Ext.extend(ExtMVC.controller.CrudController, {
+  //the name of the controller (see {@link ExtMVC.controller.Controller})
+  name : 'pages',
+  
+  //The model that this controller will be providing CRUD services for
+  model: MyApp.models.Page,
+  
+  //override the default behaviour that occurs when the 'create' action was successfully completed
+  onCreateSuccess: function(instance) {
+    alert('new Page successfully created!');
+  },
+  
+  //override the listeners that are attached to the Index view. The Index view is usually an instance of
+  //{@link ExtMVC.view.scaffold.Index} or a subclass of it.
+  getIndexViewListeners: function() {
+    return {
+      scope : this,
+      'edit': function(instance) {
+        alert('inside the Index view (usually a scaffold grid), the user wants to edit an instance');
+      }
+    };
+  },
+  
+  //provide our own implementation for destroy
+  destroy: function(instance) {
+    alert('user wants to destroy an instance');
+  }
+});
+</code></pre>
+ * 
+ * <p>The 3 CRUD Controller methods that take action are create, update and destroy<p>
+ * <p>The 3 CRUD Controller methods that render views are index, new and edit</p>
+ * <p>By default, CRUD Controllers render the scaffolding views, which provide sensible default views.
+ * The index action renders a {@link ExtMVC.view.scaffold.Index Scaffold Grid}, edit renders a 
+ * {@link ExtMVC.view.scaffold.Edit Scaffold Edit Form} and new renders a {@link ExtMVC.view.scaffold.New Scaffold New Form}</p>
+ * <p>To make CRUD controller render a customised view instead of the scaffold, simply define the relevant view and ensure it is
+ * available within your code. For example, if you want to show a customised Ext.Panel instead of the Scaffold Grid on index,
+ * simply define:</p>
+<pre><code>
+MyApp.views.pages.Index = Ext.extend(Ext.Panel, {
+  title: 'My Specialised Index view - replaces the scaffold grid'
+});
+</code></pre>
+ * <p>The same applies with Edit and New classes within the appropriate views namespace. See more on view namespaces in
+ * {@link ExtMVC.controller.Controller Controller}.</p>
  */
 ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
@@ -1199,7 +1346,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   model: null,
 
   /**
-   * @action create
    * Attempts to create a new instance of this controller's associated model
    * @param {Object} data A fields object (e.g. {title: 'My instance'})
    */
@@ -1214,7 +1360,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
   
   /**
-   * @action read
    * Attempts to find (read) a single model instance by ID
    * @param {Number} id The Id of the instance to read
    */
@@ -1254,24 +1399,18 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
   
   /**
-   * @action destroy
-   * Attempts to delete an existing instance
+   * Attempts to delete0 an existing instance
    * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
   destroy: function(instance) {
     instance.destroy({
       scope:   this,
-      success: function() {
-        this.fireEvent('delete', instance);
-      },
-      failure: function() {
-        this.fireEvent('delete-failed', instance);
-      }
+      success: this.onDestroySuccess,
+      failure: this.onDestroyFailure
     });
   },
   
   /**
-   * @action index
    * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
    */
   index: function() {
@@ -1288,7 +1427,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
   
   /**
-   * @action build
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
   build: function() {
@@ -1301,7 +1439,6 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
 
   /**
-   * @action edit
    * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
    * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.model.Base
    * instance, a findById() will be called on this controller's associated model
@@ -1425,7 +1562,25 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   onUpdateFailure: function(instance, updates) {
     this.fireEvent('update-failed', instance, updates);
   },
-   
+  
+  /**
+   * Called after successful destruction of a model instance. By default simply fires the 'delete' event
+   * with the instance as a single argument
+   * @param {ExtMVC.model.Base} instance The instane that was just destroyed
+   */
+  onDestroySuccess: function(instance) {
+    this.fireEvent('delete', instance);
+  },
+  
+  /**
+   * Called after unsuccessful destruction of a model instance. By default simply fires the 'delete-failed' event
+   * with the instance as a single argument
+   * @param {ExtMVC.model.Base} instance The instance that could not be destroyed
+   */
+  onDestroyFailure: function(instance) {
+    this.fireEvent('delete-failed', instance);
+  },
+  
   /**
    * Sets up events emitted by the CRUD Controller's actions
    */
@@ -2216,7 +2371,48 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
 /**
  * @class ExtMVC.model.plugin.adapter.RESTAdapter
  * @extends ExtMVC.model.plugin.adapter.Abstract
- * An adapter which hooks into a RESTful server side API for its data storage
+ * An adapter which hooks into a RESTful server side API for its data storage. This is the recommended
+ * adapter to use on MVC applications.
+ * <h2>Usage</h2>
+ * Say we have a User model defined:
+<pre><code>
+  ExtMVC.model.define("User", {
+    fields: [{name: 'id', type: 'int'}, {name: 'name', type: 'string'}]
+  });
+  var user = new User({id: 1, name: 'Saul Tigh'});
+</code></pre>
+ * If this model uses the REST Adapter, the following methods are made available to it. Each fires the AJAX request
+ * indicated in the comment next to it:
+<pre><code>
+  user.destroy(); //DELETE /users/1
+  user.save(); //PUT /users/1 with {id: 1, name: 'Saul Tigh'} as the request payload
+  user.update({name: 'Bill Adama'})l //PUT /users/1/ with {id: 1, name: 'Bill Adama'} as the request payload
+</code></pre>
+ * In addition, the following methods are made available to the User class object:
+ <pre><code>
+User.destroy(10); //DELETE /users/1
+
+User.find(10, {
+  success: function(instance) {
+    console.log("Asyncronously loaded User 10 from /users/10 using GET")
+  },
+  failure: function() {
+    console.log('Called if user 10 could not be found');
+  }
+}); //GET /users/10
+
+User.create({name: 'Gaius Baltar'}, {
+  success: function(instance) {
+    console.log('Gaius was created');
+  },
+  failure: function(errors) {
+    console.log('Called if Gaius could not be created');
+    console.log(errors);
+  }
+}); //POST /users
+
+User.build({name: 'Felix Gaeta'}); //same as new User({name: 'Felix Gaeta'});
+</code></pre>
  */
 ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter.Abstract, {
   
@@ -2294,6 +2490,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   /**
    * Callback for save AJAX request. By default this reads server response data and populates the instance
    * if the request was successful, adds errors if not
+   * @private
    */
   afterSave: function() {
     
@@ -2301,6 +2498,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Performs the actual find request.
+   * @private
    * @param {Object} conditions An object containing find conditions. If a primaryKey is set this will be used
    * to build the url for that particular instance, otherwise the collection url will be used
    * @param {Object} options Callbacks (use callback, success and failure)
@@ -2323,6 +2521,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Performs an HTTP DELETE request using Ext.Ajax.request
+   * @private
    * @param {ExtMVC.model.Base} instance The model instance to destroy
    * @param {Object} options Options object passed to Ext.Ajax.request
    * @return {Number} The Ajax transaction ID
@@ -2340,6 +2539,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Loads a single instance of a model via an Ext.Ajax.request
+   * @private
    * @param {String} url The url to load from
    * @param {Object} options Options passed to Ext.Ajax.request
    * @param {Function} constructor The constructor function used to instantiate the model instance
@@ -2389,6 +2589,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Specialised find for dealing with collections. Returns an Ext.data.Store
+   * @private
    * @param {String} url The url to load the collection from
    * @param {Object} options Options passed to the Store constructor
    * @param {Function} constructor The constructor function used to instantiate the model instance

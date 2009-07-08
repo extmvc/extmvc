@@ -1,7 +1,106 @@
 /**
  * @class ExtMVC.controller.Controller
  * @extends Ext.util.Observable
- * Controller base class
+ * <h1>Controllers in Ext MVC</h1>
+ * <p>Controllers are the glue that stick applications together. They listen to events emitted by the UI as the user
+ * clicks interface elements, and take actions as appropriate. The relevant action may be to create or save a model
+ * instance, to render another view, to perform AJAX requests, or any other action.</p>
+ * 
+ * <p>Controllers should be kept skinny as far as possible - receive an event, then hand any processing off to the 
+ * appropriate model. This ensures we can keep the code as DRY as possible and makes refactoring easier.</p>
+ * 
+ * <h2>Example Controller</h2>
+ * Here is a simple example controller which renders a couple of views and listens to events:
+<pre><code>
+//simple controller which manages the Page model within our application
+MyApp.controllers.PagesController = Ext.extend(ExtMVC.controller.Controller, {
+  name: 'pages',
+
+  //renders the 'Index' template and sets up listeners
+  index: function() {
+    this.render('Index', {
+      listeners: {
+        scope   : this,
+        'edit'  : this.edit,
+        'delete': this.destroy
+      }
+    });
+  },
+
+  //renders the 'Edit' template (let's say it's a FormPanel), and loads the instance
+  edit: function(instance) {
+    this.render('Edit', {
+      listeners: {
+        scope  : this,
+        save   : this.update,
+        cancel : function() {
+          alert("You cancelled the update!");
+        }
+      }
+    }).loadRecord(instance);
+  },
+
+  //when the 'delete' event is fired by our 'Index' template (see the index action), this method is called.
+  //In this fictional example, we assume that the templates 'delete' event was called with the single argument
+  //of the Page instance the user wishes to destroy
+  destroy: function(instance) {
+    instance.destroy({
+      success: function() {
+        alert("The Page was deleted");
+        //at this point we might render another page for the user to look at
+      },
+      failure: function() {
+        alert('Curses! The Page could not be deleted');
+      }
+    });
+  },
+
+  //when the 'save' event is fired by our 'Edit' template, this method is called.
+  //Again, we assume that our template fired the event with the Page instance, and also an object with updates
+  update: function(instance, updates) {
+    //this applies the updates to the model instance and saves
+    instance.update(updates, {
+      success: function(updatedInstance) {
+        alert('Success! It saved');
+        //at this point we might render another page for the user to look at
+      },
+      failure: function(updatedInstance) {
+        alert('Darn it. Did not save');
+
+        //here we're firing the controller's update-failed event, which the view can pick up on
+        //The view can simply listen to our Pages controller and add errors from this instance to the form
+        //using form.markInvalid(instance.errors.forForm())
+        this.fireEvent('update-failed', instance);
+      };
+    });
+  },
+
+   //Sets up events emitted by this controller. Controllers are expected to fire events, so this method is called
+   //automatically when a controller is instantiated. Don't forget to call super here
+  initEvents: function() {
+    this.addEvents(
+      //this event will be fired when the controller can't update a Page instance
+      'update-failed'
+    );
+
+    MyApp.controllers.PagesController.superclass.initEvents.apply(this, arguments);
+  }
+})
+</code></pre>
+ * Note that many of the methods above are provided by the {@link ExtMVC.controller.CrudController CrudController}
+ * 
+ * <h2>Rendering Views</h2>
+ * Each controller can automatically render view classes inside its views package. In the Pages controller above the
+ * views package is MyApp.views.pages - the application itself is called MyApp, and the 'pages' segment comes from the
+ * controller's 'name' property
+ * <br />
+ * <br />
+ * In the example above, the line: <pre><code>this.render('Edit', {})</code></pre> will automatically find the
+ * MyApp.views.pages.Edit class, with the second argument to this.render being a config argument passed to the view's constructor.
+ * 
+ * <br />
+ * <h4>Rendering strategies</h4>
+ * Not all applications will render views in the same way
  */
 ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
   
@@ -36,23 +135,21 @@ ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
    * Sets up events emitted by this controller. This defaults to an empty function and is
    * called automatically when the controller is constructed so can simply be overridden
    */
-  initEvents: Ext.emptyFn,
+  initEvents: function() {},
   
   /**
    * Sets up events this controller listens to, and the actions the controller should take
    * when each event is received.  This defaults to an empty function and is called when
    * the controller is constructed so can simply be overridden
    */
-  initListeners: Ext.emptyFn,
+  initListeners: function() {},
   
   /**
    * Shows the user a notification message. Usually used to inform user of a successful save, deletion, etc
    * This is an empty function which you must implement yourself
    * @param {String} notice The string notice to display
    */
-  showNotice: function(notice) {
-    console.log(notice);
-  },
+  showNotice: function(notice) {},
   
   /**
    * Returns the view class registered for the given view name, or null

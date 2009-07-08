@@ -1,7 +1,48 @@
 /**
  * @class ExtMVC.model.plugin.adapter.RESTAdapter
  * @extends ExtMVC.model.plugin.adapter.Abstract
- * An adapter which hooks into a RESTful server side API for its data storage
+ * An adapter which hooks into a RESTful server side API for its data storage. This is the recommended
+ * adapter to use on MVC applications.
+ * <h2>Usage</h2>
+ * Say we have a User model defined:
+<pre><code>
+  ExtMVC.model.define("User", {
+    fields: [{name: 'id', type: 'int'}, {name: 'name', type: 'string'}]
+  });
+  var user = new User({id: 1, name: 'Saul Tigh'});
+</code></pre>
+ * If this model uses the REST Adapter, the following methods are made available to it. Each fires the AJAX request
+ * indicated in the comment next to it:
+<pre><code>
+  user.destroy(); //DELETE /users/1
+  user.save(); //PUT /users/1 with {id: 1, name: 'Saul Tigh'} as the request payload
+  user.update({name: 'Bill Adama'})l //PUT /users/1/ with {id: 1, name: 'Bill Adama'} as the request payload
+</code></pre>
+ * In addition, the following methods are made available to the User class object:
+ <pre><code>
+User.destroy(10); //DELETE /users/1
+
+User.find(10, {
+  success: function(instance) {
+    console.log("Asyncronously loaded User 10 from /users/10 using GET")
+  },
+  failure: function() {
+    console.log('Called if user 10 could not be found');
+  }
+}); //GET /users/10
+
+User.create({name: 'Gaius Baltar'}, {
+  success: function(instance) {
+    console.log('Gaius was created');
+  },
+  failure: function(errors) {
+    console.log('Called if Gaius could not be created');
+    console.log(errors);
+  }
+}); //POST /users
+
+User.build({name: 'Felix Gaeta'}); //same as new User({name: 'Felix Gaeta'});
+</code></pre>
  */
 ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter.Abstract, {
   
@@ -79,6 +120,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   /**
    * Callback for save AJAX request. By default this reads server response data and populates the instance
    * if the request was successful, adds errors if not
+   * @private
    */
   afterSave: function() {
     
@@ -86,6 +128,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Performs the actual find request.
+   * @private
    * @param {Object} conditions An object containing find conditions. If a primaryKey is set this will be used
    * to build the url for that particular instance, otherwise the collection url will be used
    * @param {Object} options Callbacks (use callback, success and failure)
@@ -108,6 +151,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Performs an HTTP DELETE request using Ext.Ajax.request
+   * @private
    * @param {ExtMVC.model.Base} instance The model instance to destroy
    * @param {Object} options Options object passed to Ext.Ajax.request
    * @return {Number} The Ajax transaction ID
@@ -125,6 +169,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Loads a single instance of a model via an Ext.Ajax.request
+   * @private
    * @param {String} url The url to load from
    * @param {Object} options Options passed to Ext.Ajax.request
    * @param {Function} constructor The constructor function used to instantiate the model instance
@@ -174,6 +219,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
   
   /**
    * Specialised find for dealing with collections. Returns an Ext.data.Store
+   * @private
    * @param {String} url The url to load the collection from
    * @param {Object} options Options passed to the Store constructor
    * @param {Function} constructor The constructor function used to instantiate the model instance
