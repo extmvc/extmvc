@@ -1,5 +1,6 @@
 /**
  * @class ExtMVC.model.plugin.association
+ * @ignore
  */
 ExtMVC.model.plugin.association = {
   /**

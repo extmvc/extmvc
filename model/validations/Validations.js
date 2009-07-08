@@ -8,7 +8,39 @@ Ext.ns('ExtMVC.model.plugin.validation');
 
 /**
  * @class ExtMVC.model.plugin.validation.AbstractValidation
- * Base class for all validations - don't use this directly but use a subclass
+ * Base class for all validations - not used directly, but any of the following may be used:
+<pre><code>
+ExtMVC.model.define("SomeModel", {
+  fields: [
+    {name: 'title',  type: 'string'},
+    {name: 'price',  type: 'int'},
+    {name: 'stock',  type: 'int'},
+    {name: 'gender', type: 'string'},
+    {name: 'colour', type: 'string'}
+  ],
+  
+  validatesPresenceOf : ["title", "price"],
+  validatesLengthOf   : {field: 'title', minimum: 3, maximum: 12},
+  
+  validatesInclusionOf: {field: 'gender', allowed   : ["Male", "Female"]},
+  validatesExclusionOf: {field: 'colour', disallowed: ["Red"]},
+  validatesFormatOf   : {field: 'email',  regex: /someRegex/},
+  
+  validatesNumericalityOf: "stock"
+});
+</code></pre>
+ * 
+ * Most validations will allow an array to be passed to set the validation up on more than one field (e.g.
+ * see the validatesPresenceOf declaration above).
+ * 
+ * <h2>Running validations</h2>
+ * This plugin overrides ExtMVC.model.Base's usual isValid() function to provide feedback from the validations:
+ * 
+<pre><code>
+var user = new SomeModel({title: "A really long title", colour: "Blue"});
+user.isValid(); //returns false if any of the validations failed
+user.errors; //returns an {@link ExtMVC.model.plugin.validation.Errors Errors} object
+</code></pre>
  */
 ExtMVC.model.plugin.validation.AbstractValidation = function(ownerClass, field, config) {
   this.ownerClass = ownerClass;
@@ -40,7 +72,7 @@ ExtMVC.model.plugin.validation.AbstractValidation.prototype = {
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesPresenceOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that a field is present
+ * Ensures that a field is present. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
@@ -70,7 +102,7 @@ ExtMVC.model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.model.plu
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesLengthOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Returns true if the field is within the length bounds imposed.
+ * Returns true if the field is within the length bounds imposed. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   
@@ -117,7 +149,7 @@ ExtMVC.model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.model.plugi
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesNumericalityOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field is a number
+ * Ensures that the field is a number. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
@@ -139,7 +171,7 @@ ExtMVC.model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.model
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesInclusionOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field is one of the allowed values
+ * Ensures that the field is one of the allowed values. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
@@ -177,12 +209,13 @@ ExtMVC.model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.model.pl
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesExclusionOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field is not one of the allowed values
+ * Ensures that the field is not one of the allowed values. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
   /**
    * Override Abstract constructor to build the validation message
+   * @ignore
    */
   constructor: function(m, f, config) {
     //set up defaults
@@ -215,7 +248,7 @@ ExtMVC.model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.model.pl
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesFormatOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field matches the given regular expression
+ * Ensures that the field matches the given regular expression. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   

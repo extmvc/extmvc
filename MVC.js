@@ -1,6 +1,7 @@
 /**
  * @class ExtMVC
  * Initialise package and set version
+ * @singleton
  */
 ExtMVC = Ext.extend(Ext.util.Observable, {
   version: "0.6a1",

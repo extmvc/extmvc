@@ -1,11 +1,13 @@
 /**
  * This is the Validation plugin definition, which mixes in validation.Errors
  * and some other functions into a model prototype
+ * @ignore
  */
 
 /**
  * Overrides Ext.data.Record's isValid() function.
  * We apply this to Record's prototype as there is no need to define it per model or instance
+ * @ignore
  */
 Ext.apply(Ext.data.Record.prototype, {
   isValid: function() {
@@ -27,6 +29,7 @@ Ext.apply(Ext.data.Record.prototype, {
 });
 
 /**
+ * @ignore
  * FIXME: This is possibly the most horrendous hack ever. I'm so sorry :(
  * 
  * The basic problem is that we need to add an errors object to every Record instance,
@@ -54,6 +57,7 @@ Ext.apply(Ext.data.Record.prototype, {
 })();
 /**
  * Again, I'm really sorry :(
+ * @ignore
  */
 
 /**
@@ -120,7 +124,7 @@ ExtMVC.model.plugin.validation.Plugin = {
   buildValidation: function(validation, options) {
     var field, config = {};
     
-    if ('string' == typeof options) {
+    if (typeof options == 'string') {
       field = options;
     } else {
       field = options.field;

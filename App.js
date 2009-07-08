@@ -125,13 +125,6 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   },
   
   /**
-   * @property name
-   * @type String
-   * The name to namespace this application under (e.g. 'MyApp').  If set, the appropriate subnamespaces are created automatically
-   */
-  name: undefined,
-  
-  /**
    * Uses Ext.namespace to create packages view controllers, models and views
    * E.g. if name = 'Blog' or this.name = 'Blog', this is the same as:
    * Ext.ns('Blog', 'Blog.controllers', 'Blog.models', 'Blog.views')

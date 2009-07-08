@@ -1,6 +1,7 @@
 /**
  * @class ExtMVC
  * Initialise package and set version
+ * @singleton
  */
 ExtMVC = Ext.extend(Ext.util.Observable, {
   version: "0.6a1",
@@ -275,13 +276,6 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
       ExtMVC.router.Router.defineRoutes(this.router);
     }
   },
-  
-  /**
-   * @property name
-   * @type String
-   * The name to namespace this application under (e.g. 'MyApp').  If set, the appropriate subnamespaces are created automatically
-   */
-  name: undefined,
   
   /**
    * Uses Ext.namespace to create packages view controllers, models and views
@@ -1535,7 +1529,78 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
 /**
  * @class ExtMVC.model
  * @extends Object
- * Manages the definition and creation of model classes
+ * Manages the definition and creation of model classes.
+ * 
+ * <h2>Defining models</h2>
+ * <p>Models in your application are defined using Ext.model.define, which is given 2 arguments - the String name of your model and a config object</p>
+ * <p>
+ * <pre><code>
+ExtMVC.model.define("MyModel", {
+  fields: [
+    {name: 'id',    type: 'int'},
+    {name: 'title', type: 'string'},
+    {name: 'price', type: 'int'}
+  ],
+
+  validatesPresenceOf: ['id', 'title'],
+  classMethods: {
+    doSomething: function() {alert('oh hi!');}
+  }
+});
+</code></pre>
+ * 
+ * Fields are passed straight to the underlying Ext.data.Record.
+ * classMethods are defined on the constructor function, e.g. from the example above:
+ * 
+<pre><code>
+MyModel.doSomething(); //alerts 'oh hi'
+</code></pre>
+ * 
+ * All other properties are simply assigned to the Model's prototype, but may be intercepted by plugins
+ * 
+ * <h2>Extending other models</h2>
+ * Models can extend other models using the 'extend' property:
+<pre></code>
+ExtMVC.model.define("Product", {
+  fields: [...]
+}
+
+ExtMVC.model.define("Flower", {
+  extend: "Product",
+  fields: [...]
+}
+</code></pre>
+ * 
+ * The class builds a simple dependency graph to allow models to extend other models, e.g.:
+ * 
+<pre><code>
+//this model definition won't actually be created until SuperUser has been defined
+ExtMVC.model.define("SuperUser", {
+  extend: "User",
+  fields: [
+    {name: 'isAdmin', type: 'bool'}
+  ]
+});
+
+//SuperUser doesn't extend anything, so is created immediately. User is then also created
+ExtMVC.model.define("User", {
+  fields: [
+    {name: 'id',       type: 'int'},
+    {name: 'username', type: 'string'}
+  ],
+
+  validatesPresenceOf: ['id', 'username']
+});
+
+//At this point both SuperUser and User have been created and are instantiable and extendable.
+</code></pre>
+ * 
+ * When a model extends another one it inherits all of that model's instance and class methods. It also
+ * inherits all of the superclass model's fields, overwriting if redefined in the subclass. In the example
+ * above the SuperUser model would have fields 'id', 'username' and 'isAdmin', and will also have inherited
+ * User's validatesPresenceOf declaration
+ * 
+ * @singleton
  */
 ExtMVC.model = {
   /**
@@ -2458,7 +2523,39 @@ Ext.ns('ExtMVC.model.plugin.validation');
 
 /**
  * @class ExtMVC.model.plugin.validation.AbstractValidation
- * Base class for all validations - don't use this directly but use a subclass
+ * Base class for all validations - not used directly, but any of the following may be used:
+<pre><code>
+ExtMVC.model.define("SomeModel", {
+  fields: [
+    {name: 'title',  type: 'string'},
+    {name: 'price',  type: 'int'},
+    {name: 'stock',  type: 'int'},
+    {name: 'gender', type: 'string'},
+    {name: 'colour', type: 'string'}
+  ],
+  
+  validatesPresenceOf : ["title", "price"],
+  validatesLengthOf   : {field: 'title', minimum: 3, maximum: 12},
+  
+  validatesInclusionOf: {field: 'gender', allowed   : ["Male", "Female"]},
+  validatesExclusionOf: {field: 'colour', disallowed: ["Red"]},
+  validatesFormatOf   : {field: 'email',  regex: /someRegex/},
+  
+  validatesNumericalityOf: "stock"
+});
+</code></pre>
+ * 
+ * Most validations will allow an array to be passed to set the validation up on more than one field (e.g.
+ * see the validatesPresenceOf declaration above).
+ * 
+ * <h2>Running validations</h2>
+ * This plugin overrides ExtMVC.model.Base's usual isValid() function to provide feedback from the validations:
+ * 
+<pre><code>
+var user = new SomeModel({title: "A really long title", colour: "Blue"});
+user.isValid(); //returns false if any of the validations failed
+user.errors; //returns an {@link ExtMVC.model.plugin.validation.Errors Errors} object
+</code></pre>
  */
 ExtMVC.model.plugin.validation.AbstractValidation = function(ownerClass, field, config) {
   this.ownerClass = ownerClass;
@@ -2490,7 +2587,7 @@ ExtMVC.model.plugin.validation.AbstractValidation.prototype = {
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesPresenceOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that a field is present
+ * Ensures that a field is present. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
@@ -2520,7 +2617,7 @@ ExtMVC.model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.model.plu
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesLengthOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Returns true if the field is within the length bounds imposed.
+ * Returns true if the field is within the length bounds imposed. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   
@@ -2567,7 +2664,7 @@ ExtMVC.model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.model.plugi
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesNumericalityOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field is a number
+ * Ensures that the field is a number. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
@@ -2589,7 +2686,7 @@ ExtMVC.model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.model
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesInclusionOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field is one of the allowed values
+ * Ensures that the field is one of the allowed values. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
@@ -2627,12 +2724,13 @@ ExtMVC.model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.model.pl
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesExclusionOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field is not one of the allowed values
+ * Ensures that the field is not one of the allowed values. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
   /**
    * Override Abstract constructor to build the validation message
+   * @ignore
    */
   constructor: function(m, f, config) {
     //set up defaults
@@ -2665,7 +2763,7 @@ ExtMVC.model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.model.pl
 /**
  * @class ExtMVC.model.plugin.validation.ValidatesFormatOf
  * @extends ExtMVC.model.plugin.validation.AbstractValidation
- * Ensures that the field matches the given regular expression
+ * Ensures that the field matches the given regular expression. See {*link ExtMVC.model.plugin.validation.AbstractValidation AbstractValidation} for example.
  */
 ExtMVC.model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   
@@ -2687,11 +2785,36 @@ ExtMVC.model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.model.plugi
 
 /**
  * @class ExtMVC.model.plugin.validation
+ * @ignore
  */
 
 /**
  * @class ExtMVC.model.plugin.validation.Errors
- * Simple class to collect validation errors on a model and return them in various formats
+ * Simple class to collect validation errors on a model and return them in various formats. Usage:
+<pre><code>
+ExtMVC.model.define("SomeModel", {
+  fields: [
+    {name: 'title',  type: 'string'},
+    {name: 'price',  type: 'int'},
+    {name: 'stock',  type: 'int'},
+    {name: 'colour', type: 'string'}
+  ],
+  
+  validatesPresenceOf : ["title", "price"],
+  validatesLengthOf   : {field: 'title', minimum: 3, maximum: 12}
+});
+
+var s = new SomeModel({title: 'Some really long title'});
+s.errors; //returns this Errors object
+s.isValid(); //returns false, same as calling s.errors.isValid()
+
+//manually add a validation error on the title field
+s.errors.add('title', 'has an problem of some kind');
+
+this.errors.forField('title'); //returns an array of problems with the title field
+
+this.errors.forForm(); //returns an object suitable for marking fields invalid on a form
+</code></pre>
  */
 ExtMVC.model.plugin.validation.Errors = function() {
   /**
@@ -2744,8 +2867,10 @@ ExtMVC.model.plugin.validation.Errors.prototype = {
   /**
    * Returns an array of all errors for the given field.  Pass true as a second argument to
    * return a human-readable string, e.g.:
-   * forField('title'); // ['must be present', 'is too short']
-   * forField('title', true); // 'must be present and is too short'
+<pre><code>
+forField('title'); // ['must be present', 'is too short']
+forField('title', true); // 'must be present and is too short'
+</code></pre>
    * @param {String} field The field to find errors for
    * @param {Boolean} humanize True to turn the errors array into a human-readable string (defaults to false)
    * @return {Array|String} An array of errors for this field, or a string 
@@ -2798,11 +2923,13 @@ ExtMVC.model.plugin.validation.Errors.prototype = {
 /**
  * This is the Validation plugin definition, which mixes in validation.Errors
  * and some other functions into a model prototype
+ * @ignore
  */
 
 /**
  * Overrides Ext.data.Record's isValid() function.
  * We apply this to Record's prototype as there is no need to define it per model or instance
+ * @ignore
  */
 Ext.apply(Ext.data.Record.prototype, {
   isValid: function() {
@@ -2824,6 +2951,7 @@ Ext.apply(Ext.data.Record.prototype, {
 });
 
 /**
+ * @ignore
  * FIXME: This is possibly the most horrendous hack ever. I'm so sorry :(
  * 
  * The basic problem is that we need to add an errors object to every Record instance,
@@ -2851,6 +2979,7 @@ Ext.apply(Ext.data.Record.prototype, {
 })();
 /**
  * Again, I'm really sorry :(
+ * @ignore
  */
 
 /**
@@ -2917,7 +3046,7 @@ ExtMVC.model.plugin.validation.Plugin = {
   buildValidation: function(validation, options) {
     var field, config = {};
     
-    if ('string' == typeof options) {
+    if (typeof options == 'string') {
       field = options;
     } else {
       field = options.field;

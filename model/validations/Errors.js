@@ -1,10 +1,35 @@
 /**
  * @class ExtMVC.model.plugin.validation
+ * @ignore
  */
 
 /**
  * @class ExtMVC.model.plugin.validation.Errors
- * Simple class to collect validation errors on a model and return them in various formats
+ * Simple class to collect validation errors on a model and return them in various formats. Usage:
+<pre><code>
+ExtMVC.model.define("SomeModel", {
+  fields: [
+    {name: 'title',  type: 'string'},
+    {name: 'price',  type: 'int'},
+    {name: 'stock',  type: 'int'},
+    {name: 'colour', type: 'string'}
+  ],
+  
+  validatesPresenceOf : ["title", "price"],
+  validatesLengthOf   : {field: 'title', minimum: 3, maximum: 12}
+});
+
+var s = new SomeModel({title: 'Some really long title'});
+s.errors; //returns this Errors object
+s.isValid(); //returns false, same as calling s.errors.isValid()
+
+//manually add a validation error on the title field
+s.errors.add('title', 'has an problem of some kind');
+
+this.errors.forField('title'); //returns an array of problems with the title field
+
+this.errors.forForm(); //returns an object suitable for marking fields invalid on a form
+</code></pre>
  */
 ExtMVC.model.plugin.validation.Errors = function() {
   /**
@@ -57,8 +82,10 @@ ExtMVC.model.plugin.validation.Errors.prototype = {
   /**
    * Returns an array of all errors for the given field.  Pass true as a second argument to
    * return a human-readable string, e.g.:
-   * forField('title'); // ['must be present', 'is too short']
-   * forField('title', true); // 'must be present and is too short'
+<pre><code>
+forField('title'); // ['must be present', 'is too short']
+forField('title', true); // 'must be present and is too short'
+</code></pre>
    * @param {String} field The field to find errors for
    * @param {Boolean} humanize True to turn the errors array into a human-readable string (defaults to false)
    * @return {Array|String} An array of errors for this field, or a string 

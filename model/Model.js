@@ -1,7 +1,78 @@
 /**
  * @class ExtMVC.model
  * @extends Object
- * Manages the definition and creation of model classes
+ * Manages the definition and creation of model classes.
+ * 
+ * <h2>Defining models</h2>
+ * <p>Models in your application are defined using Ext.model.define, which is given 2 arguments - the String name of your model and a config object</p>
+ * <p>
+ * <pre><code>
+ExtMVC.model.define("MyModel", {
+  fields: [
+    {name: 'id',    type: 'int'},
+    {name: 'title', type: 'string'},
+    {name: 'price', type: 'int'}
+  ],
+
+  validatesPresenceOf: ['id', 'title'],
+  classMethods: {
+    doSomething: function() {alert('oh hi!');}
+  }
+});
+</code></pre>
+ * 
+ * Fields are passed straight to the underlying Ext.data.Record.
+ * classMethods are defined on the constructor function, e.g. from the example above:
+ * 
+<pre><code>
+MyModel.doSomething(); //alerts 'oh hi'
+</code></pre>
+ * 
+ * All other properties are simply assigned to the Model's prototype, but may be intercepted by plugins
+ * 
+ * <h2>Extending other models</h2>
+ * Models can extend other models using the 'extend' property:
+<pre></code>
+ExtMVC.model.define("Product", {
+  fields: [...]
+}
+
+ExtMVC.model.define("Flower", {
+  extend: "Product",
+  fields: [...]
+}
+</code></pre>
+ * 
+ * The class builds a simple dependency graph to allow models to extend other models, e.g.:
+ * 
+<pre><code>
+//this model definition won't actually be created until SuperUser has been defined
+ExtMVC.model.define("SuperUser", {
+  extend: "User",
+  fields: [
+    {name: 'isAdmin', type: 'bool'}
+  ]
+});
+
+//SuperUser doesn't extend anything, so is created immediately. User is then also created
+ExtMVC.model.define("User", {
+  fields: [
+    {name: 'id',       type: 'int'},
+    {name: 'username', type: 'string'}
+  ],
+
+  validatesPresenceOf: ['id', 'username']
+});
+
+//At this point both SuperUser and User have been created and are instantiable and extendable.
+</code></pre>
+ * 
+ * When a model extends another one it inherits all of that model's instance and class methods. It also
+ * inherits all of the superclass model's fields, overwriting if redefined in the subclass. In the example
+ * above the SuperUser model would have fields 'id', 'username' and 'isAdmin', and will also have inherited
+ * User's validatesPresenceOf declaration
+ * 
+ * @singleton
  */
 ExtMVC.model = {
   /**
