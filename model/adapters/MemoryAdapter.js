@@ -1,9 +1,9 @@
 /**
- * @class ExtMVC.Model.plugin.adapter.MemoryAdapter
- * @extends ExtMVC.Model.plugin.adapter.Abstract
+ * @class ExtMVC.model.plugin.adapter.MemoryAdapter
+ * @extends ExtMVC.model.plugin.adapter.Abstract
  * Provides a very basic storage system where model data get stored to an object in memory
  */
-ExtMVC.Model.plugin.adapter.MemoryAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.Abstract, {
+ExtMVC.model.plugin.adapter.MemoryAdapter = Ext.extend(ExtMVC.model.plugin.adapter.Abstract, {
   
   /**
    * @property store
@@ -92,7 +92,7 @@ ExtMVC.Model.plugin.adapter.MemoryAdapter = Ext.extend(ExtMVC.Model.plugin.adapt
   
   /**
    * Returns the next available primary key for a model instance
-   * @param {ExtMVC.Model.Base} instance The model instance
+   * @param {ExtMVC.model.Base} instance The model instance
    * @return {Number} The primary key to use for this instance
    */
   primaryKeyFor: function(instance) {

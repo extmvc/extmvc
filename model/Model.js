@@ -1,9 +1,9 @@
 /**
- * @class ExtMVC.Model
+ * @class ExtMVC.model
  * @extends Object
  * Manages the definition and creation of model classes
  */
-ExtMVC.Model = function() {
+ExtMVC.model = function() {
   return {
     /**
      * @property pendingCreation
@@ -27,7 +27,7 @@ ExtMVC.Model = function() {
      * Adds a model definition to the pendingCreation object if it is waiting for another model to be defined first
      * @param {String} dependencyModelName The name of another model which must be created before this one
      * @param {String} dependentModelName The name of the new model to be defined after its dependency
-     * @param {Object} config The new model's config object, as sent to ExtMVC.Model.define
+     * @param {Object} config The new model's config object, as sent to ExtMVC.model.define
      */
     setModelPendingDefinitionOf: function(dependencyModelName, dependentModelName, config) {
       var arr = this.pendingCreation[dependencyModelName] || [];
@@ -48,7 +48,7 @@ ExtMVC.Model = function() {
     /**
      * @property modelNamespace
      * @type Object
-     * The object into which Models are defined.  This defaults to window, meaning calls to ExtMVC.Model.create
+     * The object into which Models are defined.  This defaults to window, meaning calls to ExtMVC.model.create
      * will create models globally scoped unless this is modified.  Setting this instead to MyApp.models would 
      * mean that a model called 'User' would be defined as MyApp.models.User instead
      */
@@ -59,7 +59,7 @@ ExtMVC.Model = function() {
      * it is returned immediately, otherwise it is placed into a queue and defined as soon as its dependency models
      * are in place. Example:
      * 
-     * ExtMVC.Model.define('MyApp.models.MyModel', {
+     * ExtMVC.model.define('MyApp.models.MyModel', {
      *   fields: [
      *     {name: 'title',     type: 'string'},
      *     {name: 'price',     type: 'number'},
@@ -84,7 +84,7 @@ ExtMVC.Model = function() {
      *
      * @param {String} modelName The name of the model to create (e.g. 'User')
      * @param {Object} extensions An object containing field definitions and any extension methods to add to this model
-     * @return {ExtMVC.Model.Base/Null} The newly defined model constructor, or null if the model can't be defined yet
+     * @return {ExtMVC.model.Base/Null} The newly defined model constructor, or null if the model can't be defined yet
      */
     define: function(modelName, extensions) {
       var createNow  = true,
@@ -104,7 +104,7 @@ ExtMVC.Model = function() {
     
     /**
      * @ignore
-     * Creates a new ExtMVC.Model.Base subclass and sets up all fields, instance and class methods.
+     * Creates a new ExtMVC.model.Base subclass and sets up all fields, instance and class methods.
      * Don't use this directly unless you know what you're doing - use define instead (with the same arguments)
      * 
      * @param {String} modelName The full model name to define, including namespace (e.g. 'MyApp.models.MyModel')
@@ -243,7 +243,7 @@ ExtMVC.Model = function() {
     
     /**
      * Runs each plugin's initialize method with a newly created model constructor
-     * @param {ExtMVC.Model} model The model to initialize the plugin with
+     * @param {ExtMVC.model} model The model to initialize the plugin with
      */
     initializePlugins: function(model) {
       Ext.each(this.plugins, function(plugin) {
@@ -253,4 +253,4 @@ ExtMVC.Model = function() {
   };
 }();
 
-Ext.ns('ExtMVC.Model.plugin');
+Ext.ns('ExtMVC.model.plugin');

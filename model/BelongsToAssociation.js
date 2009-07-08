@@ -1,12 +1,12 @@
 /**
- * @class ExtMVC.Model.BelongsToAssociation
- * @extends ExtMVC.Model.Association
+ * @class ExtMVC.model.BelongsToAssociation
+ * @extends ExtMVC.model.Association
  */
-ExtMVC.Model.BelongsToAssociation = function(ownerObject, config) {
+ExtMVC.model.BelongsToAssociation = function(ownerObject, config) {
   var config = config || {};
   
   Ext.applyIf(config, {
-    associationName: ExtMVC.Model.Association.belongsToAssociationName(config.name)
+    associationName: ExtMVC.model.Association.belongsToAssociationName(config.name)
   });
     
   //TODO: these should be abstracted to a parent object (as should private vars and funcs below)
@@ -46,7 +46,7 @@ ExtMVC.Model.BelongsToAssociation = function(ownerObject, config) {
     
     /**
      * @property associationClass
-     * @type ExtMVC.Model
+     * @type ExtMVC.model
      * A reference to the association's class (e.g. belongsTo: "Post" would have associationClass of Post)
      */
     associationClass: associatedObjectClass,
@@ -67,7 +67,7 @@ ExtMVC.Model.BelongsToAssociation = function(ownerObject, config) {
     
     /**
      * Sets the associated model for this association to the specified model object
-     * @param {ExtMVC.Model} modelObject The associated model to set this belongsTo association to
+     * @param {ExtMVC.model} modelObject The associated model to set this belongsTo association to
      */
     set: function(modelObject) {
       this.lastFetched = new Date();

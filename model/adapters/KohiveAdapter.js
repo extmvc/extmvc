@@ -1,7 +1,7 @@
 /**
  * Data adapter to map Kohive models to the various Kohive urls
  */
-ExtMVC.Model.KohiveAdapter = {
+ExtMVC.model.KohiveAdapter = {
   
   instanceMethods: {
     /**
@@ -55,7 +55,7 @@ ExtMVC.Model.KohiveAdapter = {
         Ext.applyIf(options || {}, {
           url:     this.url(),
           method:  'post',
-          params:  ExtMVC.Model.namespaceFields(this.data, this.modelName)
+          params:  ExtMVC.model.namespaceFields(this.data, this.modelName)
         })  
       );
     }
@@ -124,7 +124,7 @@ ExtMVC.Model.KohiveAdapter = {
     },
     
     /**
-     * Finds the model by its ID.  Returns an ExtMVC.Model subclass instantiation
+     * Finds the model by its ID.  Returns an ExtMVC.model subclass instantiation
      * @param {Number} id The ID of the model to find
      */
     findById: function(id, options) {
@@ -233,4 +233,4 @@ ExtMVC.Model.KohiveAdapter = {
   initAdapter: Ext.emptyFn
 };
 
-ExtMVC.Model.registerAdapter('kohive', ExtMVC.Model.KohiveAdapter);
+ExtMVC.model.registerAdapter('kohive', ExtMVC.model.KohiveAdapter);

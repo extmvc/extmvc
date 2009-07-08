@@ -148,7 +148,7 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 
 ExtMVC = new ExtMVC();
 
-Ext.ns('ExtMVC.Model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');
+Ext.ns('ExtMVC.model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');
 
 /**
  * @class ExtMVC.App
@@ -501,9 +501,15 @@ ExtMVC.Inflector = {
 };
 
 /**
+ * @class Array
+ * Extensions to the array class
+ */
+
+/**
  * Turns an array into a sentence, joined by a specified connector - e.g.:
  * ['Adama', 'Tigh', 'Roslin'].toSentence(); //'Adama, Tigh and Roslin'
  * ['Adama', 'Tigh', 'Roslin'].toSentence('or'); //'Adama, Tigh or Roslin'
+ * @param {String} connector The string to use to connect the last two words. Usually 'and' or 'or', defaults to 'and'
  */
 Array.prototype.toSentence = function(connector) {
   connector = connector || 'and';
@@ -522,17 +528,21 @@ Array.prototype.toSentence = function(connector) {
 };
 
 /**
- * @string
- * @returns A capitalized string (e.g. "some test sentence" becomes "Some test sentence")
- * @type String
+ * @class String
+ * Extensions to the String class
+ **/
+
+/**
+ * Capitalizes a string (e.g. ("some test sentence").capitalize() == "Some test sentence")
+ * @return {String} The capitalized String
  */
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substr(1).toLowerCase();
 };
 
 /**
- * @returns The string in Title Case (e.g. "some test sentence" becomes "Some Test Sentence")
- * @type String
+ * Puts the string in Title Case (e.g. ("some test sentence").titleize() == "Some Test Sentence")
+ * @return {String} The titleized String
  */
 String.prototype.titleize = function() {
   return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
@@ -546,22 +556,43 @@ String.prototype.camelize = function() {
   return this.replace(/_/g, " ").titleize().replace(/ /g, "");
 };
 
+/**
+ * Underscores a string (e.g. (("SomeCamelizedString").underscore() == 'some_camelized_string', 
+ *                             ("some normal string").underscore()  == 'some_normal_string')
+ * @return {String} The underscored string
+ */
 String.prototype.underscore = function() {
   return this.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/ /g, "_").replace(/^_/, '');
 };
 
+/**
+ * Uses the Inflector to singularize itself (e.g. ("cats").singularize() == 'cat')
+ * @return {String} The singularized version of this string
+ */
 String.prototype.singularize = function() {
   return ExtMVC.Inflector.singularize(this);
 };
 
+/**
+ * Uses the Inflector to pluralize itself (e.g. ("cat").pluralize() == 'cats')
+ * @return {String} The pluralized version of this string
+ */
 String.prototype.pluralize = function() {
   return ExtMVC.Inflector.pluralize(this);
 };
 
+/**
+ * Attempts to humanize a name by replacing underscores with spaces. Mainly useful for Ext.Model.Base
+ * @return {String} The humanized string
+ */
 String.prototype.humanize = function() {
   return this.underscore().replace(/_/g, " ");
 };
 
+/**
+ * Replaces instances of the strings &, >, < and " with their escaped versions
+ * @return {String} The escaped version of the original text
+ */
 String.prototype.escapeHTML = function () {                                       
   return this.replace(/&/g,'&amp;').replace(/>/g,'&gt;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 };
@@ -1030,7 +1061,7 @@ ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
    * Adds a model definition to the dependencies object if it is waiting for another model to be defined first
    * @param {String} dependencyName The name of another model which must be created before this one
    * @param {String} dependentName The name of the new model to be defined after its dependency
-   * @param {Object} config The new model's config object, as sent to ExtMVC.Model.define
+   * @param {Object} config The new model's config object, as sent to ExtMVC.model.define
    */
   add: function(dependencyName, dependentName, config) {
     var arr = this.dependencies[dependencyName] || [];
@@ -1166,7 +1197,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @property model
    * @type Function/Null
-   * Defaults to null.  If set to a reference to an ExtMVC.Model subclass, renderView will attempt to dynamically
+   * Defaults to null.  If set to a reference to an ExtMVC.model subclass, renderView will attempt to dynamically
    * scaffold any missing views, if the corresponding view is defined in the ExtMVC.view.scaffold package
    */
   model: null,
@@ -1207,7 +1238,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to update an existing instance with new values.  If the update was successful the controller fires
    * the 'update' event and then shows a default notice to the user (this.showUpdatedNotice()) and calls this.index().
    * To cancel this default behaviour, return false from any listener on the 'update' event.
-   * @param {ExtMVC.Model.Base} instance The existing instance object
+   * @param {ExtMVC.model.Base} instance The existing instance object
    * @param {Object} updates An object containing updates to apply to the instance
    */
   update: function(instance, updates) {
@@ -1229,7 +1260,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @action destroy
    * Attempts to delete an existing instance
-   * @param {Mixed} instance The ExtMVC.Model.Base subclass instance to delete.  Will also accept a string/number ID
+   * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
   destroy: function(instance) {
     instance.destroy({
@@ -1276,7 +1307,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @action edit
    * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
-   * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.Model.Base
+   * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.model.Base
    * instance, a findById() will be called on this controller's associated model
    */
   edit: function(instance) {
@@ -1359,7 +1390,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after a successful update. By default this calls showUpdatedNotice and then this.index()
-   * @param {ExtMVC.Model.Base} instance The newly updated instance
+   * @param {ExtMVC.model.Base} instance The newly updated instance
    * @param {Object} updates The updates that were made
    */
   onCreateSuccess: function(instance) {
@@ -1371,7 +1402,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after an unsuccessful update. By default this simply fires the 'update-failed' event
-   * @param {ExtMVC.Model.Base} instance The instance that could not be updated
+   * @param {ExtMVC.model.Base} instance The instance that could not be updated
    * @param {Object} updates The updates that were attempted to be made
    */
   onCreateFailure: function(instance) {
@@ -1380,7 +1411,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after a successful update. By default this calls showUpdatedNotice and then this.index()
-   * @param {ExtMVC.Model.Base} instance The newly updated instance
+   * @param {ExtMVC.model.Base} instance The newly updated instance
    * @param {Object} updates The updates that were made
    */
   onUpdateSuccess: function(instance, updates) {
@@ -1392,7 +1423,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after an unsuccessful update. By default this simply fires the 'update-failed' event
-   * @param {ExtMVC.Model.Base} instance The instance that could not be updated
+   * @param {ExtMVC.model.Base} instance The instance that could not be updated
    * @param {Object} updates The updates that were attempted to be made
    */
   onUpdateFailure: function(instance, updates) {
@@ -1407,21 +1438,21 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event create
        * Fired when a new instance has been successfully created
-       * @param {ExtMVC.Model.Base} instance The newly created model instance
+       * @param {ExtMVC.model.Base} instance The newly created model instance
        */
       'create',
       
       /**
        * @event create-failed
        * Fired when an attempt to create a new instance failed
-       * @param {ExtMVC.Model.Base} instance The instance object which couldn't be saved
+       * @param {ExtMVC.model.Base} instance The instance object which couldn't be saved
        */
       'create-failed',
       
       /**
        * @event read
        * Fired when a single instance has been loaded from the database
-       * @param {ExtMVC.Model.Base} instance The instance instance that was loaded
+       * @param {ExtMVC.model.Base} instance The instance instance that was loaded
        */
       'read',
       
@@ -1435,7 +1466,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event update
        * Fired when an existing instance has been successfully created
-       * @param {ExtMVC.Model.Base} instance The updated instance
+       * @param {ExtMVC.model.Base} instance The updated instance
        * @param {Object} updates The updates object that was supplied
        */
       'update',
@@ -1443,7 +1474,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event update-failed
        * Fired when an attempty to update an existing instance failed
-       * @param {ExtMVC.Model.Base} instance The instance we were attempting to update
+       * @param {ExtMVC.model.Base} instance The instance we were attempting to update
        * @param {Object} updates The object of updates we were trying to apply
        */
       'update-failed',
@@ -1451,14 +1482,14 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event delete
        * Fired when an existing instance has been successfully deleteed
-       * @param {ExtMVC.Model.Base} instance The instance that was deleteed
+       * @param {ExtMVC.model.Base} instance The instance that was deleteed
        */
       'delete',
       
       /**
        * @event delete-failed
        * Fired when an attempt to delete an existing instance failed
-       * @param {ExtMVC.Model.Base} instance The instance we were trying to delete
+       * @param {ExtMVC.model.Base} instance The instance we were trying to delete
        */
       'delete-failed',
       
@@ -1471,7 +1502,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event edit
        * Fired when an instance is being edited
-       * @param {ExtMVC.Model.Base} instance The instance being edited
+       * @param {ExtMVC.model.Base} instance The instance being edited
        */
       'edit'
     );
@@ -1767,11 +1798,11 @@ Ext.reg('os', ExtMVC.OS);
 // ExtMVC.getOS = ExtMVC.OS.getOS();
 
 /**
- * @class ExtMVC.Model
+ * @class ExtMVC.model
  * @extends Object
  * Manages the definition and creation of model classes
  */
-ExtMVC.Model = function() {
+ExtMVC.model = function() {
   return {
     /**
      * @property pendingCreation
@@ -1795,7 +1826,7 @@ ExtMVC.Model = function() {
      * Adds a model definition to the pendingCreation object if it is waiting for another model to be defined first
      * @param {String} dependencyModelName The name of another model which must be created before this one
      * @param {String} dependentModelName The name of the new model to be defined after its dependency
-     * @param {Object} config The new model's config object, as sent to ExtMVC.Model.define
+     * @param {Object} config The new model's config object, as sent to ExtMVC.model.define
      */
     setModelPendingDefinitionOf: function(dependencyModelName, dependentModelName, config) {
       var arr = this.pendingCreation[dependencyModelName] || [];
@@ -1816,7 +1847,7 @@ ExtMVC.Model = function() {
     /**
      * @property modelNamespace
      * @type Object
-     * The object into which Models are defined.  This defaults to window, meaning calls to ExtMVC.Model.create
+     * The object into which Models are defined.  This defaults to window, meaning calls to ExtMVC.model.create
      * will create models globally scoped unless this is modified.  Setting this instead to MyApp.models would 
      * mean that a model called 'User' would be defined as MyApp.models.User instead
      */
@@ -1827,7 +1858,7 @@ ExtMVC.Model = function() {
      * it is returned immediately, otherwise it is placed into a queue and defined as soon as its dependency models
      * are in place. Example:
      * 
-     * ExtMVC.Model.define('MyApp.models.MyModel', {
+     * ExtMVC.model.define('MyApp.models.MyModel', {
      *   fields: [
      *     {name: 'title',     type: 'string'},
      *     {name: 'price',     type: 'number'},
@@ -1852,7 +1883,7 @@ ExtMVC.Model = function() {
      *
      * @param {String} modelName The name of the model to create (e.g. 'User')
      * @param {Object} extensions An object containing field definitions and any extension methods to add to this model
-     * @return {ExtMVC.Model.Base/Null} The newly defined model constructor, or null if the model can't be defined yet
+     * @return {ExtMVC.model.Base/Null} The newly defined model constructor, or null if the model can't be defined yet
      */
     define: function(modelName, extensions) {
       var createNow  = true,
@@ -1872,7 +1903,7 @@ ExtMVC.Model = function() {
     
     /**
      * @ignore
-     * Creates a new ExtMVC.Model.Base subclass and sets up all fields, instance and class methods.
+     * Creates a new ExtMVC.model.Base subclass and sets up all fields, instance and class methods.
      * Don't use this directly unless you know what you're doing - use define instead (with the same arguments)
      * 
      * @param {String} modelName The full model name to define, including namespace (e.g. 'MyApp.models.MyModel')
@@ -2011,7 +2042,7 @@ ExtMVC.Model = function() {
     
     /**
      * Runs each plugin's initialize method with a newly created model constructor
-     * @param {ExtMVC.Model} model The model to initialize the plugin with
+     * @param {ExtMVC.model} model The model to initialize the plugin with
      */
     initializePlugins: function(model) {
       Ext.each(this.plugins, function(plugin) {
@@ -2021,15 +2052,15 @@ ExtMVC.Model = function() {
   };
 }();
 
-Ext.ns('ExtMVC.Model.plugin');
+Ext.ns('ExtMVC.model.plugin');
 
 /**
- * @class ExtMVC.Model.Base
- * A set of properties and functions which are applied to all ExtMVC.Models when they are defined
+ * @class ExtMVC.model.Base
+ * A set of properties and functions which are applied to all ExtMVC.models when they are defined
  */
-ExtMVC.Model.Base = function() {};
+ExtMVC.model.Base = function() {};
 
-ExtMVC.Model.Base.prototype = {
+ExtMVC.model.Base.prototype = {
   
   /**
    * @property primaryKey
@@ -2048,7 +2079,7 @@ ExtMVC.Model.Base.prototype = {
   },
   
   /**
-   * Returns a unique string for a model instance, suitable for use as a key in a cache (e.g. ExtMVC.Model.Cache).
+   * Returns a unique string for a model instance, suitable for use as a key in a cache (e.g. ExtMVC.model.Cache).
    * new User({id: 123}).MVCModelId(); //'user-123'
    * @return {String} The unique key for this model object
    */
@@ -2085,9 +2116,9 @@ ExtMVC.Model.Base.prototype = {
  * Add the above Base methods and properties to the Ext.data.Record prototype. This means all Record instances
  * will have MVC models methods, even if not instantiated by an MVC-defined model constructor
  */
-Ext.apply(Ext.data.Record.prototype, new ExtMVC.Model.Base());
+Ext.apply(Ext.data.Record.prototype, new ExtMVC.model.Base());
 
-ExtMVC.Model.plugin.adapter = (function() {
+ExtMVC.model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
       var adapter = new this.RESTJSONAdapter();
@@ -2097,39 +2128,39 @@ ExtMVC.Model.plugin.adapter = (function() {
       
       //associations are optional so only add them if they are present
       try {
-        Ext.override(ExtMVC.Model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
-        Ext.override(ExtMVC.Model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
+        Ext.override(ExtMVC.model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
+        Ext.override(ExtMVC.model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
       } catch(e) {};
     }
   };
 })();
 
-ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.adapter);
+ExtMVC.model.addPlugin(ExtMVC.model.plugin.adapter);
 
 /**
- * @class ExtMVC.Model.plugin.adapter.Abstract
+ * @class ExtMVC.model.plugin.adapter.Abstract
  * Abstract adapter class containing methods that all Adapters should provide
  * All of these methods are expected to be asynchronous except for loaded()
  */
 
 /**
  * @constructor
- * @param {ExtMVC.Model} model The model this adapter represents
+ * @param {ExtMVC.model} model The model this adapter represents
 */
-ExtMVC.Model.plugin.adapter.Abstract = function(model) {
+ExtMVC.model.plugin.adapter.Abstract = function(model) {
   /**
    * @property model
-   * @type ExtMVC.Model.Base
+   * @type ExtMVC.model.Base
    * The model this adapter represents (set on initialize)
    */
   // this.model = model;
 };
 
-ExtMVC.Model.plugin.adapter.Abstract.prototype = {
+ExtMVC.model.plugin.adapter.Abstract.prototype = {
   
   /**
    * Abstract save method which should be overridden by an Adapter subclass
-   * @param {ExtMVC.Model.Base} instance A model instance to save
+   * @param {ExtMVC.model.Base} instance A model instance to save
    * @param {Object} options Save options (e.g. {success: function(), failure: function()})
    */
   doSave: Ext.emptyFn,
@@ -2142,7 +2173,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
   
   /**
    * Abstract destroy method which should be overridden by an Adapter subclass
-   * @param {ExtMVC.Model.Base} instance The model instance to destroy
+   * @param {ExtMVC.model.Base} instance The model instance to destroy
    */
   doDestroy: Ext.emptyFn,
   
@@ -2365,7 +2396,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
  */
 
 
-// ExtMVC.Model.Adapter.Abstract = {
+// ExtMVC.model.Adapter.Abstract = {
 //   initialize: function(model) {
 //     
 //   },
@@ -2398,11 +2429,11 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
 // };
 
 /**
- * @class ExtMVC.Model.plugin.adapter.RESTAdapter
- * @extends ExtMVC.Model.plugin.adapter.Abstract
+ * @class ExtMVC.model.plugin.adapter.RESTAdapter
+ * @extends ExtMVC.model.plugin.adapter.Abstract
  * An adapter which hooks into a RESTful server side API for its data storage
  */
-ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.Abstract, {
+ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter.Abstract, {
   
   /**
    * @property createMethod
@@ -2507,7 +2538,7 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   
   /**
    * Performs an HTTP DELETE request using Ext.Ajax.request
-   * @param {ExtMVC.Model.Base} instance The model instance to destroy
+   * @param {ExtMVC.model.Base} instance The model instance to destroy
    * @param {Object} options Options object passed to Ext.Ajax.request
    * @return {Number} The Ajax transaction ID
    */
@@ -2597,7 +2628,7 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   
   /**
    * Calculates the unique REST URL for a given model instance
-   * @param {ExtMVC.Model.Base} instance The model instance
+   * @param {ExtMVC.model.Base} instance The model instance
    * @return {String} The url associated with this instance
    */
   instanceUrl: function(instance) {
@@ -2630,7 +2661,7 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   
   /**
    * Creates a params object suitable for sending as POST data to the server
-   * @param {ExtMVC.Model.Base} instance The models instance to build post data for
+   * @param {ExtMVC.model.Base} instance The models instance to build post data for
    * @return {Object} Params object to send to the server
    */
   buildPostData: function(instance) {
@@ -2674,11 +2705,11 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
 });
 
 /**
- * @class ExtMVC.Model.plugin.adapter.RESTJSONAdapter
- * @extends ExtMVC.Model.plugin.adapter.RESTAdapter
+ * @class ExtMVC.model.plugin.adapter.RESTJSONAdapter
+ * @extends ExtMVC.model.plugin.adapter.RESTAdapter
  * An adapter which hooks into a RESTful server side API that expects JSON for its data storage
  */
-ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.RESTAdapter, {
+ExtMVC.model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.model.plugin.adapter.RESTAdapter, {
 
   /**
    * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
@@ -2695,7 +2726,7 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
       }
     });
     
-    ExtMVC.Model.plugin.adapter.RESTJSONAdapter.superclass.doSave.apply(this, arguments);
+    ExtMVC.model.plugin.adapter.RESTJSONAdapter.superclass.doSave.apply(this, arguments);
   },
   
   /**
@@ -2717,7 +2748,7 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
    * @return {Object} Configuration for the proxy
    */
   buildProxyConfig: function(url) {
-    var defaults = ExtMVC.Model.plugin.adapter.RESTJSONAdapter.superclass.buildProxyConfig.apply(this, arguments);
+    var defaults = ExtMVC.model.plugin.adapter.RESTJSONAdapter.superclass.buildProxyConfig.apply(this, arguments);
     
     return Ext.apply(defaults, {
       headers: {
@@ -2727,29 +2758,29 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
   }
 });
 
-Ext.ns('ExtMVC.Model.plugin.validation');
+Ext.ns('ExtMVC.model.plugin.validation');
 
 /**
  * @ignore
  * The Validation classes themselves are defined here.
- * Subclass ExtMVC.Model.plugin.validation.AbstractValidation to create your own validations
+ * Subclass ExtMVC.model.plugin.validation.AbstractValidation to create your own validations
  */
 
 /**
- * @class ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.AbstractValidation
  * Base class for all validations - don't use this directly but use a subclass
  */
-ExtMVC.Model.plugin.validation.AbstractValidation = function(ownerClass, field, config) {
+ExtMVC.model.plugin.validation.AbstractValidation = function(ownerClass, field, config) {
   this.ownerClass = ownerClass;
   this.field = field;
   
   Ext.apply(this, config);
 };
 
-ExtMVC.Model.plugin.validation.AbstractValidation.prototype = {
+ExtMVC.model.plugin.validation.AbstractValidation.prototype = {
   /**
    * Returns the current value of the field to which this validation applies
-   * @param {ExtMVC.Model.Base} instance The model instance to get the value from
+   * @param {ExtMVC.model.Base} instance The model instance to get the value from
    * @return {Mixed} The current value of the field
    */
   getValue: function(instance) {
@@ -2767,11 +2798,11 @@ ExtMVC.Model.plugin.validation.AbstractValidation.prototype = {
 };
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesPresenceOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesPresenceOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that a field is present
  */
-ExtMVC.Model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
    * @property message
    * @type String
@@ -2797,11 +2828,11 @@ ExtMVC.Model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.Model.plu
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesLengthOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesLengthOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Returns true if the field is within the length bounds imposed.
  */
-ExtMVC.Model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   
   /**
    * @property tooShortMessage
@@ -2844,11 +2875,11 @@ ExtMVC.Model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.Model.plugi
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesNumericalityOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesNumericalityOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field is a number
  */
-ExtMVC.Model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
    * @property message
    * @type String
@@ -2866,11 +2897,11 @@ ExtMVC.Model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.Model
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesInclusionOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesInclusionOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field is one of the allowed values
  */
-ExtMVC.Model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
 
   /**
@@ -2881,7 +2912,7 @@ ExtMVC.Model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.Model.pl
     config = config || {};
     Ext.applyIf(config, { allowed: [] });
     
-    ExtMVC.Model.plugin.validation.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
+    ExtMVC.model.plugin.validation.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
     
     Ext.applyIf(this, {
       message: 'must be one of ' + this.allowed.toSentence('or')
@@ -2904,11 +2935,11 @@ ExtMVC.Model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.Model.pl
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesExclusionOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesExclusionOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field is not one of the allowed values
  */
-ExtMVC.Model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
   /**
    * Override Abstract constructor to build the validation message
@@ -2918,7 +2949,7 @@ ExtMVC.Model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.Model.pl
     config = config || {};
     Ext.applyIf(config, { disallowed: [] });
     
-    ExtMVC.Model.plugin.validation.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
+    ExtMVC.model.plugin.validation.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
     
     Ext.applyIf(this, {
       message: 'must not be ' + this.disallowed.toSentence('or')
@@ -2942,11 +2973,11 @@ ExtMVC.Model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.Model.pl
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesFormatOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesFormatOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field matches the given regular expression
  */
-ExtMVC.Model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   
   /**
    * @property message
@@ -2965,10 +2996,14 @@ ExtMVC.Model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.Model.plugi
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.Errors
+ * @class ExtMVC.model.plugin.validation
+ */
+
+/**
+ * @class ExtMVC.model.plugin.validation.Errors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-ExtMVC.Model.plugin.validation.Errors = function() {
+ExtMVC.model.plugin.validation.Errors = function() {
   /**
    * @property errors
    * @type Object
@@ -2977,7 +3012,7 @@ ExtMVC.Model.plugin.validation.Errors = function() {
   this.all = {};
 };
 
-ExtMVC.Model.plugin.validation.Errors.prototype = {
+ExtMVC.model.plugin.validation.Errors.prototype = {
   
   /**
    * Returns an errors object suitable for applying to a form via BasicForm's markInvalid() method
@@ -3082,7 +3117,7 @@ ExtMVC.Model.plugin.validation.Errors.prototype = {
 Ext.apply(Ext.data.Record.prototype, {
   isValid: function() {
     if (this.validations) {
-      if (!this.errors) this.errors = new ExtMVC.Model.plugin.validations.Errors();
+      if (!this.errors) this.errors = new ExtMVC.model.plugin.validations.Errors();
       
       this.errors.clear();
       
@@ -3117,7 +3152,7 @@ Ext.apply(Ext.data.Record.prototype, {
   Ext.data.Record = function(data, id) {
     oldConstructor.apply(this, arguments);
 
-    this.errors = new ExtMVC.Model.plugin.validation.Errors();
+    this.errors = new ExtMVC.model.plugin.validation.Errors();
   };
 
   for (var method in oldFunctionMethods) {
@@ -3129,13 +3164,13 @@ Ext.apply(Ext.data.Record.prototype, {
  */
 
 /**
- * @class ExtMVC.Model.plugin.validation.Plugin
+ * @class ExtMVC.model.plugin.validation.Plugin
  */
-ExtMVC.Model.plugin.validation.Plugin = {
+ExtMVC.model.plugin.validation.Plugin = {
   /**
    * Initializes this plugin for a given model.  This is called every time a model is *created*
-   * via ExtMVC.Model.create, not when a model object is *instantiated*
-   * @param {ExtMVC.Model} model The model to initialize the plugin for
+   * via ExtMVC.model.create, not when a model object is *instantiated*
+   * @param {ExtMVC.model} model The model to initialize the plugin for
    */
   initialize: function(model) {
     this.model = model;
@@ -3157,15 +3192,15 @@ ExtMVC.Model.plugin.validation.Plugin = {
   parseValidations: function() {
     var validations = [];
     
-    for (var validation in ExtMVC.Model.plugin.validation) {
+    for (var validation in ExtMVC.model.plugin.validation) {
       if (/^validate/.test(validation.toLowerCase())) {
         
-        //for each validation type defined on ExtMVC.Model.plugin.validation, check to see if we are using
+        //for each validation type defined on ExtMVC.model.plugin.validation, check to see if we are using
         //it in on our model
         for (var modelKey in this.model.prototype) {
           if (modelKey.toLowerCase() == validation.toLowerCase()) {
             //this validation is being used by the model, so add it now
-            var validationConstructor = ExtMVC.Model.plugin.validation[validation],
+            var validationConstructor = ExtMVC.model.plugin.validation[validation],
                 validationOptions     = this.model.prototype[modelKey];
             
             if (!Ext.isArray(validationOptions)) {
@@ -3187,7 +3222,7 @@ ExtMVC.Model.plugin.validation.Plugin = {
    * Creates a new Validation object based on the passed constructor and options
    * @param {Function} validation The validation constructor function
    * @param {Object|String} options A fieldname string, or config object
-   * @return {ExtMVC.Model.plugin.validation.AbstractValidation} The validation instance
+   * @return {ExtMVC.model.plugin.validation.AbstractValidation} The validation instance
    */
   buildValidation: function(validation, options) {
     var field, config = {};
@@ -3204,7 +3239,7 @@ ExtMVC.Model.plugin.validation.Plugin = {
   }
 };
 
-ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.validation.Plugin);
+ExtMVC.model.addPlugin(ExtMVC.model.plugin.validation.Plugin);
 
 /**
  * A simple manager for registering and retrieving named ViewportBuilders
@@ -4054,12 +4089,12 @@ Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);
  * @class ExtMVC.view.HasManyEditorGridPanel
  * @extends Ext.grid.EditorGridPanel
  * Provides some sensible defaults for a HasMany editor grid.  For example, given the following models:
- * ExtMVC.Model.define("MyApp.models.User", {
+ * ExtMVC.model.define("MyApp.models.User", {
  *   ...
  *   hasMany: "Post"
  * });
  *
- * ExtMVC.Model.define("MyApp.models.Post", {
+ * ExtMVC.model.define("MyApp.models.Post", {
  *   ...
  *   belongsTo: "User"
  * });

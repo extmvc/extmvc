@@ -1,14 +1,14 @@
 /**
- * @class ExtMVC.Model.HasManyAssociation
- * @extends ExtMVC.Model.Association
+ * @class ExtMVC.model.HasManyAssociation
+ * @extends ExtMVC.model.Association
  */
-ExtMVC.Model.HasManyAssociation = function(ownerObject, config) {
+ExtMVC.model.HasManyAssociation = function(ownerObject, config) {
   var config = config || {};
   
   Ext.applyIf(config, {
     offset:          0,
     limit:           25,
-    associationName: ExtMVC.Model.Association.hasManyAssociationName(config.name)
+    associationName: ExtMVC.model.Association.hasManyAssociationName(config.name)
   });
 
   //TODO: these should be abstracted to a parent object (as should private vars and funcs below)
@@ -135,7 +135,7 @@ ExtMVC.Model.HasManyAssociation = function(ownerObject, config) {
       var obj = new associatedObjectClass(fields);
       
       //set up the object's belongsTo association.  This also sets up the foreign key
-      var assocName = ExtMVC.Model.Association.belongsToAssociationName(ownerObject.className);
+      var assocName = ExtMVC.model.Association.belongsToAssociationName(ownerObject.className);
       obj[assocName].set(ownerObject);
       
       return obj;
@@ -143,7 +143,7 @@ ExtMVC.Model.HasManyAssociation = function(ownerObject, config) {
 
     /**
      * Adds an existing (saved) instantiation of the associated model to this model's hasMany collection
-     * @param {ExtMVC.Model} modelObject The existing, saved model
+     * @param {ExtMVC.model} modelObject The existing, saved model
      */
     add: function(modelObject) {
       //TODO: implement this
@@ -157,4 +157,4 @@ ExtMVC.Model.HasManyAssociation = function(ownerObject, config) {
   });
 };
 
-// Ext.extend(ExtMVC.Model.HasManyAssociation, ExtMVC.Model.Association);
+// Ext.extend(ExtMVC.model.HasManyAssociation, ExtMVC.model.Association);

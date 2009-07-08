@@ -148,4 +148,4 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 
 ExtMVC = new ExtMVC();
 
-Ext.ns('ExtMVC.Model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');
+Ext.ns('ExtMVC.model', 'ExtMVC.plugin', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');

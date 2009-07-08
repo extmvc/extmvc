@@ -1,9 +1,9 @@
 /**
- * @class ExtMVC.Model.plugin.adapter.RESTJSONAdapter
- * @extends ExtMVC.Model.plugin.adapter.RESTAdapter
+ * @class ExtMVC.model.plugin.adapter.RESTJSONAdapter
+ * @extends ExtMVC.model.plugin.adapter.RESTAdapter
  * An adapter which hooks into a RESTful server side API that expects JSON for its data storage
  */
-ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.RESTAdapter, {
+ExtMVC.model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.model.plugin.adapter.RESTAdapter, {
 
   /**
    * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
@@ -20,7 +20,7 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
       }
     });
     
-    ExtMVC.Model.plugin.adapter.RESTJSONAdapter.superclass.doSave.apply(this, arguments);
+    ExtMVC.model.plugin.adapter.RESTJSONAdapter.superclass.doSave.apply(this, arguments);
   },
   
   /**
@@ -42,7 +42,7 @@ ExtMVC.Model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.Model.plugin.ada
    * @return {Object} Configuration for the proxy
    */
   buildProxyConfig: function(url) {
-    var defaults = ExtMVC.Model.plugin.adapter.RESTJSONAdapter.superclass.buildProxyConfig.apply(this, arguments);
+    var defaults = ExtMVC.model.plugin.adapter.RESTJSONAdapter.superclass.buildProxyConfig.apply(this, arguments);
     
     return Ext.apply(defaults, {
       headers: {

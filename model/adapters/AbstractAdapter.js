@@ -1,4 +1,4 @@
-ExtMVC.Model.plugin.adapter = (function() {
+ExtMVC.model.plugin.adapter = (function() {
   return {
     initialize: function(model) {
       var adapter = new this.RESTJSONAdapter();
@@ -8,39 +8,39 @@ ExtMVC.Model.plugin.adapter = (function() {
       
       //associations are optional so only add them if they are present
       try {
-        Ext.override(ExtMVC.Model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
-        Ext.override(ExtMVC.Model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
+        Ext.override(ExtMVC.model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
+        Ext.override(ExtMVC.model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
       } catch(e) {};
     }
   };
 })();
 
-ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.adapter);
+ExtMVC.model.addPlugin(ExtMVC.model.plugin.adapter);
 
 /**
- * @class ExtMVC.Model.plugin.adapter.Abstract
+ * @class ExtMVC.model.plugin.adapter.Abstract
  * Abstract adapter class containing methods that all Adapters should provide
  * All of these methods are expected to be asynchronous except for loaded()
  */
 
 /**
  * @constructor
- * @param {ExtMVC.Model} model The model this adapter represents
+ * @param {ExtMVC.model} model The model this adapter represents
 */
-ExtMVC.Model.plugin.adapter.Abstract = function(model) {
+ExtMVC.model.plugin.adapter.Abstract = function(model) {
   /**
    * @property model
-   * @type ExtMVC.Model.Base
+   * @type ExtMVC.model.Base
    * The model this adapter represents (set on initialize)
    */
   // this.model = model;
 };
 
-ExtMVC.Model.plugin.adapter.Abstract.prototype = {
+ExtMVC.model.plugin.adapter.Abstract.prototype = {
   
   /**
    * Abstract save method which should be overridden by an Adapter subclass
-   * @param {ExtMVC.Model.Base} instance A model instance to save
+   * @param {ExtMVC.model.Base} instance A model instance to save
    * @param {Object} options Save options (e.g. {success: function(), failure: function()})
    */
   doSave: Ext.emptyFn,
@@ -53,7 +53,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
   
   /**
    * Abstract destroy method which should be overridden by an Adapter subclass
-   * @param {ExtMVC.Model.Base} instance The model instance to destroy
+   * @param {ExtMVC.model.Base} instance The model instance to destroy
    */
   doDestroy: Ext.emptyFn,
   
@@ -276,7 +276,7 @@ ExtMVC.Model.plugin.adapter.Abstract.prototype = {
  */
 
 
-// ExtMVC.Model.Adapter.Abstract = {
+// ExtMVC.model.Adapter.Abstract = {
 //   initialize: function(model) {
 //     
 //   },

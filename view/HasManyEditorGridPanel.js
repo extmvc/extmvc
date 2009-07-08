@@ -2,12 +2,12 @@
  * @class ExtMVC.view.HasManyEditorGridPanel
  * @extends Ext.grid.EditorGridPanel
  * Provides some sensible defaults for a HasMany editor grid.  For example, given the following models:
- * ExtMVC.Model.define("MyApp.models.User", {
+ * ExtMVC.model.define("MyApp.models.User", {
  *   ...
  *   hasMany: "Post"
  * });
  *
- * ExtMVC.Model.define("MyApp.models.Post", {
+ * ExtMVC.model.define("MyApp.models.Post", {
  *   ...
  *   belongsTo: "User"
  * });

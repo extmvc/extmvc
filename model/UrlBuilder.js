@@ -82,7 +82,7 @@ ExtMVC.UrlBuilder.prototype = {
   
   /**
    * Returns an array of url segments for a model instance
-   * @param {ExtMVC.Model} instance A Model instance with at least its primary key value set
+   * @param {ExtMVC.model} instance A Model instance with at least its primary key value set
    * @return {Array} An array of segments for this url (e.g. ['users', '10'])
    */
   segmentsForInstance: function(instance) {

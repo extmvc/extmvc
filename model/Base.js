@@ -1,10 +1,10 @@
 /**
- * @class ExtMVC.Model.Base
- * A set of properties and functions which are applied to all ExtMVC.Models when they are defined
+ * @class ExtMVC.model.Base
+ * A set of properties and functions which are applied to all ExtMVC.models when they are defined
  */
-ExtMVC.Model.Base = function() {};
+ExtMVC.model.Base = function() {};
 
-ExtMVC.Model.Base.prototype = {
+ExtMVC.model.Base.prototype = {
   
   /**
    * @property primaryKey
@@ -23,7 +23,7 @@ ExtMVC.Model.Base.prototype = {
   },
   
   /**
-   * Returns a unique string for a model instance, suitable for use as a key in a cache (e.g. ExtMVC.Model.Cache).
+   * Returns a unique string for a model instance, suitable for use as a key in a cache (e.g. ExtMVC.model.Cache).
    * new User({id: 123}).MVCModelId(); //'user-123'
    * @return {String} The unique key for this model object
    */
@@ -60,4 +60,4 @@ ExtMVC.Model.Base.prototype = {
  * Add the above Base methods and properties to the Ext.data.Record prototype. This means all Record instances
  * will have MVC models methods, even if not instantiated by an MVC-defined model constructor
  */
-Ext.apply(Ext.data.Record.prototype, new ExtMVC.Model.Base());
+Ext.apply(Ext.data.Record.prototype, new ExtMVC.model.Base());

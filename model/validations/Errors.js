@@ -1,8 +1,12 @@
 /**
- * @class ExtMVC.Model.plugin.validation.Errors
+ * @class ExtMVC.model.plugin.validation
+ */
+
+/**
+ * @class ExtMVC.model.plugin.validation.Errors
  * Simple class to collect validation errors on a model and return them in various formats
  */
-ExtMVC.Model.plugin.validation.Errors = function() {
+ExtMVC.model.plugin.validation.Errors = function() {
   /**
    * @property errors
    * @type Object
@@ -11,7 +15,7 @@ ExtMVC.Model.plugin.validation.Errors = function() {
   this.all = {};
 };
 
-ExtMVC.Model.plugin.validation.Errors.prototype = {
+ExtMVC.model.plugin.validation.Errors.prototype = {
   
   /**
    * Returns an errors object suitable for applying to a form via BasicForm's markInvalid() method

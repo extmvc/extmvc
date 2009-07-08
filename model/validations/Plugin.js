@@ -10,7 +10,7 @@
 Ext.apply(Ext.data.Record.prototype, {
   isValid: function() {
     if (this.validations) {
-      if (!this.errors) this.errors = new ExtMVC.Model.plugin.validations.Errors();
+      if (!this.errors) this.errors = new ExtMVC.model.plugin.validations.Errors();
       
       this.errors.clear();
       
@@ -45,7 +45,7 @@ Ext.apply(Ext.data.Record.prototype, {
   Ext.data.Record = function(data, id) {
     oldConstructor.apply(this, arguments);
 
-    this.errors = new ExtMVC.Model.plugin.validation.Errors();
+    this.errors = new ExtMVC.model.plugin.validation.Errors();
   };
 
   for (var method in oldFunctionMethods) {
@@ -57,13 +57,13 @@ Ext.apply(Ext.data.Record.prototype, {
  */
 
 /**
- * @class ExtMVC.Model.plugin.validation.Plugin
+ * @class ExtMVC.model.plugin.validation.Plugin
  */
-ExtMVC.Model.plugin.validation.Plugin = {
+ExtMVC.model.plugin.validation.Plugin = {
   /**
    * Initializes this plugin for a given model.  This is called every time a model is *created*
-   * via ExtMVC.Model.create, not when a model object is *instantiated*
-   * @param {ExtMVC.Model} model The model to initialize the plugin for
+   * via ExtMVC.model.create, not when a model object is *instantiated*
+   * @param {ExtMVC.model} model The model to initialize the plugin for
    */
   initialize: function(model) {
     this.model = model;
@@ -85,15 +85,15 @@ ExtMVC.Model.plugin.validation.Plugin = {
   parseValidations: function() {
     var validations = [];
     
-    for (var validation in ExtMVC.Model.plugin.validation) {
+    for (var validation in ExtMVC.model.plugin.validation) {
       if (/^validate/.test(validation.toLowerCase())) {
         
-        //for each validation type defined on ExtMVC.Model.plugin.validation, check to see if we are using
+        //for each validation type defined on ExtMVC.model.plugin.validation, check to see if we are using
         //it in on our model
         for (var modelKey in this.model.prototype) {
           if (modelKey.toLowerCase() == validation.toLowerCase()) {
             //this validation is being used by the model, so add it now
-            var validationConstructor = ExtMVC.Model.plugin.validation[validation],
+            var validationConstructor = ExtMVC.model.plugin.validation[validation],
                 validationOptions     = this.model.prototype[modelKey];
             
             if (!Ext.isArray(validationOptions)) {
@@ -115,7 +115,7 @@ ExtMVC.Model.plugin.validation.Plugin = {
    * Creates a new Validation object based on the passed constructor and options
    * @param {Function} validation The validation constructor function
    * @param {Object|String} options A fieldname string, or config object
-   * @return {ExtMVC.Model.plugin.validation.AbstractValidation} The validation instance
+   * @return {ExtMVC.model.plugin.validation.AbstractValidation} The validation instance
    */
   buildValidation: function(validation, options) {
     var field, config = {};
@@ -132,4 +132,4 @@ ExtMVC.Model.plugin.validation.Plugin = {
   }
 };
 
-ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.validation.Plugin);
+ExtMVC.model.addPlugin(ExtMVC.model.plugin.validation.Plugin);

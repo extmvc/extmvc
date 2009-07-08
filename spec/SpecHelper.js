@@ -1,12 +1,12 @@
 Ext.ns('MVCTest', 'MVCTest.models');
 
-ExtMVC.Model.modelNamespace = MVCTest.models;
+ExtMVC.model.modelNamespace = MVCTest.models;
 
 /**
  * @class MVCTest.models.User
- * @extends ExtMVC.Model
+ * @extends ExtMVC.model
  */
-ExtMVC.Model.define("User", {
+ExtMVC.model.define("User", {
   fields:    [
     {name: 'id',         type: 'int'},
     {name: 'first_name', type: 'string'},
@@ -41,7 +41,7 @@ ExtMVC.Model.define("User", {
  * @extends MVCTest.models.User
  * A subclass of User, defining additional fields
  */
-ExtMVC.Model.define("AdminUser", {
+ExtMVC.model.define("AdminUser", {
   extend: "User",
   fields: [
     {name: 'is_admin', type: 'bool'},
@@ -51,9 +51,9 @@ ExtMVC.Model.define("AdminUser", {
 
 /**
  * @class MVCTest.models.BlogPost
- * @extends ExtMVC.Model
+ * @extends ExtMVC.model
  */
-ExtMVC.Model.define("BlogPost", {
+ExtMVC.model.define("BlogPost", {
   fields:    [
     {name: 'id',      type: 'int'},
     {name: 'title',   type: 'string'},
@@ -70,9 +70,9 @@ ExtMVC.Model.define("BlogPost", {
 
 /**
  * @class MVCTest.models.Comment
- * @extends ExtMVC.Model
+ * @extends ExtMVC.model
  */
-ExtMVC.Model.define("Comment", {
+ExtMVC.model.define("Comment", {
   fields:    [
     {name: 'id',           type: 'int'},
     {name: 'blog_post_id', type: 'int'},

@@ -1,6 +1,6 @@
 Screw.Unit(function() {
   //keep track of the object to which models are currently assigned
-  var ns = ExtMVC.Model.modelNamespace;
+  var ns = ExtMVC.model.modelNamespace;
 
   //Uses some test models set up in SpecHelper.js
   user = new ns.User({
@@ -28,26 +28,26 @@ Screw.Unit(function() {
       it("should create the model immediately if it does not extend any other models", function() {
         expect(typeof ns.AnotherModel).to(equal, "undefined");
         
-        ExtMVC.Model.define('AnotherModel', {fields: [{name: 'title', type: 'string'}]});
+        ExtMVC.model.define('AnotherModel', {fields: [{name: 'title', type: 'string'}]});
         expect(typeof ns.AnotherModel).to(equal, "function");
       });
       
       describe("when checking to see if the model has already been defined", function() {
         it("should return false when trying to define a new model", function() {
-          expect(ExtMVC.Model.isAlreadyDefined('MySuperModel')).to(equal, false);
+          expect(ExtMVC.model.isAlreadyDefined('MySuperModel')).to(equal, false);
         });
         
         it("should return true when trying to define a model that already exists", function() {
-          expect(ExtMVC.Model.isAlreadyDefined('User')).to(equal, true);
+          expect(ExtMVC.model.isAlreadyDefined('User')).to(equal, true);
         });
 
         it("should return true when trying to define a model that is already in the pending creation queue", function() {
           //Add a fake model that depends on another model which hasn't yet been created
-          ExtMVC.Model.define("AnotherNewModel", {extend: "NonExistantModel"});
+          ExtMVC.model.define("AnotherNewModel", {extend: "NonExistantModel"});
           
           //AnotherNewModel hasn't actually been created at this point
           expect(typeof ns.AnotherNewModel).to(equal, "undefined");
-          expect(ExtMVC.Model.isAlreadyDefined('AnotherNewModel')).to(equal, true);
+          expect(ExtMVC.model.isAlreadyDefined('AnotherNewModel')).to(equal, true);
         });        
       });
       
@@ -60,7 +60,7 @@ Screw.Unit(function() {
           //make sure our superclass has been defined already
           expect(typeof ns.User).to(equal, "function");
           
-          ExtMVC.Model.define('RichUser', {extend: 'User', monies: 'many'});
+          ExtMVC.model.define('RichUser', {extend: 'User', monies: 'many'});
           expect(typeof ns.RichUser).to(equal, "function");
         });
         
@@ -68,17 +68,17 @@ Screw.Unit(function() {
           //make sure our superclass model hasn't been defined yet
           expect(typeof ns.SpecialModel).to(equal, "undefined");
           
-          ExtMVC.Model.define('AnotherModel', {fields: [{name: 'title', type: 'string'}], extend: 'SpecialModel'});
+          ExtMVC.model.define('AnotherModel', {fields: [{name: 'title', type: 'string'}], extend: 'SpecialModel'});
           
           expect(typeof ns.AnotherModel).to(equal, "undefined");
         });
         
         it("should add the create config to an internal object if the model it extends has not yet been defined", function() {
-          var previousLength = ExtMVC.Model.getModelsPendingDefinitionOf('SpecialModel').length;
+          var previousLength = ExtMVC.model.getModelsPendingDefinitionOf('SpecialModel').length;
           
-          ExtMVC.Model.define('AnotherModel', {fields: [{name: 'title', type: 'string'}], extend: 'SpecialModel'});
+          ExtMVC.model.define('AnotherModel', {fields: [{name: 'title', type: 'string'}], extend: 'SpecialModel'});
           
-          var p = ExtMVC.Model.getModelsPendingDefinitionOf('SpecialModel');
+          var p = ExtMVC.model.getModelsPendingDefinitionOf('SpecialModel');
           expect(p.length).to(equal, previousLength + 1);
           expect(p[0].name).to(equal, 'AnotherModel');
         });
@@ -90,14 +90,14 @@ Screw.Unit(function() {
       var peonUserConfig = {displayName: function() {return 'Peon';}};
       var noobUserConfig = {displayName: function() {return 'Noob';}};
       
-      var m = ExtMVC.Model;
+      var m = ExtMVC.model;
       m.pendingCreation = {'User': [
         {name: 'PeonUser', config: peonUserConfig},
         {name: 'NoobUser', config: noobUserConfig}
       ]};
       
       it("should return an array of all model definitions waiting for the creation of a given model", function() {
-        var p = ExtMVC.Model.getModelsPendingDefinitionOf('User');
+        var p = ExtMVC.model.getModelsPendingDefinitionOf('User');
         
         expect(p.length).to(equal, 2);
         expect(p[0].name).to(equal, 'PeonUser');
@@ -105,9 +105,9 @@ Screw.Unit(function() {
       });
       
       it("should add model definition objects to the queue", function() {
-        ExtMVC.Model.setModelPendingDefinitionOf('User', 'NormalUser', {displayName: function() {return 'Normal';}});
+        ExtMVC.model.setModelPendingDefinitionOf('User', 'NormalUser', {displayName: function() {return 'Normal';}});
         
-        var p = ExtMVC.Model.getModelsPendingDefinitionOf('User');
+        var p = ExtMVC.model.getModelsPendingDefinitionOf('User');
         expect(p.length).to(equal, 3);
         expect(p[2].name).to(equal, 'NormalUser');
       });
@@ -115,16 +115,16 @@ Screw.Unit(function() {
     
     describe("when creating a model", function() {
       before(function() {
-        ExtMVC.Model.define('NewModel', {fields: [{name: 'name', type: 'string'}]});        
+        ExtMVC.model.define('NewModel', {fields: [{name: 'name', type: 'string'}]});        
       });
       
       after(function() {
         delete ns.NewModel; delete ns.MyNewModel;
       });
       
-      it("should create the model within ExtMVC.Model.modelNamespace", function() {
+      it("should create the model within ExtMVC.model.modelNamespace", function() {
         expect(typeof ns.MyNewModel).to(equal, 'undefined');
-        ExtMVC.Model.create('MyNewModel', {fields: [{name: 'title', type: 'string'}]});
+        ExtMVC.model.create('MyNewModel', {fields: [{name: 'title', type: 'string'}]});
         
         expect(typeof ns.MyNewModel).to(equal, 'function');
       });
@@ -146,7 +146,7 @@ Screw.Unit(function() {
       });
       
       it("should allow specification of a different primary key to 'id'", function() {
-        ExtMVC.Model.create("SpecialModel", {
+        ExtMVC.model.create("SpecialModel", {
           fields:     [{name: 'someField', type: 'string'}],
           primaryKey: 'someField'
         });
@@ -212,7 +212,7 @@ Screw.Unit(function() {
         var lmn;
         
         before(function() {
-          ExtMVC.Model.define("LongModelName", {fields: [{}]});
+          ExtMVC.model.define("LongModelName", {fields: [{}]});
           lmn = new ns.LongModelName({});
         });
         
@@ -251,7 +251,7 @@ Screw.Unit(function() {
     });
     
     describe("Extending another Model", function() {
-      ExtMVC.Model.define("SuperUser", {
+      ExtMVC.model.define("SuperUser", {
         extend: 'User',
         fields: [
           {name: 'is_admin',   type: 'boolean'},
@@ -328,22 +328,22 @@ Screw.Unit(function() {
       var initializeCalled,
           myPlugin = { initialize: Ext.emptyFn };
       
-      var normalPlugins = ExtMVC.Model.plugins;
+      var normalPlugins = ExtMVC.model.plugins;
       
       before(function() {
         //clear out all plugins between tests
-        ExtMVC.Model.plugins = [];
+        ExtMVC.model.plugins = [];
       });
       
       after(function() {
-        ExtMVC.Model.plugins = normalPlugins;
+        ExtMVC.model.plugins = normalPlugins;
       });
       
       it("should allow specification of new plugins", function() {
-        var p = ExtMVC.Model.plugins;
+        var p = ExtMVC.model.plugins;
         expect(p.length).to(equal, 0);
         
-        ExtMVC.Model.addPlugin(myPlugin);
+        ExtMVC.model.addPlugin(myPlugin);
         expect(p.length).to(equal, 1);
       });
       
@@ -357,9 +357,9 @@ Screw.Unit(function() {
           initializeArgument = model;
         };
                 
-        ExtMVC.Model.addPlugin(myPlugin);
+        ExtMVC.model.addPlugin(myPlugin);
         
-        ExtMVC.Model.define('AnotherModel', {fields: []});
+        ExtMVC.model.define('AnotherModel', {fields: []});
         expect(initializeCalled).to(equal, true);
         expect(initializeArgument).to(equal, ns.AnotherModel);
         

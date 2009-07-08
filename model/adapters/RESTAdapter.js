@@ -1,9 +1,9 @@
 /**
- * @class ExtMVC.Model.plugin.adapter.RESTAdapter
- * @extends ExtMVC.Model.plugin.adapter.Abstract
+ * @class ExtMVC.model.plugin.adapter.RESTAdapter
+ * @extends ExtMVC.model.plugin.adapter.Abstract
  * An adapter which hooks into a RESTful server side API for its data storage
  */
-ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter.Abstract, {
+ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter.Abstract, {
   
   /**
    * @property createMethod
@@ -108,7 +108,7 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   
   /**
    * Performs an HTTP DELETE request using Ext.Ajax.request
-   * @param {ExtMVC.Model.Base} instance The model instance to destroy
+   * @param {ExtMVC.model.Base} instance The model instance to destroy
    * @param {Object} options Options object passed to Ext.Ajax.request
    * @return {Number} The Ajax transaction ID
    */
@@ -198,7 +198,7 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   
   /**
    * Calculates the unique REST URL for a given model instance
-   * @param {ExtMVC.Model.Base} instance The model instance
+   * @param {ExtMVC.model.Base} instance The model instance
    * @return {String} The url associated with this instance
    */
   instanceUrl: function(instance) {
@@ -231,7 +231,7 @@ ExtMVC.Model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.Model.plugin.adapter
   
   /**
    * Creates a params object suitable for sending as POST data to the server
-   * @param {ExtMVC.Model.Base} instance The models instance to build post data for
+   * @param {ExtMVC.model.Base} instance The models instance to build post data for
    * @return {Object} Params object to send to the server
    */
   buildPostData: function(instance) {

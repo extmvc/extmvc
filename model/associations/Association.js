@@ -1,15 +1,15 @@
 /**
- * @class ExtMVC.Model.plugin.association
+ * @class ExtMVC.model.plugin.association
  */
-ExtMVC.Model.plugin.association = {
+ExtMVC.model.plugin.association = {
   /**
-   * This function is called every time a model is created via ExtMVC.Model.create
+   * This function is called every time a model is created via ExtMVC.model.create
    * (*NOT* when a model instance is instantiated). Here we initialize associations
    * on this model.
    */
   initialize: function(model) {
     var proto = model.prototype,
-        assoc = ExtMVC.Model.plugin.association;
+        assoc = ExtMVC.model.plugin.association;
     
     this.resolveDependencies(model);
     
@@ -42,7 +42,7 @@ ExtMVC.Model.plugin.association = {
    * @param {Object} params Association params such as associationName and associatedClass
    */
   define: function(constructor, model, params) {
-    var modelNS         = ExtMVC.Model.modelNamespace,
+    var modelNS         = ExtMVC.model.modelNamespace,
         associatedClass = params.associatedClass,
         modelName       = model.prototype.modelName;
     
@@ -63,7 +63,7 @@ ExtMVC.Model.plugin.association = {
    * @param {Object} params Parameters for the association, containing at least the following properties:
    */
   create: function(constructor, modelName, params) {
-    var modelNS         = ExtMVC.Model.modelNamespace,
+    var modelNS         = ExtMVC.model.modelNamespace,
         model           = modelNS[modelName],
         associatedModel = modelNS[params.associatedClass],
         associationName = params.associationName;
@@ -76,7 +76,7 @@ ExtMVC.Model.plugin.association = {
    * been created yet, so we keep a list of dependent associations which are to be defined as soon as the
    * model has been created.  This method is called with the Model constructor function, looks up any associations
    * that couldn't previously be defined (as this model did not yet exist), and creates them no
-   * @param {ExtMVC.Model.Base} model The newly created model
+   * @param {ExtMVC.model.Base} model The newly created model
    */
   resolveDependencies: function(model) {
     var dependents = this.dependencies.get(model.prototype.modelName);
@@ -133,11 +133,11 @@ ExtMVC.Model.plugin.association = {
 };
 
 /**
- * @class ExtMVC.Model.plugin.association.Base
+ * @class ExtMVC.model.plugin.association.Base
  * Association Base class which provides basic functionality for other Association classes to build upon
  * Don't use directly - instead use the HasMany or BelongsTo classes.
  */
-ExtMVC.Model.plugin.association.Base = function(ownerClass, associatedClass, config) {
+ExtMVC.model.plugin.association.Base = function(ownerClass, associatedClass, config) {
   config = config || {};
   
   this.ownerClass = ownerClass;
@@ -149,7 +149,7 @@ ExtMVC.Model.plugin.association.Base = function(ownerClass, associatedClass, con
   this.initialize();
 };
 
-ExtMVC.Model.plugin.association.Base.prototype = {
+ExtMVC.model.plugin.association.Base.prototype = {
   /**
    * Sets up default values for foreignKey
    */
@@ -157,11 +157,11 @@ ExtMVC.Model.plugin.association.Base.prototype = {
 };
 
 /**
- * @class ExtMVC.Model.plugin.association.BelongsTo
- * @extends ExtMVC.Model.plugin.association.Base
+ * @class ExtMVC.model.plugin.association.BelongsTo
+ * @extends ExtMVC.model.plugin.association.Base
  * A belongsTo association
  */
-ExtMVC.Model.plugin.association.BelongsTo = Ext.extend(ExtMVC.Model.plugin.association.Base, {
+ExtMVC.model.plugin.association.BelongsTo = Ext.extend(ExtMVC.model.plugin.association.Base, {
   initialize: function() {
     Ext.apply(this, {
       name:       ExtMVC.Inflector.singularize(this.associatedClass.prototype.tableName),
@@ -171,11 +171,11 @@ ExtMVC.Model.plugin.association.BelongsTo = Ext.extend(ExtMVC.Model.plugin.assoc
 });
 
 /**
- * @class ExtMVC.Model.plugin.association.HasMany
- * @extends ExtMVC.Model.plugin.association.Base
+ * @class ExtMVC.model.plugin.association.HasMany
+ * @extends ExtMVC.model.plugin.association.Base
  * A hasMany association
  */
-ExtMVC.Model.plugin.association.HasMany = Ext.extend(ExtMVC.Model.plugin.association.Base, {
+ExtMVC.model.plugin.association.HasMany = Ext.extend(ExtMVC.model.plugin.association.Base, {
   
   /**
    * Set up default values for name etc
@@ -188,4 +188,4 @@ ExtMVC.Model.plugin.association.HasMany = Ext.extend(ExtMVC.Model.plugin.associa
   }
 });
 
-ExtMVC.Model.addPlugin(ExtMVC.Model.plugin.association);
+ExtMVC.model.addPlugin(ExtMVC.model.plugin.association);

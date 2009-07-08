@@ -1,26 +1,26 @@
-Ext.ns('ExtMVC.Model.plugin.validation');
+Ext.ns('ExtMVC.model.plugin.validation');
 
 /**
  * @ignore
  * The Validation classes themselves are defined here.
- * Subclass ExtMVC.Model.plugin.validation.AbstractValidation to create your own validations
+ * Subclass ExtMVC.model.plugin.validation.AbstractValidation to create your own validations
  */
 
 /**
- * @class ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.AbstractValidation
  * Base class for all validations - don't use this directly but use a subclass
  */
-ExtMVC.Model.plugin.validation.AbstractValidation = function(ownerClass, field, config) {
+ExtMVC.model.plugin.validation.AbstractValidation = function(ownerClass, field, config) {
   this.ownerClass = ownerClass;
   this.field = field;
   
   Ext.apply(this, config);
 };
 
-ExtMVC.Model.plugin.validation.AbstractValidation.prototype = {
+ExtMVC.model.plugin.validation.AbstractValidation.prototype = {
   /**
    * Returns the current value of the field to which this validation applies
-   * @param {ExtMVC.Model.Base} instance The model instance to get the value from
+   * @param {ExtMVC.model.Base} instance The model instance to get the value from
    * @return {Mixed} The current value of the field
    */
   getValue: function(instance) {
@@ -38,11 +38,11 @@ ExtMVC.Model.plugin.validation.AbstractValidation.prototype = {
 };
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesPresenceOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesPresenceOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that a field is present
  */
-ExtMVC.Model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
    * @property message
    * @type String
@@ -68,11 +68,11 @@ ExtMVC.Model.plugin.validation.ValidatesPresenceOf = Ext.extend(ExtMVC.Model.plu
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesLengthOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesLengthOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Returns true if the field is within the length bounds imposed.
  */
-ExtMVC.Model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   
   /**
    * @property tooShortMessage
@@ -115,11 +115,11 @@ ExtMVC.Model.plugin.validation.ValidatesLengthOf = Ext.extend(ExtMVC.Model.plugi
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesNumericalityOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesNumericalityOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field is a number
  */
-ExtMVC.Model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   /**
    * @property message
    * @type String
@@ -137,11 +137,11 @@ ExtMVC.Model.plugin.validation.ValidatesNumericalityOf = Ext.extend(ExtMVC.Model
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesInclusionOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesInclusionOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field is one of the allowed values
  */
-ExtMVC.Model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
 
   /**
@@ -152,7 +152,7 @@ ExtMVC.Model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.Model.pl
     config = config || {};
     Ext.applyIf(config, { allowed: [] });
     
-    ExtMVC.Model.plugin.validation.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
+    ExtMVC.model.plugin.validation.ValidatesInclusionOf.superclass.constructor.call(this, m, f, config);
     
     Ext.applyIf(this, {
       message: 'must be one of ' + this.allowed.toSentence('or')
@@ -175,11 +175,11 @@ ExtMVC.Model.plugin.validation.ValidatesInclusionOf = Ext.extend(ExtMVC.Model.pl
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesExclusionOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesExclusionOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field is not one of the allowed values
  */
-ExtMVC.Model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
 
   /**
    * Override Abstract constructor to build the validation message
@@ -189,7 +189,7 @@ ExtMVC.Model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.Model.pl
     config = config || {};
     Ext.applyIf(config, { disallowed: [] });
     
-    ExtMVC.Model.plugin.validation.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
+    ExtMVC.model.plugin.validation.ValidatesExclusionOf.superclass.constructor.call(this, m, f, config);
     
     Ext.applyIf(this, {
       message: 'must not be ' + this.disallowed.toSentence('or')
@@ -213,11 +213,11 @@ ExtMVC.Model.plugin.validation.ValidatesExclusionOf = Ext.extend(ExtMVC.Model.pl
 });
 
 /**
- * @class ExtMVC.Model.plugin.validation.ValidatesFormatOf
- * @extends ExtMVC.Model.plugin.validation.AbstractValidation
+ * @class ExtMVC.model.plugin.validation.ValidatesFormatOf
+ * @extends ExtMVC.model.plugin.validation.AbstractValidation
  * Ensures that the field matches the given regular expression
  */
-ExtMVC.Model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.Model.plugin.validation.AbstractValidation, {
+ExtMVC.model.plugin.validation.ValidatesFormatOf = Ext.extend(ExtMVC.model.plugin.validation.AbstractValidation, {
   
   /**
    * @property message

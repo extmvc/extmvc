@@ -7,7 +7,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @property model
    * @type Function/Null
-   * Defaults to null.  If set to a reference to an ExtMVC.Model subclass, renderView will attempt to dynamically
+   * Defaults to null.  If set to a reference to an ExtMVC.model subclass, renderView will attempt to dynamically
    * scaffold any missing views, if the corresponding view is defined in the ExtMVC.view.scaffold package
    */
   model: null,
@@ -48,7 +48,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to update an existing instance with new values.  If the update was successful the controller fires
    * the 'update' event and then shows a default notice to the user (this.showUpdatedNotice()) and calls this.index().
    * To cancel this default behaviour, return false from any listener on the 'update' event.
-   * @param {ExtMVC.Model.Base} instance The existing instance object
+   * @param {ExtMVC.model.Base} instance The existing instance object
    * @param {Object} updates An object containing updates to apply to the instance
    */
   update: function(instance, updates) {
@@ -70,7 +70,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @action destroy
    * Attempts to delete an existing instance
-   * @param {Mixed} instance The ExtMVC.Model.Base subclass instance to delete.  Will also accept a string/number ID
+   * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
   destroy: function(instance) {
     instance.destroy({
@@ -117,7 +117,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * @action edit
    * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
-   * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.Model.Base
+   * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.model.Base
    * instance, a findById() will be called on this controller's associated model
    */
   edit: function(instance) {
@@ -200,7 +200,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after a successful update. By default this calls showUpdatedNotice and then this.index()
-   * @param {ExtMVC.Model.Base} instance The newly updated instance
+   * @param {ExtMVC.model.Base} instance The newly updated instance
    * @param {Object} updates The updates that were made
    */
   onCreateSuccess: function(instance) {
@@ -212,7 +212,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after an unsuccessful update. By default this simply fires the 'update-failed' event
-   * @param {ExtMVC.Model.Base} instance The instance that could not be updated
+   * @param {ExtMVC.model.Base} instance The instance that could not be updated
    * @param {Object} updates The updates that were attempted to be made
    */
   onCreateFailure: function(instance) {
@@ -221,7 +221,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after a successful update. By default this calls showUpdatedNotice and then this.index()
-   * @param {ExtMVC.Model.Base} instance The newly updated instance
+   * @param {ExtMVC.model.Base} instance The newly updated instance
    * @param {Object} updates The updates that were made
    */
   onUpdateSuccess: function(instance, updates) {
@@ -233,7 +233,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   
   /**
    * Called after an unsuccessful update. By default this simply fires the 'update-failed' event
-   * @param {ExtMVC.Model.Base} instance The instance that could not be updated
+   * @param {ExtMVC.model.Base} instance The instance that could not be updated
    * @param {Object} updates The updates that were attempted to be made
    */
   onUpdateFailure: function(instance, updates) {
@@ -248,21 +248,21 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event create
        * Fired when a new instance has been successfully created
-       * @param {ExtMVC.Model.Base} instance The newly created model instance
+       * @param {ExtMVC.model.Base} instance The newly created model instance
        */
       'create',
       
       /**
        * @event create-failed
        * Fired when an attempt to create a new instance failed
-       * @param {ExtMVC.Model.Base} instance The instance object which couldn't be saved
+       * @param {ExtMVC.model.Base} instance The instance object which couldn't be saved
        */
       'create-failed',
       
       /**
        * @event read
        * Fired when a single instance has been loaded from the database
-       * @param {ExtMVC.Model.Base} instance The instance instance that was loaded
+       * @param {ExtMVC.model.Base} instance The instance instance that was loaded
        */
       'read',
       
@@ -276,7 +276,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event update
        * Fired when an existing instance has been successfully created
-       * @param {ExtMVC.Model.Base} instance The updated instance
+       * @param {ExtMVC.model.Base} instance The updated instance
        * @param {Object} updates The updates object that was supplied
        */
       'update',
@@ -284,7 +284,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event update-failed
        * Fired when an attempty to update an existing instance failed
-       * @param {ExtMVC.Model.Base} instance The instance we were attempting to update
+       * @param {ExtMVC.model.Base} instance The instance we were attempting to update
        * @param {Object} updates The object of updates we were trying to apply
        */
       'update-failed',
@@ -292,14 +292,14 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event delete
        * Fired when an existing instance has been successfully deleteed
-       * @param {ExtMVC.Model.Base} instance The instance that was deleteed
+       * @param {ExtMVC.model.Base} instance The instance that was deleteed
        */
       'delete',
       
       /**
        * @event delete-failed
        * Fired when an attempt to delete an existing instance failed
-       * @param {ExtMVC.Model.Base} instance The instance we were trying to delete
+       * @param {ExtMVC.model.Base} instance The instance we were trying to delete
        */
       'delete-failed',
       
@@ -312,7 +312,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       /**
        * @event edit
        * Fired when an instance is being edited
-       * @param {ExtMVC.Model.Base} instance The instance being edited
+       * @param {ExtMVC.model.Base} instance The instance being edited
        */
       'edit'
     );
