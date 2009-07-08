@@ -623,12 +623,13 @@ String.prototype.toCurrency = function(symbol) {
 };
 
 /**
- * @class ExtMVC.Router
+ * @class ExtMVC.router.Router
  * @extends Object
  * TODO: [DOCS] Give a good description of the Router
  */
-ExtMVC.Router = function() {};
-ExtMVC.Router.prototype = {
+ExtMVC.router.Router = function() {};
+
+ExtMVC.router.Router.prototype = {
   
   /**
    * @property mappings
@@ -882,17 +883,19 @@ ExtMVC.Router.prototype = {
 /**
  * Basic default routes.  Redefine this method inside config/routes.js
  */
-ExtMVC.Router.defineRoutes = function(map) {
+ExtMVC.router.Router.defineRoutes = function(map) {
   map.connect(":controller/:action");
   map.connect(":controller/:action/:id");
 };
 
+Ext.ns('ExtMVC.router');
+
 /**
- * @class ExtMVC.Route
+ * @class ExtMVC.router.Route
  * @extends Object
  * TODO: [DOCS] Rewrite this horrible nonsense
  */
-ExtMVC.Route = function(mappingString, options) {
+ExtMVC.router.Route = function(mappingString, options) {
   this.mappingString = mappingString;
   this.options       = options || {};
   
@@ -908,7 +911,7 @@ ExtMVC.Route = function(mappingString, options) {
   this.paramsInMatchString = this.mappingString.match(this.paramMatchingRegex) || [];
   this.paramsInStringWithOptions = [];
   
-  /**
+  /**1
    * Store and remove any route conditions specified
    */
   this.conditions = this.options.conditions || {};
@@ -925,7 +928,7 @@ ExtMVC.Route = function(mappingString, options) {
   this.matcherRegex = this.convertToUsableRegex(mappingString);
 };
 
-ExtMVC.Route.prototype = {
+ExtMVC.router.Route.prototype = {
   /**
    * @param {url} The url we want to match against this route to see if it matches
    * @return {boolean} Returns true if this route matches the url
