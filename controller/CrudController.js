@@ -147,7 +147,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
   build: function() {
-    this.render('New', {
+    return this.render('New', {
       model       : this.model,
       controller  : this,
       listeners   : this.getBuildViewListeners(),
@@ -162,14 +162,18 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    */
   edit: function(instance) {
     if (instance instanceof Ext.data.Record) {
-      this.render('Edit', {
+      var editView = this.render('Edit', {
         model       : this.model,
         controller  : this,
         listeners   : this.getEditViewListeners(),
         viewsPackage: this.viewsPackage
-      }).loadRecord(instance);
+      });
+      
+      editView.loadRecord(instance);
       
       this.fireEvent('edit', instance);
+      
+      return editView;
     } else {
       var id = instance;
       
