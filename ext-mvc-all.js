@@ -3386,7 +3386,21 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
           stopEvent: true,
           handler:   this.onSave
         }
-      ]
+      ],
+      
+      /**
+       * @property hasSaveButton
+       * @type Boolean
+       * True to include a save button (defaults to true)
+       */
+      hasSaveButton: true,
+
+      /**
+       * @property hasCancelButton
+       * @type Boolean
+       * True to include a cancel button (defaults to true)
+       */
+      hasCancelButton: true
     });
     
     //applyIf applies when buttons: [] is passed, which meant there was no way to
@@ -3469,20 +3483,38 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * @return {Array} An array of Ext.Button objects or configs
    */
   buildButtons: function() {
-    return [
-      {
-        text:    'Save',
-        scope:   this,
-        iconCls: 'save',
-        handler: this.onSave
-      },
-      {
-        text:    'Cancel',
-        scope:   this,
-        iconCls: 'cancel',
-        handler: this.onCancel
-      }
-    ];
+    var buttons = [];
+    
+    if (this.hasSaveButton   === true) buttons.push(this.buildSaveButton());
+    if (this.hasCancelButton === true) buttons.push(this.buildCancelButton());
+    
+    return buttons;
+  },
+  
+  /**
+   * Builds the Save button config. Override this to provide your own
+   * @return {Object/Ext.Button} The button config or object
+   */
+  buildSaveButton: function() {
+    return {
+      text:    'Save',
+      scope:   this,
+      iconCls: 'save',
+      handler: this.onSave
+    };
+  },
+  
+  /**
+   * Builds the Cancel button config. Override this to provide your own
+   * @return {Object/Ext.Button} The button config or object
+   */
+  buildCancelButton: function() {
+    return {
+      text:    'Cancel',
+      scope:   this,
+      iconCls: 'cancel',
+      handler: this.onCancel
+    };
   },
   
   /**
@@ -3536,7 +3568,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * an edit form the cancel event will be called with a single argument - the current instance
    */
   onCancel: function() {
-    this.fireEvent('cancel', this.instance);
+    this.fireEvent('cancel', this.instance, this);
   }
 });
 
