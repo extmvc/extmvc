@@ -1403,11 +1403,16 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
   destroy: function(instance) {
-    instance.destroy({
-      scope:   this,
-      success: this.onDestroySuccess,
-      failure: this.onDestroyFailure
-    });
+    if (instance.destroy == undefined) {
+      //if we're passed an ID instead of an instance
+      this.model.destroy(parseInt(instance, 10));
+    } else {
+      instance.destroy({
+        scope:   this,
+        success: this.onDestroySuccess,
+        failure: this.onDestroyFailure
+      });
+    }
   },
   
   /**
@@ -1460,7 +1465,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
     } else {
       var id = instance;
       
-      this.model.find(id, {
+      this.model.find(parseInt(id, 10), {
         scope  : this,
         success: function(instance) {
           this.edit(instance);
@@ -2244,7 +2249,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
        * @param {Object} options Options (see collectionMethods.create for arguments)
        */
       destroy: function(id, options) {
-        return this.adapter.doDestroy(id, options);
+        return this.adapter.doDestroy(id, options, this);
       }
     };
   },
@@ -2530,8 +2535,15 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
    * @param {Object} options Options object passed to Ext.Ajax.request
    * @return {Number} The Ajax transaction ID
    */
-  doDestroy: function(instance, options) {
+  doDestroy: function(instance, options, constructor) {
     if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter destroy');
+    
+    if (!(instance instanceof Ext.data.Record)) {
+      var id = parseInt(instance, 10);
+      
+      instance = new constructor();
+      instance.set(constructor.prototype.primaryKey, id);
+    }
     
     return Ext.Ajax.request(
       Ext.applyIf(options || {}, {
@@ -3448,6 +3460,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
        * @event save
        * Fired when the user clicks the save button, or presses ctrl + s
        * @param {Object} values The values entered into the form
+       * @param {ExtMVC.view.scaffold.ScaffoldFormPanel} this The form panel
        */
       'save',
       
@@ -3560,7 +3573,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
   onSave: function() {
-    this.fireEvent('save', this.getForm().getValues());
+    this.fireEvent('save', this.getForm().getValues(), this);
   },
   
   /**
@@ -4172,8 +4185,16 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
   onSave: function() {
-    this.fireEvent('save', this.instance, this.getForm().getValues());
+    this.fireEvent('save', this.instance, this.getForm().getValues(), this);
   }
+  
+  /**
+   * @event save
+   * Fired when the user clicks the save button, or presses ctrl + s
+   * @param {ExtMVC.model.Base} instance The existing instance that is to be updated
+   * @param {Object} values The values entered into the form
+   * @param {ExtMVC.view.scaffold.ScaffoldFormPanel} this The form panel
+   */
 });
 
 Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);

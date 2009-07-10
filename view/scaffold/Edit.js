@@ -31,8 +31,16 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
   onSave: function() {
-    this.fireEvent('save', this.instance, this.getForm().getValues());
+    this.fireEvent('save', this.instance, this.getForm().getValues(), this);
   }
+  
+  /**
+   * @event save
+   * Fired when the user clicks the save button, or presses ctrl + s
+   * @param {ExtMVC.model.Base} instance The existing instance that is to be updated
+   * @param {Object} values The values entered into the form
+   * @param {ExtMVC.view.scaffold.ScaffoldFormPanel} this The form panel
+   */
 });
 
 Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);

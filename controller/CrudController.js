@@ -120,11 +120,16 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
   destroy: function(instance) {
-    instance.destroy({
-      scope:   this,
-      success: this.onDestroySuccess,
-      failure: this.onDestroyFailure
-    });
+    if (instance.destroy == undefined) {
+      //if we're passed an ID instead of an instance
+      this.model.destroy(parseInt(instance, 10));
+    } else {
+      instance.destroy({
+        scope:   this,
+        success: this.onDestroySuccess,
+        failure: this.onDestroyFailure
+      });
+    }
   },
   
   /**
@@ -177,7 +182,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
     } else {
       var id = instance;
       
-      this.model.find(id, {
+      this.model.find(parseInt(id, 10), {
         scope  : this,
         success: function(instance) {
           this.edit(instance);

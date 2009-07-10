@@ -167,7 +167,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
        * @param {Object} options Options (see collectionMethods.create for arguments)
        */
       destroy: function(id, options) {
-        return this.adapter.doDestroy(id, options);
+        return this.adapter.doDestroy(id, options, this);
       }
     };
   },

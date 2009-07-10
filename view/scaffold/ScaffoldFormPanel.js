@@ -99,6 +99,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
        * @event save
        * Fired when the user clicks the save button, or presses ctrl + s
        * @param {Object} values The values entered into the form
+       * @param {ExtMVC.view.scaffold.ScaffoldFormPanel} this The form panel
        */
       'save',
       
@@ -211,7 +212,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
   onSave: function() {
-    this.fireEvent('save', this.getForm().getValues());
+    this.fireEvent('save', this.getForm().getValues(), this);
   },
   
   /**
