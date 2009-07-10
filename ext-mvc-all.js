@@ -1459,6 +1459,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
       
       editView.loadRecord(instance);
       
+      this.onEdit(editView, instance);
       this.fireEvent('edit', instance);
       
       return editView;
@@ -1589,6 +1590,14 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   onDestroyFailure: function(instance) {
     this.fireEvent('delete-failed', instance);
   },
+  
+  /**
+   * Called whenever the Edit form has been rendered for a given instance. This is an empty function by default,
+   * which you can override to provide your own logic if needed
+   * @param {Ext.Component} form The rendered Edit form
+   * @param {ExtMVC.model.Base} instance The instance loaded into the form
+   */
+  onEdit: function(form) {},
   
   /**
    * Sets up events emitted by the CRUD Controller's actions
