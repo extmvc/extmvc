@@ -27,7 +27,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
         // this.initializeViewport();
         this.initializeEvents();
 
-        if (this.usesHistory) this.initializeHistory();     
+        if (this.usesHistory === true) this.initializeHistory();     
 
         this.launch();
         this.fireEvent('launched', this);
@@ -66,7 +66,6 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    */
   usesHistory: false,
 
- 
   /**
    * @prop dispatchHistoryOnLoad
    * @type Boolean

@@ -171,7 +171,8 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
         model       : this.model,
         controller  : this,
         listeners   : this.getEditViewListeners(),
-        viewsPackage: this.viewsPackage
+        viewsPackage: this.viewsPackage,
+        id          : String.format("{0}_edit_{1}", this.name, instance.get(instance.primaryKey))
       });
       
       editView.loadRecord(instance);
