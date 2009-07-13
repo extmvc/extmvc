@@ -1917,7 +1917,7 @@ ExtMVC.model = {
     this.setupNames(model);
 
     //add any class methods to the class level
-    for (methodName in classMethods) {
+    for (var methodName in classMethods) {
       if (methodName != 'prototype') model[methodName] = classMethods[methodName];
     };
 
