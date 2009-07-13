@@ -3582,7 +3582,25 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
    * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
   onSave: function() {
-    this.fireEvent('save', this.getForm().getValues(), this);
+    this.fireEvent('save', this.getFormValues(), this);
+  },
+  
+  /**
+   * Gets form values in a nicer way than getForm.getValues() does - calls getValue on each field.
+   * See http://www.diloc.de/blog/2008/03/05/how-to-submit-ext-forms-the-right-way/
+   * @return {Object} key: value pairings of form values
+   */
+  getFormValues: function() {
+    var form   = this.getForm(),
+        values = {};
+    
+    form.items.each(function(item) {
+      var func = (typeof item.getSubmitValue == "function") ? 'getSubmitValue' : 'getValue';
+      
+      values[item.getName()] = item[func]();
+    }, this);
+    
+    return values;
   },
   
   /**
@@ -4194,7 +4212,7 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    * the 'save' event, passing this.getForm().getValues() as the sole argument
    */
   onSave: function() {
-    this.fireEvent('save', this.instance, this.getForm().getValues(), this);
+    this.fireEvent('save', this.instance, this.getFormValues(), this);
   }
   
   /**
