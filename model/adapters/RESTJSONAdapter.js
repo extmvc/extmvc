@@ -24,6 +24,21 @@ ExtMVC.model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.model.plugin.ada
   },
   
   /**
+   * Performs the actual destroy request. This simply adds an 'application/json' content type to the headers
+   */
+  doDestroy: function(instance, options, constructor) {
+    options = options || {};
+    
+    Ext.applyIf(options, {
+      headers: {
+        "Content-type": "application/json"
+      }
+    });
+    
+    ExtMVC.model.plugin.adapter.RESTJSONAdapter.superclass.doDestroy.call(this, instance, options, constructor);
+  },
+  
+  /**
    * Decodes response text received from the server as the result of requesting data for a single record.
    * By default this expects the data to be in the form {"model_name": {"key": "value", "key2", "value 2"}}
    * and would return an object like {"key": "value", "key2", "value 2"}

@@ -46,7 +46,7 @@ ExtMVC.model.define("Flower", {
  * The class builds a simple dependency graph to allow models to extend other models, e.g.:
  * 
 <pre><code>
-//this model definition won't actually be created until SuperUser has been defined
+//this model definition will not actually be created until SuperUser has been defined
 ExtMVC.model.define("SuperUser", {
   extend: "User",
   fields: [
@@ -54,7 +54,7 @@ ExtMVC.model.define("SuperUser", {
   ]
 });
 
-//SuperUser doesn't extend anything, so is created immediately. User is then also created
+//SuperUser does not extend anything, so is created immediately. User is then also created
 ExtMVC.model.define("User", {
   fields: [
     {name: 'id',       type: 'int'},

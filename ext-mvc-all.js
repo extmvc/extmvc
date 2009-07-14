@@ -1747,7 +1747,7 @@ ExtMVC.model.define("Flower", {
  * The class builds a simple dependency graph to allow models to extend other models, e.g.:
  * 
 <pre><code>
-//this model definition won't actually be created until SuperUser has been defined
+//this model definition will not actually be created until SuperUser has been defined
 ExtMVC.model.define("SuperUser", {
   extend: "User",
   fields: [
@@ -1755,7 +1755,7 @@ ExtMVC.model.define("SuperUser", {
   ]
 });
 
-//SuperUser doesn't extend anything, so is created immediately. User is then also created
+//SuperUser does not extend anything, so is created immediately. User is then also created
 ExtMVC.model.define("User", {
   fields: [
     {name: 'id',       type: 'int'},
@@ -2738,6 +2738,21 @@ ExtMVC.model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.model.plugin.ada
     });
     
     ExtMVC.model.plugin.adapter.RESTJSONAdapter.superclass.doSave.apply(this, arguments);
+  },
+  
+  /**
+   * Performs the actual destroy request. This simply adds an 'application/json' content type to the headers
+   */
+  doDestroy: function(instance, options, constructor) {
+    options = options || {};
+    
+    Ext.applyIf(options, {
+      headers: {
+        "Content-type": "application/json"
+      }
+    });
+    
+    ExtMVC.model.plugin.adapter.RESTJSONAdapter.superclass.doDestroy.call(this, instance, options, constructor);
   },
   
   /**
