@@ -3650,20 +3650,29 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
     }
     config.store   = config.store   || this.model.find();
     
-    var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()                : null;
-    var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(config.store) : null;
-
     Ext.applyIf(config, {
-      title:      this.getTitle(),
       viewConfig: { forceFit: true },
       id:         String.format("{0}_index", this.model.prototype.tableName),
 
-      loadMask: true,
+      loadMask: true
+    });
 
-      tbar: tbarConfig,
-      bbar: bbar,
+    ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
+    
+    this.initEvents();
+    this.initListeners();
+  },
+  
+  initComponent: function() {
+    var tbarConfig = this.hasTopToolbar    ? this.buildTopToolbar()              : null;
+    var bbar       = this.hasBottomToolbar ? this.buildBottomToolbar(this.store) : null;
+    
+    Ext.applyIf(this, {
+      title: this.getTitle(),
+      tbar:  tbarConfig,
+      bbar:  bbar,
       
-      keys: [
+      keys:  [
         {
           key:     'a',
           scope:   this,
@@ -3680,13 +3689,9 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
           handler: this.onDelete
         }
       ]
-
     });
-
-    ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
     
-    this.initEvents();
-    this.initListeners();
+    ExtMVC.view.scaffold.Index.superclass.initComponent.apply(this, arguments);
   },
   
   /**
