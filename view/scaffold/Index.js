@@ -125,11 +125,11 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   
   /**
    * Returns the title to give to this grid.  If this view is currently representing a model called User,
-   * this will return "Showing Users". Override to set your own grid title
+   * this will return "All Users". Override to set your own grid title
    * @return {String} The title to give the grid
    */
   getTitle: function() {
-    return String.format("Showing {0}", this.model.prototype.pluralHumanName);
+    return String.format("All {0}", this.model.prototype.pluralHumanName);
   },
   
   /**

@@ -227,9 +227,9 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    */
   getBuildViewListeners: function() {
     return {
-      scope:  this,
+      scope : this,
       cancel: this.index,
-      save:   this.create
+      save  : this.create
     };
   },
   
@@ -247,6 +247,14 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    */
   showUpdatedNotice: function() {
     this.showNotice(String.format("{0} successfully updated", this.model.prototype.singularHumanName));    
+  },
+  
+  /**
+   * Called when an instance has been successfully destroyed.  This just calls this.showNotice
+   * with a default message for this model. Overwrite to provide your own implementation
+   */
+  showDestroyedNotice: function() {
+    this.showNotice(String.format("{0} successfully deleted", this.model.prototype.singularHumanName));    
   },
   
   /**
@@ -298,6 +306,8 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    */
   onDestroySuccess: function(instance) {
     this.fireEvent('delete', instance);
+    
+    this.showDestroyedNotice();
   },
   
   /**
