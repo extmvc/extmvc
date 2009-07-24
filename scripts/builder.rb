@@ -79,7 +79,8 @@ module ExtMVC
                "model/adapters/AbstractAdapter.js", "model/adapters/RESTAdapter.js",  "model/adapters/RESTJSONAdapter.js",
                "model/validations/Validations.js", "model/validations/Errors.js", "model/validations/Plugin.js",
                "os/viewportbuilder/ViewportBuilderManager.js", "os/viewportbuilder/ViewportBuilder.js", 
-               "view/scaffold/ScaffoldFormPanel.js", "view/scaffold/Index.js", "view/scaffold/New.js", "view/scaffold/Edit.js", "view/HasManyEditorGridPanel.js"]
+               "view/scaffold/ScaffoldFormPanel.js", "view/scaffold/Index.js", "view/scaffold/New.js", "view/scaffold/Edit.js",
+               "view/HasManyEditorGridPanel.js", "view/FormWindow.js"]
       
       concatenated_filename = "vendor/mvc/ext-mvc-all.js"
       
