@@ -157,6 +157,8 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
    * @return {Number} The Ajax transaction ID
    */
   doDestroy: function(instance, options, constructor) {
+    var options = options || {};
+    
     if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter destroy');
     
     if (!(instance instanceof Ext.data.Record)) {
@@ -166,10 +168,17 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
       instance.set(constructor.prototype.primaryKey, id);
     }
     
+    //if we were passed a success function, save it here so that we can call it with the instance later
+    var successFn = options.success || Ext.emptyFn;
+    delete options.success;
+    
     return Ext.Ajax.request(
-      Ext.applyIf(options || {}, {
+      Ext.applyIf(options, {
         method: this.destroyMethod,
-        url:    this.instanceUrl(instance)
+        url:    this.instanceUrl(instance),
+        success: function() {
+          successFn.call(options.scope || this, instance);
+        }
       })
     );
   },
