@@ -189,14 +189,16 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
          * TODO: This used to reside in initializeHistory but this.launch() needs to be
          * called before this dispatches so it is temporarily here... ugly though
          */
-        if (this.usesHistory && this.dispatchHistoryOnLoad) {
-          Ext.History.init(function(history) {
-            var hash   = document.location.hash.replace("#", "");
-            var params = this.router.recognise(hash);
-            if (params) {this.dispatch(params);}
-          }, this);
-        } else {
-          Ext.History.init();
+        if (this.usesHistory) {
+          if (this.dispatchHistoryOnLoad === true) {
+            Ext.History.init(function(history) {
+              var hash   = document.location.hash.replace("#", "");
+              var params = this.router.recognise(hash);
+              if (params) {this.dispatch(params);}
+            }, this);
+          } else {
+            Ext.History.init();
+          }
         }
       }
     }, this);
@@ -1066,6 +1068,53 @@ ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
     this.dependencies[dependencyName] = arr;
   }
 });
+
+/**
+ * An extension to Ext.extend which calls the extended object's onExtended function, if it exists
+ * The only lines that are different from vanilla Ext.extend are the 2 before the return sb statement
+ */
+Ext.extend = function(){
+    // inline overrides
+    var io = function(o){
+        for(var m in o){
+            this[m] = o[m];
+        }
+    };
+    var oc = Object.prototype.constructor;
+
+    return function(sb, sp, overrides){
+        if(Ext.isObject(sp)){
+            overrides = sp;
+            sp = sb;
+            sb = overrides.constructor!= oc ? overrides.constructor : function(){sp.apply(this, arguments);};
+        }
+        var F = function(){},
+            sbp,
+            spp = sp.prototype;
+
+        F.prototype = spp;
+        sbp = sb.prototype = new F();
+        sbp.constructor=sb;
+        sb.superclass=spp;
+        if(spp.constructor == oc){
+            spp.constructor=sp;
+        }
+        sb.override = function(o){
+            Ext.override(sb, o);
+        };
+        sbp.superclass = sbp.supr = (function(){
+            return spp;
+        });
+        sbp.override = io;
+        Ext.override(sb, overrides);
+        sb.extend = function(o){Ext.extend(sb, o);};
+        
+        var extendFunction = sb.prototype.onExtended;
+        if (extendFunction) extendFunction.call(sb.prototype);
+        
+        return sb;
+    };
+}();
 
 /**
  * @class ExtMVC.controller.Controller

@@ -36,14 +36,16 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
          * TODO: This used to reside in initializeHistory but this.launch() needs to be
          * called before this dispatches so it is temporarily here... ugly though
          */
-        if (this.usesHistory && this.dispatchHistoryOnLoad) {
-          Ext.History.init(function(history) {
-            var hash   = document.location.hash.replace("#", "");
-            var params = this.router.recognise(hash);
-            if (params) {this.dispatch(params);}
-          }, this);
-        } else {
-          Ext.History.init();
+        if (this.usesHistory) {
+          if (this.dispatchHistoryOnLoad === true) {
+            Ext.History.init(function(history) {
+              var hash   = document.location.hash.replace("#", "");
+              var params = this.router.recognise(hash);
+              if (params) {this.dispatch(params);}
+            }, this);
+          } else {
+            Ext.History.init();
+          }
         }
       }
     }, this);
