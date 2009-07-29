@@ -116,20 +116,22 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   },
   
   /**
-   * Attempts to delete0 an existing instance
+   * Attempts to delete an existing instance
    * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
   destroy: function(instance) {
     if (instance.destroy == undefined) {
-      //if we're passed an ID instead of an instance
-      this.model.destroy(parseInt(instance, 10));
-    } else {
-      instance.destroy({
-        scope:   this,
-        success: this.onDestroySuccess,
-        failure: this.onDestroyFailure
-      });
+      //if we're passed an ID instead of an instance, make a fake model instance
+      var config = {};
+      config[this.model.prototype.primaryKey] = parseInt(instance, 10);
+      var instance = new (this.model)(config);
     }
+
+    instance.destroy({
+      scope:   this,
+      success: this.onDestroySuccess,
+      failure: this.onDestroyFailure
+    });
   },
   
   /**
