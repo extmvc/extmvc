@@ -5,9 +5,12 @@
  * 
 <pre>
 MyApp.views.MyFormWindow = Ext.extend(ExtMVC.view.FormWindow, {
- height: 200,
- width : 400,
- 
+
+ height: 200,
+
+ width : 400,
+
+ 
   buildForm: function() {
     //return your Ext.form.FormPanel here
   }
@@ -80,7 +83,7 @@ ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
    * Called when the user clicks the save button
    */
   onSave: function() {
-    this.fireEvent('save', this.getFormValues());
+    this.fireEvent('save', this.getFormValues(), this);
   },
   
   /**

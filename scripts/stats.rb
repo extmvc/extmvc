@@ -110,7 +110,7 @@ module ExtMVC
       
       # The lines to show, in order
       def line_order
-        [:controller_files, :model_files, :view_files, :lib_files, :controller_specs, :model_specs]
+        [:controller_files, :model_files, :view_files, :lib_files, :controller_specs, :model_specs, :view_specs]
       end
       
       # The arrays to use when calculating totals for project LOC etc
@@ -120,7 +120,7 @@ module ExtMVC
       
       # The arrays to use when calculating totals for project spec LOC etc
       def project_spec_arrays
-        [:controller_specs, :model_specs]
+        [:controller_specs, :model_specs, :view_specs]
       end
       
       # Mappings between method and human names for line headings
@@ -132,7 +132,8 @@ module ExtMVC
           :lib_files        => "Libraries",
           :plugin_files     => "Plugins",
           :controller_specs => "Controller Specs",
-          :model_specs      => "Model Specs"
+          :model_specs      => "Model Specs",
+          :view_specs       => "View Specs"
         }
       end
       
@@ -175,6 +176,10 @@ module ExtMVC
       
       def model_specs
         files_in('spec/models')        
+      end
+      
+      def view_specs
+        files_in('spec/views')
       end
 
       private

@@ -166,16 +166,21 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Renders the custom Edit view if present, otherwise falls back to the default scaffold Edit form
    * @param {Mixed} instance The model instance to edit. If not given an ExtMVC.model.Base
    * instance, a findById() will be called on this controller's associated model
+   * @param {Object} viewConfig Optional config object to pass to the view class constructor
    */
-  edit: function(instance) {
+  edit: function(instance, viewConfig) {
+    viewConfig = viewConfig || {};
+    
     if (instance instanceof Ext.data.Record) {
-      var editView = this.render('Edit', {
+      Ext.applyIf(viewConfig, {
         model       : this.model,
         controller  : this,
         listeners   : this.getEditViewListeners(),
         viewsPackage: this.viewsPackage,
-        id          : String.format("{0}_edit_{1}", this.name, instance.get(instance.primaryKey))
+        id          : String.format("{0}_edit_{1}", this.name, instance.get(instance.primaryKey))        
       });
+      
+      var editView = this.render('Edit', viewConfig);
       
       editView.loadRecord(instance);
       
