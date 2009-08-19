@@ -154,12 +154,16 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
   build: function() {
-    return this.render('New', {
+    var buildView = this.render('New', {
       model       : this.model,
       controller  : this,
       listeners   : this.getBuildViewListeners(),
       viewsPackage: this.viewsPackage
     });
+    
+    this.onBuild(buildView);
+    
+    return buildView;
   },
 
   /**
@@ -325,6 +329,13 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   onDestroyFailure: function(instance) {
     this.fireEvent('delete-failed', instance);
   },
+  
+  /**
+   * Called whenever the 'New' form has been rendered for a given instance. This is an empty function by default,
+   * which you can override to provide your own logic if needed
+   * @param {Ext.Component} form The rendered 'New' form
+   */
+  onBuild: function(form) {},
   
   /**
    * Called whenever the Edit form has been rendered for a given instance. This is an empty function by default,

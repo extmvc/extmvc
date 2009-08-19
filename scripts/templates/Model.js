@@ -1,8 +1,8 @@
 /**
  * @class <%= @name %>
- * @extends ExtMVC.Model
+ * @extends ExtMVC.model.Base
  */
-ExtMVC.Model.define("<%= @name %>", {
+ExtMVC.model.define("<%= @name %>", {
   fields:    [
 <%= @fields %>
   ]

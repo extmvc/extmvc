@@ -47,6 +47,151 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
   },
   
   /**
+   * @property bootParams
+   * @type Object
+   * An object which contains all boot parameters. These are used during the boot phase,
+   * and can be set using GET params after the '?' in the url
+   */
+  bootParams: {
+    environment: 'production'
+  },
+  
+  /**
+   * @property globalEnvironmentSettings
+   * @type Object
+   * All default environment settings that will be Ext.applyIf'd to the current environment.
+   * These are things that don't tend to change between applications, but you can override them if you need to
+   */
+  globalEnvironmentSettings: {
+    pluginsDir  : '../vendor/plugins',
+    libDir      : '../lib',
+    configDir   : '../config',
+    overridesDir: '../config/overrides',
+    appDir      : '../app',
+    vendor      : ['mvc'],
+    mvcFilename : 'ext-mvc-all-min',
+    config      : ['initialize', 'database', 'routes']
+  },
+  
+  /**
+   * Boots up the application.
+   * TODO: When it works, document this :)
+   */
+  boot: function() {
+    var args = window.location.href.split("?")[1];
+    
+    /**
+     * Read config data from url parameters
+     */
+    if (args != undefined) {
+      Ext.each(args.split("&"), function(arg) {
+        var splits = arg.split("="),
+            key    = splits[0],
+            value  = splits[1];
+
+        this.bootParams[key] = value;
+      }, this);
+    }
+    
+    
+    //load up the environment
+    Ext.Ajax.request({
+      url: '../config/environment.json',
+      scope  : this,
+      success: function(response, options) {
+        var envName = this.bootParams.environment;
+
+        this.addEnvironmentSettings(envName, this.globalEnvironmentSettings);        
+        this.addSettingsFromEnvironmentFile(response);
+        this.setCurrentEnvironment(envName);
+
+        Ext.Ajax.request({
+          url   : String.format("../config/environments/{0}.json", envName),
+          success: function(response, options) {
+            this.addSettingsFromEnvironmentFile(response);
+            
+            this.onEnvironmentLoaded(this.getCurrentEnvironmentSettings());
+          },
+          scope  : this
+        });
+      },
+      failure: function() {
+        Ext.Msg.alert(
+          'Could not load environment',
+          'The ' + config.environment  + ' environment could not be found'
+        );
+      }
+    });
+  },
+  
+  /**
+   * Called when the environment files have been loaded and application load can begin
+   * @param {Object} environment The current environment object
+   */
+  onEnvironmentLoaded: function(env) {
+    var order = ['overrides', 'config', 'plugins', 'models', 'controllers', 'views'],
+        files = [];
+    
+    // Ext.each(order, function(fileList) {
+    //   var dir = env[fileList + "Dir"] || String.format("../app/{0}", fileList);
+    //   
+    //   Ext.each(env[fileList], function(file) {
+    //     files.push(String.format("{0}/{1}.js", dir, file));
+    //   }, this);
+    // }, this);
+    
+    Ext.each(env.overrides, function(file) {
+      files.push(String.format("{0}/{1}.js", env.overridesDir, file));
+    }, this);
+    
+    Ext.each(env.config, function(file) {
+      files.push(String.format("{0}/{1}.js", env.configDir, file));
+    }, this);
+    
+    Ext.each(env.plugins, function(file) {
+      files.push(String.format("{0}/{1}/{2}-all.js", env.pluginsDir, file, file));
+    }, this);
+    
+    Ext.each(env.models, function(file) {
+      files.push(String.format("{0}/models/{1}.js", env.appDir, file));
+    }, this);
+    
+    Ext.each(env.controllers, function(file) {
+      files.push(String.format("{0}/controllers/{1}Controller.js", env.appDir, file));
+    }, this);
+    
+    Ext.iterate(env.views, function(dir, fileList) {
+      Ext.each(fileList, function(file) {
+        files.push(String.format("{0}/views/{1}/{2}.js", env.appDir, dir, file));
+      }, this);
+    }, this);
+    
+    var fragment = "";
+    for (var i=0; i < files.length; i++) {
+      fragment += String.format("<script type\"text/javascript\" src=\"{0}\"></script>", files[i]);
+    };
+
+    Ext.getBody().createChild(fragment);
+    
+    // Ext.onReady(function() {
+    //   console.log('hmm');
+    //   console.log('test');
+    //   console.log(this);
+    //   this.app.onReady();
+    // }, this);
+  },
+
+  
+  /**
+   * @private
+   * Takes the response of an AJAX request, encodes it into a JSON object and adds to the current environment
+   */
+  addSettingsFromEnvironmentFile: function(response) {
+    var envJSON = Ext.decode(response.responseText);
+    this.addEnvironmentSettings(this.bootParams.environment, envJSON);
+  },
+  
+  /**
    * @property controllers
    * When this.registerController('application', MyApp.ApplicationController) is called,
    * the ApplicationController class is registered here under the 'application' key.

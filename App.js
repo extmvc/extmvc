@@ -21,34 +21,40 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
     
     this.initializeNamespaces();
     
-    Ext.onReady(function() {
-      if (this.fireEvent('before-launch', this)) {
-        this.initializeRouter();
-        // this.initializeViewport();
-        this.initializeEvents();
+    Ext.onReady(this.onReady, this);
+  },
+  
+  /**
+   * @private
+   * Called when Ext.onReadt fires
+   */
+  onReady: function() {
+    if (this.fireEvent('before-launch', this)) {
+      this.initializeRouter();
+      // this.initializeViewport();
+      this.initializeEvents();
 
-        if (this.usesHistory === true) this.initializeHistory();     
+      if (this.usesHistory === true) this.initializeHistory();     
 
-        this.launch();
-        this.fireEvent('launched', this);
-        
-        /**
-         * TODO: This used to reside in initializeHistory but this.launch() needs to be
-         * called before this dispatches so it is temporarily here... ugly though
-         */
-        if (this.usesHistory) {
-          if (this.dispatchHistoryOnLoad === true) {
-            Ext.History.init(function(history) {
-              var hash   = document.location.hash.replace("#", "");
-              var params = this.router.recognise(hash);
-              if (params) {this.dispatch(params);}
-            }, this);
-          } else {
-            Ext.History.init();
-          }
+      this.launch();
+      this.fireEvent('launched', this);
+      
+      /**
+       * TODO: This used to reside in initializeHistory but this.launch() needs to be
+       * called before this dispatches so it is temporarily here... ugly though
+       */
+      if (this.usesHistory) {
+        if (this.dispatchHistoryOnLoad === true) {
+          Ext.History.init(function(history) {
+            var hash   = document.location.hash.replace("#", "");
+            var params = this.router.recognise(hash);
+            if (params) {this.dispatch(params);}
+          }, this);
+        } else {
+          Ext.History.init();
         }
       }
-    }, this);
+    }
   },
     
   /**
