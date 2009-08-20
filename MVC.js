@@ -131,7 +131,7 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
   onEnvironmentLoaded: function(env) {
     var order = ['overrides', 'config', 'plugins', 'models', 'controllers', 'views'],
         files = [];
-    
+        
     // Ext.each(order, function(fileList) {
     //   var dir = env[fileList + "Dir"] || String.format("../app/{0}", fileList);
     //   
@@ -160,25 +160,27 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
       files.push(String.format("{0}/controllers/{1}Controller.js", env.appDir, file));
     }, this);
     
+    var body = Ext.getBody();
+    
     Ext.iterate(env.views, function(dir, fileList) {
       Ext.each(fileList, function(file) {
         files.push(String.format("{0}/views/{1}/{2}.js", env.appDir, dir, file));
       }, this);
     }, this);
     
-    var fragment = "";
-    for (var i=0; i < files.length; i++) {
-      fragment += String.format("<script type\"text/javascript\" src=\"{0}\"></script>", files[i]);
-    };
-
-    Ext.getBody().createChild(fragment);
-    
-    // Ext.onReady(function() {
-    //   console.log('hmm');
-    //   console.log('test');
-    //   console.log(this);
-    //   this.app.onReady();
-    // }, this);
+    Ext.each(files, function(file, index) {
+      var script = body.createChild({
+        tag : 'script',
+        type: 'text/javascript',
+        src : file
+      }, null, true);
+      
+      if (index + 1 == files.length) {
+        script.onload = function() {
+          ExtMVC.app.onReady();
+        };
+      };
+    }, this);
   },
 
   

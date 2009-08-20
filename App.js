@@ -21,7 +21,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
     
     this.initializeNamespaces();
     
-    Ext.onReady(this.onReady, this);
+    // Ext.onReady(this.onReady, this);
   },
   
   /**
@@ -45,9 +45,18 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
        */
       if (this.usesHistory) {
         if (this.dispatchHistoryOnLoad === true) {
+          /**
+           * FIXME: This is needed here currently because ExtMVC loads application files via an environment,
+           * but doing this never triggers any Ext.onReady handlers to fire. This, in turn, means that History
+           * cannot initialize as it checks Ext.isReady first. At this point though, we can be sure that everything
+           * is loaded, but it's still a stupid hack
+           */
+          Ext.isReady = true;
+          
           Ext.History.init(function(history) {
             var hash   = document.location.hash.replace("#", "");
             var params = this.router.recognise(hash);
+            
             if (params) {this.dispatch(params);}
           }, this);
         } else {
