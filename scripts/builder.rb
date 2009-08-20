@@ -74,7 +74,8 @@ module ExtMVC
     def self.mvc
       # Files to build in their dependency order. This is a bit gash :/
       files = ["MVC.js", "App.js",
-               "lib/Inflector.js", "lib/Array.js", "lib/String.js", "lib/Router.js", "lib/Route.js", "lib/Dependencies.js",
+               "lib/Inflector.js","lib/Array.js", "lib/String.js", "lib/Router.js", "lib/Route.js", "lib/Dependencies.js",
+               "lib/Booter.js", "lib/Environment.js",
                "overrides/Ext.extend.js", "controller/Controller.js", "controller/CrudController.js",
                "model/Model.js", "model/Base.js",
                "model/adapters/AbstractAdapter.js", "model/adapters/RESTAdapter.js",  "model/adapters/RESTJSONAdapter.js",

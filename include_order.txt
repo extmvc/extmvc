@@ -1,0 +1,11 @@
+# This doesn't do anything currently, but should refactor the Plugin builder into builder.rb, then
+# use the include_order.txt reading code to build MVC itself instead of updating builder.rb all the time
+# Might look something like this:
+
+MVC.js
+App.js
+lib/*.js
+overrides/*.js
+controller/*.js
+model/**/*/js
+view/**/*.js

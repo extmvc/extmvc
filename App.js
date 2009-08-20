@@ -26,7 +26,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   
   /**
    * @private
-   * Called when Ext.onReadt fires
+   * Called when Ext.onReady fires
    */
   onReady: function() {    
     if (this.fireEvent('before-launch', this)) {
