@@ -3833,51 +3833,6 @@ ExtMVC.model.plugin.validation.Plugin = {
 ExtMVC.model.addPlugin(ExtMVC.model.plugin.validation.Plugin);
 
 /**
- * A simple manager for registering and retrieving named ViewportBuilders
- * @class ExtMVC.ViewportBuilderManager
- */
-ExtMVC.ViewportBuilderManager = {
-  
-  /**
-   * @property viewportBuilders
-   * @type Object
-   * Key/value pairs for registered viewport builders.  Private
-   */
-  viewportBuilders: {},
-  
-  /**
-   * Registers a ViewportBuilder with the manager
-   * @param {String} name String name for this ViewportBuilder (e.g. 'desktop')
-   * @param {Function} constructor A reference to the constructor of the ViewportBuilder
-   */
-  register: function(name, constructor) {
-    this.viewportBuilders[name] = constructor;
-  },
-  
-  find: function(name, config) {
-    var c = this.viewportBuilders[name];
-    if (c) {
-      return new c(config);
-    };
-  }
-};
-
-ExtMVC.ViewportBuilder = function(config) {
-  this.initialConfig = config;
-};
-
-ExtMVC.ViewportBuilder.prototype = {
-  
-  /**
-   * Abstract function which should be overridden by your implementation
-   * @param {ExtMVC.OS} os A reference to the OS.  Usually a builder would set 
-   * os.viewport = new Ext.Viewport({...}) and return the os at the end of the function
-   * @return {ExtMVC.OS} The operating system as passed in parameters after viewport is built
-   */
-  build: Ext.emptyFn
-};
-
-/**
  * @class ExtMVC.view.scaffold.ScaffoldFormPanel
  * @extends Ext.form.FormPanel
  * Base class for any scaffold form panel (e.g. new and edit forms)
