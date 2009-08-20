@@ -1284,9 +1284,17 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
       id: 'loading',
       cn: [{
         cls: 'loading-indicator',
-        html: 'Loading...'
+        html: this.getLoadingMaskMessage()
       }]
     });
+  },
+  
+  /**
+   * Returns the loading mask message string. Override this to provide your own
+   * @return {String} The message to place inside the loading mask (defaults to "Loading...")
+   */
+  getLoadingMaskMessage: function() {
+    return "Loading...";
   },
   
   /**
