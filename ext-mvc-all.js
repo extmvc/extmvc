@@ -25,25 +25,32 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
     this.getEnvSettings = this.getCurrentEnvironmentSettings;
   },
   
-  /**
-   * Sets up Ext MVC with application-specific configuration. Internally, this creates a new
-   * Ext.App instance and assigns it to the 'name' property inside the config object you pass in.
-   * If not present, this defaults to 'MyApp'.  The config object is passed straight into ExtMVC.App's
-   * constructor, so any of ExtMVC.App's configuration options can be set this way. Sample usage:
-   * ExtMVC.setup({
-   *   name: 'MyApp',
-   *   usesHistory: true
-   * });
-   * This sets up an ExtMVC.App instance in the global variable MyApp, which is
-   * the only global variable your application should need.
-   * It automatically sets up namespaces for models, views and controllers, e.g.:
-   * MyApp.models, MyApp.views, MyApp.controllers
-   *
-   * @param {Object} config Application configuration
-   */
-  setup: function(config) {
-    this.app = new ExtMVC.App(config);
-    this.name = this.app.name;
+  // /**
+  //  * Sets up Ext MVC with application-specific configuration. Internally, this creates a new
+  //  * Ext.App instance and assigns it to the 'name' property inside the config object you pass in.
+  //  * If not present, this defaults to 'MyApp'.  The config object is passed straight into ExtMVC.App's
+  //  * constructor, so any of ExtMVC.App's configuration options can be set this way. Sample usage:
+  //  * ExtMVC.setup({
+  //  *   name: 'MyApp',
+  //  *   usesHistory: true
+  //  * });
+  //  * This sets up an ExtMVC.App instance in the global variable MyApp, which is
+  //  * the only global variable your application should need.
+  //  * It automatically sets up namespaces for models, views and controllers, e.g.:
+  //  * MyApp.models, MyApp.views, MyApp.controllers
+  //  *
+  //  * @param {Object} config Application configuration
+  //  */
+  // setup: function(config) {
+  //   this.app = new ExtMVC.App(config);
+  //   this.name = this.app.name;
+  // },
+  
+  setApplication: function(app) {
+    this.app = app;
+    this.name = app.name;
+    
+    ExtMVC.model.modelNamespace = window[app.name].models;
   },
   
   /**
@@ -1113,7 +1120,8 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
     this.on({
       scope                     : this,
       'environment-loaded'      : this.loadApplicationFiles,
-      'application-files-loaded': this.launchApp
+      'application-files-loaded': this.launchApp,
+      'boot-complete'           : this.onBootComplete
     });
   },
   
@@ -1128,6 +1136,12 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
        * @param {ExtMVC.lib.Booter} this The Booter instance
        */
       'before-boot',
+      
+      /**
+       * @event boot-complete
+       * Fires when the entire boot sequence has been completed
+       */
+      'boot-complete',
       
       /**
        * @event environment-loaded
@@ -1157,6 +1171,13 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
     if (this.useLoadingMask) this.addLoadingMask();
     
     this.loadEnvironment();
+  },
+  
+  /**
+   * Called when the app has been fully booted. Override to provide you own logic (defaults to an empty function)
+   */
+  onBootComplete: function() {
+    
   },
   
   /**
@@ -1261,6 +1282,7 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
     if (this.useLoadingMask) this.removeLoadingMask();
     
     this.fireEvent('application-launched');
+    this.fireEvent('boot-complete');
   },
   
   /**
@@ -1298,13 +1320,21 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
   },
   
   /**
+   * @property loadingMaskFadeDelay
+   * @type Number
+   * Number of milliseconds after app launch is called before the loading mask will fade away.
+   * Gives your app a little time to draw its UI (defaults to 250)
+   */
+  loadingMaskFadeDelay: 250,
+  
+  /**
    * Fades out the loading mask (called after bootup is complete)
    */
   removeLoadingMask: function() {
     (function(){  
       Ext.get('loading').remove();  
       Ext.get('loading-mask').fadeOut({remove:true});  
-    }).defer(300);
+    }).defer(this.loadingMaskFadeDelay);
   },
   
   /**
@@ -1435,7 +1465,7 @@ ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
       appDir      : '../app',
       vendor      : ['mvc'],
       mvcFilename : 'ext-mvc-all-min',
-      config      : ['initialize', 'database', 'routes']
+      config      : ['../app/App', 'database', 'routes']
     });
   },
   

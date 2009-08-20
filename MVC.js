@@ -25,25 +25,32 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
     this.getEnvSettings = this.getCurrentEnvironmentSettings;
   },
   
-  /**
-   * Sets up Ext MVC with application-specific configuration. Internally, this creates a new
-   * Ext.App instance and assigns it to the 'name' property inside the config object you pass in.
-   * If not present, this defaults to 'MyApp'.  The config object is passed straight into ExtMVC.App's
-   * constructor, so any of ExtMVC.App's configuration options can be set this way. Sample usage:
-   * ExtMVC.setup({
-   *   name: 'MyApp',
-   *   usesHistory: true
-   * });
-   * This sets up an ExtMVC.App instance in the global variable MyApp, which is
-   * the only global variable your application should need.
-   * It automatically sets up namespaces for models, views and controllers, e.g.:
-   * MyApp.models, MyApp.views, MyApp.controllers
-   *
-   * @param {Object} config Application configuration
-   */
-  setup: function(config) {
-    this.app = new ExtMVC.App(config);
-    this.name = this.app.name;
+  // /**
+  //  * Sets up Ext MVC with application-specific configuration. Internally, this creates a new
+  //  * Ext.App instance and assigns it to the 'name' property inside the config object you pass in.
+  //  * If not present, this defaults to 'MyApp'.  The config object is passed straight into ExtMVC.App's
+  //  * constructor, so any of ExtMVC.App's configuration options can be set this way. Sample usage:
+  //  * ExtMVC.setup({
+  //  *   name: 'MyApp',
+  //  *   usesHistory: true
+  //  * });
+  //  * This sets up an ExtMVC.App instance in the global variable MyApp, which is
+  //  * the only global variable your application should need.
+  //  * It automatically sets up namespaces for models, views and controllers, e.g.:
+  //  * MyApp.models, MyApp.views, MyApp.controllers
+  //  *
+  //  * @param {Object} config Application configuration
+  //  */
+  // setup: function(config) {
+  //   this.app = new ExtMVC.App(config);
+  //   this.name = this.app.name;
+  // },
+  
+  setApplication: function(app) {
+    this.app = app;
+    this.name = app.name;
+    
+    ExtMVC.model.modelNamespace = window[app.name].models;
   },
   
   /**
