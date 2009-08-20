@@ -75,9 +75,13 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
   
   /**
    * Boots up the application.
-   * TODO: When it works, document this :)
+   * @param {Object} config Optional config object.
    */
-  boot: function() {
+  boot: function(config) {
+    Ext.apply(this.bootParams, config || {}, { 
+      callback: Ext.emptyFn
+    });
+    
     var args = window.location.href.split("?")[1];
     
     /**
@@ -92,7 +96,6 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
         this.bootParams[key] = value;
       }, this);
     }
-    
     
     //load up the environment
     Ext.Ajax.request({
@@ -216,57 +219,9 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
         controllerFiles = [],
         viewFiles       = [];
     
-    var loadFiles = function(fileList, onLoadFn, scope) {
-      var fragment    = document.createDocumentFragment(),
-          numFiles    = fileList.length,
-          loadedFiles = 0;
-      
-      Ext.each(fileList, function(file, index) {
-        var script = document.createElement('script');
-        script.type = "text/javascript";
-        script.src = file;
-        
-        script.onload = function() {
-          loadedFiles ++;
-          
-          // console.log(loadedFiles + " of " + numFiles);
-          if (numFiles == loadedFiles && Ext.isFunction(onLoadFn)) {
-            onLoadFn.call(scope || this);
-          }
-        };
-        
-        fragment.appendChild(script);  
-      }, this);
-      
-      document.getElementsByTagName("head")[0].appendChild(fragment);
-    };
-    
-    var loadFilesInOrder = function(fileList, onLoadFn, scope) {
-      if (Ext.isSafari) {
-        var numFiles    = fileList.length,
-            loadedFiles = 0;
-        
-        var loadFileIndex = function(index) {
-          loadFiles([fileList[index]], onFileLoaded);
-        };
-        
-        var onFileLoaded = function(response) {
-          loadedFiles ++;
-          
-          // console.log(loadedFiles + " !!of " + numFiles);
-          if (numFiles == loadedFiles && Ext.isFunction(onLoadFn)) {
-            onLoadFn.call(scope || this);
-          } else {
-            loadFileIndex(loadedFiles);
-          }
-        };
-        
-        loadFileIndex(0);
-        
-      } else {
-        loadFiles.apply(this, arguments);
-      }
-    };
+    // var groups = {
+    //   'base': {preserveOrder: false, }
+    // };
     
     Ext.each(env.overrides, function(file) {
       baseFiles.push(String.format("{0}/{1}.js", env.overridesDir, file));
@@ -299,16 +254,9 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
         this.loadFiles(modelFiles, false, function() {
           this.loadFiles(controllerFiles, true, function() {
             this.loadFiles(viewFiles, true, function() {
-              // console.log(Ext.app);
-              // console.log(Ext.isReady);
-              // 
-              // console.log(GetIt);
-              // console.log(GetIt.models);
-              // console.log(GetIt.controllers);
-              // console.log(GetIt.views);
-              // 
-              // console.log(ExtMVC.app);
               ExtMVC.app.onReady();
+              
+              this.bootParams.callback();
             });
           });
         });
@@ -4032,7 +3980,6 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
 
     ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
     
-    this.initEvents();
     this.initListeners();
   },
   
@@ -4092,6 +4039,8 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
        */
       'delete'
     );
+    
+    ExtMVC.view.scaffold.Index.superclass.initEvents.apply(this, arguments);
   },
   
   /**

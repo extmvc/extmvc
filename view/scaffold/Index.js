@@ -28,7 +28,6 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
 
     ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
     
-    this.initEvents();
     this.initListeners();
   },
   
@@ -88,6 +87,8 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
        */
       'delete'
     );
+    
+    ExtMVC.view.scaffold.Index.superclass.initEvents.apply(this, arguments);
   },
   
   /**
