@@ -125,62 +125,185 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
   },
   
   /**
+   * Creates and returns a script tag, but does not place it into the document. If a callback function
+   * is passed, this is called when the script has been loaded
+   * @param {String} filename The name of the file to create a script tag for
+   * @param {Function} callback Optional callback, which is called when the script has been loaded
+   * @return {Element} The new script ta
+   */
+  buildScriptTag: function(filename, callback) {
+    var script = document.createElement('script');
+    script.type = "text/javascript";
+    script.src = filename;
+    
+    script.onload = callback;
+    
+    return script;
+  },
+  
+  /**
+   * Loads a given set of application .js files. Calls the callback function when all files have been loaded
+   * Set preserveOrder to true to ensure non-parallel loading of files, if load ordering is important
+   * @param {Array} fileList Array of all files to load
+   * @param {Boolean} preserveOrder True to make files load in serial, one after the other (defaults to false)
+   * @param {Function} callback Callback to call after all files have been loaded
+   * @param {Object} scope The scope to call the callback in
+   */
+  loadFiles: function(fileList, preserveOrder, callback, scope) {
+    var scope       = scope || this,
+        head        = document.getElementsByTagName("head")[0],
+        fragment    = document.createDocumentFragment(),
+        numFiles    = fileList.length,
+        loadedFiles = 0;
+      
+    /**
+     * Loads a particular file from the fileList by index. This is used when preserving order
+     */
+    var loadFileIndex = function(index) {
+      head.appendChild(
+        ExtMVC.buildScriptTag(fileList[index], onFileLoaded, scope)
+      );
+    };
+    
+    /**
+     * Callback function which is called after each file has been loaded. This calls the callback
+     * passed to loadFiles once the final file in the fileList has been loaded
+     */
+    var onFileLoaded = function() {
+      loadedFiles ++;
+
+      //if this was the last file, call the callback, otherwise load the next file
+      if (numFiles == loadedFiles && Ext.isFunction(callback)) {
+        callback.call(scope);
+      } else {
+        if (preserveOrder === true) loadFileIndex(loadedFiles);
+      }
+    };
+    
+    if (preserveOrder === true) {
+      loadFileIndex(0);
+    } else {
+      //load each file (most browsers will do this in parallel)
+      Ext.each(fileList, function(file, index) {
+        fragment.appendChild(
+          ExtMVC.buildScriptTag(file, onFileLoaded)
+        );  
+      }, this);
+
+      head.appendChild(fragment);
+    }
+  },
+  
+  /**
    * Called when the environment files have been loaded and application load can begin
    * @param {Object} environment The current environment object
    */
   onEnvironmentLoaded: function(env) {
-    var order = ['overrides', 'config', 'plugins', 'models', 'controllers', 'views'],
-        files = [];
+    var order           = ['overrides', 'config', 'plugins', 'models', 'controllers', 'views'],
+        baseFiles       = [],
+        pluginFiles     = [],
+        modelFiles      = [],
+        controllerFiles = [],
+        viewFiles       = [];
+    
+    var loadFiles = function(fileList, onLoadFn, scope) {
+      var fragment    = document.createDocumentFragment(),
+          numFiles    = fileList.length,
+          loadedFiles = 0;
+      
+      Ext.each(fileList, function(file, index) {
+        var script = document.createElement('script');
+        script.type = "text/javascript";
+        script.src = file;
         
-    // Ext.each(order, function(fileList) {
-    //   var dir = env[fileList + "Dir"] || String.format("../app/{0}", fileList);
-    //   
-    //   Ext.each(env[fileList], function(file) {
-    //     files.push(String.format("{0}/{1}.js", dir, file));
-    //   }, this);
-    // }, this);
+        script.onload = function() {
+          loadedFiles ++;
+          
+          // console.log(loadedFiles + " of " + numFiles);
+          if (numFiles == loadedFiles && Ext.isFunction(onLoadFn)) {
+            onLoadFn.call(scope || this);
+          }
+        };
+        
+        fragment.appendChild(script);  
+      }, this);
+      
+      document.getElementsByTagName("head")[0].appendChild(fragment);
+    };
+    
+    var loadFilesInOrder = function(fileList, onLoadFn, scope) {
+      if (Ext.isSafari) {
+        var numFiles    = fileList.length,
+            loadedFiles = 0;
+        
+        var loadFileIndex = function(index) {
+          loadFiles([fileList[index]], onFileLoaded);
+        };
+        
+        var onFileLoaded = function(response) {
+          loadedFiles ++;
+          
+          // console.log(loadedFiles + " !!of " + numFiles);
+          if (numFiles == loadedFiles && Ext.isFunction(onLoadFn)) {
+            onLoadFn.call(scope || this);
+          } else {
+            loadFileIndex(loadedFiles);
+          }
+        };
+        
+        loadFileIndex(0);
+        
+      } else {
+        loadFiles.apply(this, arguments);
+      }
+    };
     
     Ext.each(env.overrides, function(file) {
-      files.push(String.format("{0}/{1}.js", env.overridesDir, file));
+      baseFiles.push(String.format("{0}/{1}.js", env.overridesDir, file));
     }, this);
     
     Ext.each(env.config, function(file) {
-      files.push(String.format("{0}/{1}.js", env.configDir, file));
+      baseFiles.push(String.format("{0}/{1}.js", env.configDir, file));
     }, this);
     
     Ext.each(env.plugins, function(file) {
-      files.push(String.format("{0}/{1}/{2}-all.js", env.pluginsDir, file, file));
+      pluginFiles.push(String.format("{0}/{1}/{2}-all.js", env.pluginsDir, file, file));
     }, this);
     
     Ext.each(env.models, function(file) {
-      files.push(String.format("{0}/models/{1}.js", env.appDir, file));
+      modelFiles.push(String.format("{0}/models/{1}.js", env.appDir, file));
     }, this);
     
     Ext.each(env.controllers, function(file) {
-      files.push(String.format("{0}/controllers/{1}Controller.js", env.appDir, file));
+      controllerFiles.push(String.format("{0}/controllers/{1}Controller.js", env.appDir, file));
     }, this);
-    
-    var body = Ext.getBody();
     
     Ext.iterate(env.views, function(dir, fileList) {
       Ext.each(fileList, function(file) {
-        files.push(String.format("{0}/views/{1}/{2}.js", env.appDir, dir, file));
+        viewFiles.push(String.format("{0}/views/{1}/{2}.js", env.appDir, dir, file));
       }, this);
     }, this);
     
-    Ext.each(files, function(file, index) {
-      var script = body.createChild({
-        tag : 'script',
-        type: 'text/javascript',
-        src : file
-      }, null, true);
-      
-      if (index + 1 == files.length) {
-        script.onload = function() {
-          ExtMVC.app.onReady();
-        };
-      };
-    }, this);
+    this.loadFiles(baseFiles, false, function() {
+      this.loadFiles(pluginFiles, false, function() {
+        this.loadFiles(modelFiles, false, function() {
+          this.loadFiles(controllerFiles, true, function() {
+            this.loadFiles(viewFiles, true, function() {
+              // console.log(Ext.app);
+              // console.log(Ext.isReady);
+              // 
+              // console.log(GetIt);
+              // console.log(GetIt.models);
+              // console.log(GetIt.controllers);
+              // console.log(GetIt.views);
+              // 
+              // console.log(ExtMVC.app);
+              ExtMVC.app.onReady();
+            });
+          });
+        });
+      });
+    });
   },
 
   
@@ -328,7 +451,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * @private
    * Called when Ext.onReadt fires
    */
-  onReady: function() {
+  onReady: function() {    
     if (this.fireEvent('before-launch', this)) {
       this.initializeRouter();
       // this.initializeViewport();
@@ -345,14 +468,6 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
        */
       if (this.usesHistory) {
         if (this.dispatchHistoryOnLoad === true) {
-          /**
-           * FIXME: This is needed here currently because ExtMVC loads application files via an environment,
-           * but doing this never triggers any Ext.onReady handlers to fire. This, in turn, means that History
-           * cannot initialize as it checks Ext.isReady first. At this point though, we can be sure that everything
-           * is loaded, but it's still a stupid hack
-           */
-          Ext.isReady = true;
-          
           Ext.History.init(function(history) {
             var hash   = document.location.hash.replace("#", "");
             var params = this.router.recognise(hash);
