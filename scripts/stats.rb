@@ -151,7 +151,7 @@ module ExtMVC
       end
       
       def controller_files
-        files_in('app/controllers') + ['app/OS.js']
+        files_in('app/controllers') + ['app/App.js']
       end
       
       def model_files

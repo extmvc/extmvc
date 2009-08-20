@@ -1176,9 +1176,7 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
   /**
    * Called when the app has been fully booted. Override to provide you own logic (defaults to an empty function)
    */
-  onBootComplete: function() {
-    
-  },
+  onBootComplete: function() {},
   
   /**
    * Loads up the current environment by loading config/environment.json, and the appropriate file from within
@@ -1233,7 +1231,7 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
     }, this);
     
     Ext.each(env.config, function(file) {
-      baseFiles.push(String.format("{0}/{1}.js", env.configDir, file));
+      baseFiles.push(String.format("../{0}.js", file));
     }, this);
     
     Ext.each(env.plugins, function(file) {
@@ -1465,7 +1463,7 @@ ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
       appDir      : '../app',
       vendor      : ['mvc'],
       mvcFilename : 'ext-mvc-all-min',
-      config      : ['../app/App', 'database', 'routes']
+      config      : ['app/App', 'config/routes']
     });
   },
   
