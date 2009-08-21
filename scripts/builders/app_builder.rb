@@ -43,12 +43,16 @@ module ExtMVC
       files
     end
     
+    def name
+      "Ext MVC Application"
+    end
+    
     def message
-      "Built Ext MVC Application"
+      "Built #{name}"
     end
     
     def description
-      "Your Ext MVC Application"
+      "Your #{name}"
     end
     
     def output_filename

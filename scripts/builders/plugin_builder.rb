@@ -12,20 +12,22 @@ module ExtMVC
       end
     end
     
+    attr_accessor :name
+    
     def initialize(name)
       @name = name
     end
     
     def output_filename
-      "#{directory_name}/#{@name}-all.js"
+      "#{directory_name}/#{name}-all.js"
     end
     
     def message
-      "Built the #{@name} plugin"
+      "Built the #{name} plugin"
     end
     
     def description
-      "The #{@name} plugin (#{directory_name})"
+      "The #{name} plugin (#{directory_name})"
     end
     
     def directory_name

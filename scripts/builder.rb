@@ -8,18 +8,24 @@ module ExtMVC
     
     # Does the actual building - just concatenates file_list and optionally minifies
     def build
-      concatenate file_list, output_filename
-      minify output_filename if should_minify
+      concatenate(file_list, output_filename)
+      system('growlnotify -m "Built ' + name + '"')
+      
+      if should_minify
+        minify output_filename
+        system('growlnotify -m "Minified ' + name + '"')
+      end
       
       puts message
-      puts
-      
-      system('growlnotify -m "' + message + '"')
     end
     
     # Indicates whether the outputted filename should also be minified (defaults to false)
     def should_minify
       false
+    end
+    
+    def name
+      "Unknown Package"
     end
     
     def message
@@ -84,7 +90,10 @@ module ExtMVC
     # Concatenates an array of files together and saves
     def concatenate(files, concatenated_filename, baseDir = './')
       #remove old files, create blank ones again
-      File.delete(concatenated_filename) and puts "Deleted old #{concatenated_filename}" if File.exists?(concatenated_filename)
+      if File.exists?(concatenated_filename)
+        File.delete(concatenated_filename) 
+        # puts "Deleted old #{concatenated_filename}"
+      end
       FileUtils.touch(concatenated_filename)
       
       count = 0
@@ -99,8 +108,8 @@ module ExtMVC
         end
       end
       
-      puts "Concatenated #{count} files into #{concatenated_filename}"
-      puts
+      # puts "Concatenated #{count} files into #{concatenated_filename}"
+      # puts
     end
     
     # Minifies a file using YUI compressor
@@ -108,13 +117,16 @@ module ExtMVC
       if minified_filename.nil?
         minified_filename = filename.gsub(/\.js$/, '-min.js')
       end
-
-      FileUtils.rm(minified_filename) and puts "Deleted old #{minified_filename}" if File.exists?(minified_filename)
+      
+      if File.exists?(minified_filename)
+        FileUtils.rm(minified_filename)
+        # puts "Deleted old #{minified_filename}"
+      end
 
       system("java -jar vendor/yui-compressor/build/yuicompressor-2.4.jar #{filename} -o #{minified_filename}")
 
-      puts "Created minified file #{minified_filename}"
-      puts
+      # puts "Created minified file #{minified_filename}"
+      # puts
     end
 
   end
@@ -160,7 +172,9 @@ module ExtMVC
         exit
       end
       
+      puts
       puts "All packages built. Now listening for changes to any of the following:"
+      puts
       
       instances.each_with_index {|instance, index| puts "  #{index + 1}) #{instance.description}"}
       
@@ -189,6 +203,7 @@ module ExtMVC
             
             puts "#{builder.description} is being rebuilt because #{changed_file} changed"
             builder.build
+            puts
             puts "=> Listening for changes..."
             puts
           end
