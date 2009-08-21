@@ -26,6 +26,10 @@ module ExtMVC
       "Build complete"
     end
     
+    def description
+      directory_name
+    end
+    
     # Returns an array of all files to be concatenated, in the order they should be included
     def file_list
       has_build_file? ? order_from_build_file : guess_build_order
@@ -145,16 +149,31 @@ module ExtMVC
       instances.each {|i| i.build}
     end
     
+    # Takes an array of Builder instances and checks their files every second to see if any changed
+    # if they did, rebuild that package. Also builds all packages immediately when first run
     def self.auto(instances)
+      # Force rebuild on all packages on startup
+      instances.each {|i| i.build}
+      
       trap('INT') do
         puts "\nQuitting..."
         exit
       end
       
+      puts "All packages built. Now listening for changes to any of the following:"
+      
+      instances.each_with_index {|instance, index| puts "  #{index + 1}) #{instance.description}"}
+      
       files = {}
       instances.each do |builder|
         files[builder.directory_name] = builder.file_list.inject({}) {|m, f| m.merge({f => File.mtime(f)})}
       end
+      
+      puts
+      puts "If files belonging to the above change, the concatenated versions will be rebuilt"
+      puts
+      puts "Listening for changes..."
+      puts
       
       loop do
         sleep 1
@@ -168,8 +187,10 @@ module ExtMVC
           if changed_file
             files[builder.directory_name][changed_file] = File.mtime(changed_file)
             
-            puts "=> #{changed_file} changed, rebuilding"
+            puts "#{builder.description} is being rebuilt because #{changed_file} changed"
             builder.build
+            puts "=> Listening for changes..."
+            puts
           end
 
         end

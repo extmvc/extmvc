@@ -47,6 +47,10 @@ module ExtMVC
       "Built Ext MVC Application"
     end
     
+    def description
+      "Your Ext MVC Application"
+    end
+    
     def output_filename
       "public/application-all.js"
     end

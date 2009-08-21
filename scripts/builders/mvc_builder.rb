@@ -19,5 +19,9 @@ module ExtMVC
     def message
       "Built Ext MVC"
     end
+    
+    def description
+      "The Ext MVC framework (#{directory_name})"
+    end
   end
 end

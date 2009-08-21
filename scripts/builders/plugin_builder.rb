@@ -24,6 +24,10 @@ module ExtMVC
       "Built the #{@name} plugin"
     end
     
+    def description
+      "The #{@name} plugin (#{directory_name})"
+    end
+    
     def directory_name
       "#{ExtMVC::PluginBuilder.plugins_directory}/#{@name}"
     end
