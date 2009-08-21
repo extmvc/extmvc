@@ -9,44 +9,6 @@ module ExtMVC
       self.send(meth, name)
     end
     
-    def self.build(name)
-      return self.build_all if name == 'all'
-      
-      dirName        = "vendor/plugins/#{name}"
-      pluginFileName = "#{dirName}/#{name}-all.js"
-      buildFiles     = []
-      
-      if File.exists?("#{dirName}/include_order.txt")
-        #Load using the include file
-        includeFile = File.open("#{dirName}/include_order.txt", "r")
-        while (line = includeFile.gets)
-          line.gsub!(/\n/, '')
-          next if line =~ /^#/ || line.length.zero?
-          buildFiles.push("#{dirName}/#{line}")
-        end
-      else
-        #Load all files in the order they are found
-        Dir["#{dirName}/**/*.js"].each do |fileName| 
-          next if fileName =~ /-all.js$/
-          buildFiles.push(fileName)
-        end
-      end
-      
-      self.concatenate_files(buildFiles, pluginFileName)
-      puts
-    end
-    
-    def self.build_all
-      dirs = []
-      pluginsPath = 'vendor/plugins'
-      
-      Dir.entries(pluginsPath).each do |fileName|
-        dirs.push(fileName) if File.directory?("#{pluginsPath}/#{fileName}") && (fileName =~ /^\./) != 0
-      end
-      
-      dirs.each {|plugin| self.build(plugin)}
-    end
-    
     # Installs a given plugin by copying its public assets
     def self.install(name)
       
@@ -60,28 +22,6 @@ module ExtMVC
     # Creates a new skeleton plugin
     def self.create(name)
       
-    end
-    
-    private
-    # TODO: this is copied verbatim from the builder script. Refactor this and builder's version somewhere else
-    def self.concatenate_files(files, concatenated_filename, baseDir = './')
-      #remove old files, create blank ones again
-      File.delete(concatenated_filename) and puts "Deleted old #{concatenated_filename}" if File.exists?(concatenated_filename)
-      FileUtils.touch(concatenated_filename)
-      
-      count = 0
-      file = File.open(concatenated_filename, 'w') do |f|
-        files.each do |i|
-          # remove the directory the app is in if add_dir is supplied
-          i = i.gsub(Regexp.new(ENV['app_dir']), '').gsub(/$(\/*)(.*)/, '\2') if ENV['app_dir']
-
-          f.puts(IO.read(File.join(baseDir, i)))
-          f.puts("\n")
-          count += 1
-        end
-      end
-      
-      puts "Concatenated #{count} files into #{concatenated_filename}"
     end
   end
 end

@@ -16,20 +16,59 @@ module ExtMVC
     end
     
     # Builds the current app based on the files specified in the index.html file
-    def self.all
+    def self.app
       filename = (ARGV.shift || 'index.html').downcase
       
-      self.js(filename)
-      self.css(filename)
+      self.app_js(filename)
+      self.app_css(filename)
     end
     
-    def self.js filename = 'index.html'
+    def self.app_js filename = 'index.html'
       self.concatenate_js(filename)
       self.minify_js(filename)
     end
     
-    def self.css filename = 'index.html'
+    def self.app_css filename = 'index.html'
       self.concatenate_css(filename)
+    end
+    
+    # Builds either a specific plugin, or all of them
+    def self.plugin(name = nil)
+      name ||= ARGV.shift
+      return self.all_plugins if name == 'all'
+      
+      dirName        = "vendor/plugins/#{name}"
+      pluginFileName = "#{dirName}/#{name}-all.js"
+      buildFiles     = []
+      
+      if File.exists?("#{dirName}/build")
+        #Load using the include file
+        includeFile = File.open("#{dirName}/build", "r")
+        while (line = includeFile.gets)
+          line.gsub!(/\n/, '')
+          next if line =~ /^#/ || line.length.zero?
+          buildFiles.push("#{dirName}/#{line}")
+        end
+      else
+        #Load all files in the order they are found
+        Dir["#{dirName}/**/*.js"].each do |fileName| 
+          next if fileName =~ /-all.js$/
+          buildFiles.push(fileName)
+        end
+      end
+      
+      self.concatenate_files(buildFiles, pluginFileName)
+      puts
+    end
+    
+    # Builds all plugins found in the vendor/plugins directory
+    def self.all_plugins
+      pluginsDir = 'vendor/plugins'
+      
+      #Gets the name of each plugin directory inside vendor/plugins and calls self.plugin with it
+      Dir.entries(pluginsDir).select {|fileName| 
+        File.directory?("#{pluginsDir}/#{fileName}") && (fileName =~ /^\./) != 0
+      }.each {|pluginName| self.plugin(pluginName)}
     end
     
     def self.concatenate_js filename = 'index.html'

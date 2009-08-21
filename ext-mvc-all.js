@@ -1452,9 +1452,8 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
 ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
 
   constructor: function(config) {
-    ExtMVC.Environment.superclass.constructor.apply(this, arguments);
-    
     config = config || {};
+    
     Ext.apply(this, config, {
       //TODO: jsdoc these defaults
       pluginsDir  : '../vendor/plugins',
@@ -1473,6 +1472,8 @@ ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
        */
       stylesheets: ['ext-all']
     });
+    
+    ExtMVC.Environment.superclass.constructor.apply(this, arguments);
   },
   
   /**
