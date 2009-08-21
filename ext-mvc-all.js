@@ -354,6 +354,511 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   }
 });
 
+/**
+ * @class Array
+ * Extensions to the array class
+ */
+
+/**
+ * Turns an array into a sentence, joined by a specified connector - e.g.:
+ * ['Adama', 'Tigh', 'Roslin'].toSentence(); //'Adama, Tigh and Roslin'
+ * ['Adama', 'Tigh', 'Roslin'].toSentence('or'); //'Adama, Tigh or Roslin'
+ * @param {String} connector The string to use to connect the last two words. Usually 'and' or 'or', defaults to 'and'
+ */
+Array.prototype.toSentence = function(connector) {
+  connector = connector || 'and';
+  
+  var sentence = "";
+  if (this.length <= 1) { 
+    sentence = this[0];
+  } else {
+    //we'll join all but the last error with commas
+    var firstErrors = this.slice(0, this.length - 1);
+    
+    //add the last error, with the connector string
+    sentence = String.format("{0} {1} {2}", firstErrors.join(", "), connector, this[this.length - 1]);
+  }
+  return sentence;
+};
+
+/**
+ * @class ExtMVC.lib.Booter
+ * @extends Ext.util.Observable
+ * Boots an Ext MVC application by loading all application files and launching
+ */
+ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
+  
+  /**
+   * @property defaultBootParams
+   * @type Object
+   * Contains default boot parameters (e.g. sets the default environment to 'production')
+   */
+  defaultBootParams: {
+    environment: 'production'
+  },
+
+  constructor: function(config) {
+    config = config || {};
+    Ext.applyIf(config, this.parseLocationParams());
+    Ext.apply(this, config, this.defaultBootParams);
+    
+    ExtMVC.lib.Booter.superclass.constructor.apply(this, arguments);
+    
+    this.initEvents();
+    this.initListeners();
+  },
+  
+  /**
+   * The Booter loads some code asynchronously, so uses events to proceed the logic. This sets up
+   * all of the internal event monitoring.
+   */
+  initListeners: function() {
+    this.on('environment-loaded', this.loadApplicationFiles, this);
+    
+    this.on({
+      scope                     : this,
+      'environment-loaded'      : this.loadApplicationFiles,
+      'application-files-loaded': this.launchApp,
+      'boot-complete'           : this.onBootComplete
+    });
+  },
+  
+  /**
+   * Sets up events emitted by this component
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event before-boot
+       * Called just before boot starts. Use this as a hook to tie in any pre-boot logic
+       * @param {ExtMVC.lib.Booter} this The Booter instance
+       */
+      'before-boot',
+      
+      /**
+       * @event boot-complete
+       * Fires when the entire boot sequence has been completed
+       */
+      'boot-complete',
+      
+      /**
+       * @event environment-loaded
+       * Fires when environment config data has been retrieved
+       * @param {ExtMVC.Environment} environment the Ext.Environment object
+       */
+      'environment-loaded',
+      
+      /**
+       * @event app-files-loaded
+       * Fires when all application files (overrides, config, models, views and controllers) 
+       * have been loaded and are available
+       */
+      'application-files-loaded',
+      
+      /**
+       * @event application-launched
+       * Fires after the application has been launched
+       */
+      'application-launched'
+    );
+  },
+  
+  boot: function() {
+    this.fireEvent('before-boot');
+    
+    if (this.useLoadingMask) this.addLoadingMask();
+    
+    this.loadEnvironment();
+  },
+  
+  /**
+   * Called when the app has been fully booted. Override to provide you own logic (defaults to an empty function)
+   */
+  onBootComplete: function() {},
+  
+  /**
+   * Loads up the current environment by loading config/environment.json, and the appropriate file from within
+   * config/environments/ for the current environment (e.g. config/environments/production.json)
+   */
+  loadEnvironment: function() {
+    Ext.Ajax.request({
+      url    : '../config/environment.json',
+      scope  : this,
+      success: function(response, options) {
+        var envName = this.environment;
+        
+        this.environment = new ExtMVC.Environment(Ext.decode(response.responseText));
+
+        Ext.Ajax.request({
+          url   : String.format("../config/environments/{0}.json", envName),
+          success: function(response, options) {
+            this.environment.update(Ext.decode(response.responseText));
+            
+            this.fireEvent('environment-loaded', this.environment);
+          },
+          scope  : this
+        });
+      },
+      failure: function() {
+        Ext.Msg.alert(
+          'Could not load environment',
+          'The environment could not be found'
+        );
+      }
+    });
+  },
+  
+  /**
+   * Loads all required application files, fires the 'app-files-loaded' event when done
+   * @param {ExtMVC.Environment} environment The ExtMVC.Environment to gather file list from
+   */
+  loadApplicationFiles: function(env) {
+    this.loadStylesheets(env);
+    
+    //if the 'scripts' property on the Environment is present then models, controllers, plugins etc are ignored
+    if (Ext.isArray(env.scripts) && env.scripts.length > 0) {
+      this.loadFiles(env.scripts, false, function() {
+        this.fireEvent('application-files-loaded');
+      }, this);
+      
+      return;
+    }
+    
+    
+    var order           = ['overrides', 'config', 'plugins', 'models', 'controllers', 'views'],
+        baseFiles       = [],
+        pluginFiles     = [],
+        modelFiles      = [],
+        controllerFiles = [],
+        viewFiles       = [];
+    
+    // var groups = {
+    //   'base': {preserveOrder: false, }
+    // };
+    
+    
+    Ext.each(env.overrides, function(file) {
+      baseFiles.push(String.format("{0}/{1}.js", env.overridesDir, file));
+    }, this);
+    
+    Ext.each(env.config, function(file) {
+      baseFiles.push(String.format("../{0}.js", file));
+    }, this);
+    
+    Ext.each(env.plugins, function(file) {
+      pluginFiles.push(String.format("{0}/{1}/{2}-all.js", env.pluginsDir, file, file));
+    }, this);
+    
+    Ext.each(env.models, function(file) {
+      modelFiles.push(String.format("{0}/models/{1}.js", env.appDir, file));
+    }, this);
+    
+    Ext.each(env.controllers, function(file) {
+      controllerFiles.push(String.format("{0}/controllers/{1}Controller.js", env.appDir, file));
+    }, this);
+    
+    Ext.each(env.views, function(viewObj) {
+      Ext.iterate(viewObj, function(dir, fileList) {
+        Ext.each(fileList, function(file) {
+          viewFiles.push(String.format("{0}/views/{1}/{2}.js", env.appDir, dir, file));
+        }, this);
+      }, this);
+    }, this);
+    
+    var me = this;
+    var doFireEvent = function() {
+      me.fireEvent('application-files-loaded');
+    };
+    
+    this.loadFiles(baseFiles, false, function() {
+      this.loadFiles(pluginFiles, false, function() {
+        this.loadFiles(modelFiles, false, function() {
+          this.loadFiles(controllerFiles, true, function() {
+            this.loadFiles(viewFiles, true, function() {
+              doFireEvent();
+            });
+          });
+        });
+      });
+    });
+  },
+  
+  /**
+   * Once all application files are loaded, this launches the application, hides the loading mask, fires the
+   * 'application-launched' event
+   */
+  launchApp: function() {
+    ExtMVC.app.onReady();
+    
+    if (this.useLoadingMask) this.removeLoadingMask();
+    
+    this.fireEvent('application-launched');
+    this.fireEvent('boot-complete');
+  },
+  
+  /**
+   * @property useLoadingMask
+   * @type Boolean
+   * True to automatically add an application loading mask layer to give the user loading feedback (defaults to true)
+   */
+  useLoadingMask: true,
+  
+  /**
+   * Adds loading mask HTML elements to the page (called at start of bootup)
+   */
+  addLoadingMask: function() {
+    var body = Ext.getBody();
+    
+    body.createChild({
+      id: 'loading-mask'
+    });
+    
+    body.createChild({
+      id: 'loading',
+      cn: [{
+        cls: 'loading-indicator',
+        html: this.getLoadingMaskMessage()
+      }]
+    });
+  },
+  
+  /**
+   * Returns the loading mask message string. Override this to provide your own
+   * @return {String} The message to place inside the loading mask (defaults to "Loading...")
+   */
+  getLoadingMaskMessage: function() {
+    return "Loading...";
+  },
+  
+  /**
+   * @property loadingMaskFadeDelay
+   * @type Number
+   * Number of milliseconds after app launch is called before the loading mask will fade away.
+   * Gives your app a little time to draw its UI (defaults to 250)
+   */
+  loadingMaskFadeDelay: 250,
+  
+  /**
+   * Fades out the loading mask (called after bootup is complete)
+   */
+  removeLoadingMask: function() {
+    (function(){  
+      Ext.get('loading').remove();  
+      Ext.get('loading-mask').fadeOut({remove:true});  
+    }).defer(this.loadingMaskFadeDelay);
+  },
+  
+  /**
+   * @private
+   * Inspects document.location and returns an object containing all of the url params
+   * @return {Object} The url params
+   */
+  parseLocationParams: function() {
+    var args   = window.location.search.split("?")[1],
+        params = {};
+    
+    /**
+     * Read config data from url parameters
+     */
+    if (args != undefined) {
+      Ext.each(args.split("&"), function(arg) {
+        var splits = arg.split("="),
+            key    = splits[0],
+            value  = splits[1];
+
+        params[key] = value;
+      }, this);
+    }
+    
+    return params;
+  },
+  
+  /**
+   * Inserts <link> tags to load stylesheets contained in the environment
+   * @param {ExtMVC.lib.Environment} env The environment to load stylesheets from
+   */
+  loadStylesheets: function(env) {
+    var body = Ext.getBody();
+    Ext.each(env.stylesheets, function(filename) {
+      body.createChild({
+        tag : 'link',
+        rel : 'stylesheet',
+        type: 'text/css',
+        href: String.format("stylesheets/{0}.css", filename)
+      });
+    }, this);
+  },
+  
+  /**
+   * Creates and returns a script tag, but does not place it into the document. If a callback function
+   * is passed, this is called when the script has been loaded
+   * @param {String} filename The name of the file to create a script tag for
+   * @param {Function} callback Optional callback, which is called when the script has been loaded
+   * @return {Element} The new script ta
+   */
+  buildScriptTag: function(filename, callback) {
+    var script = document.createElement('script');
+    script.type = "text/javascript";
+    script.src = filename;
+    
+    //IE has a different way of handling <script> loads, so we need to check for it here
+    if (script.readyState) {
+      script.onreadystatechange = function(){
+        if (script.readyState == "loaded" || script.readyState == "complete") {
+          script.onreadystatechange = null;
+          callback();
+        }
+      };
+    } else {
+      script.onload = callback;
+    }    
+    
+    return script;
+  },
+  
+  /**
+   * Loads a given set of application .js files. Calls the callback function when all files have been loaded
+   * Set preserveOrder to true to ensure non-parallel loading of files, if load ordering is important
+   * @param {Array} fileList Array of all files to load
+   * @param {Boolean} preserveOrder True to make files load in serial, one after the other (defaults to false)
+   * @param {Function} callback Callback to call after all files have been loaded
+   * @param {Object} scope The scope to call the callback in
+   */
+  loadFiles: function(fileList, preserveOrder, callback, scope) {
+    var scope       = scope || this,
+        head        = document.getElementsByTagName("head")[0],
+        fragment    = document.createDocumentFragment(),
+        numFiles    = fileList.length,
+        loadedFiles = 0,
+        me          = this;
+    /**
+     * Loads a particular file from the fileList by index. This is used when preserving order
+     */
+    var loadFileIndex = function(index) {
+      head.appendChild(
+        me.buildScriptTag(fileList[index], onFileLoaded)
+      );
+    };
+
+    /**
+     * Callback function which is called after each file has been loaded. This calls the callback
+     * passed to loadFiles once the final file in the fileList has been loaded
+     */
+    var onFileLoaded = function() {
+      loadedFiles ++;
+
+      //if this was the last file, call the callback, otherwise load the next file
+      if (numFiles == loadedFiles && Ext.isFunction(callback)) {
+        callback.call(scope);
+      } else {
+        if (preserveOrder === true) loadFileIndex(loadedFiles);
+      }
+    };
+    
+    if (preserveOrder === true) {
+      loadFileIndex.call(this, 0);
+    } else {
+      //load each file (most browsers will do this in parallel)
+      Ext.each(fileList, function(file, index) {
+        fragment.appendChild(
+          this.buildScriptTag(file, onFileLoaded)
+        );  
+      }, this);
+
+      head.appendChild(fragment);
+    }
+  }
+});
+
+/**
+ * @class ExtMVC.lib.Dependencies
+ * @extends Ext.util.Observable
+ * Very simply dependency management class
+ */
+ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
+
+  constructor: function() {
+    
+    /**
+     * @property dependencies
+     * @type Object
+     * An object of model creation configurations awaiting definition because their dependency model(s) have not yet
+     * been defined. e.g. {'User': [{name: 'SuperUser', config: someConfigObject}, {name: 'AdminUser', config: anotherCfgObj}]}
+     * signifies that SuperUser and AdminUser should be defined as soon as User has been defined
+     */
+    this.dependencies = {};    
+    
+    ExtMVC.lib.Dependencies.superclass.constructor.apply(this, arguments);
+  },
+  
+  /**
+   * Returns an array of any Model subclasses waiting for this model to be defined
+   * @param {String} dependencyName The dependency model name to check against
+   * @return {Array} An array of items dependent on this item being defined (e.g. [{name: 'MyModel', config: someObject}])
+   */
+  get: function(dependencyName) {
+    return this.dependencies[dependencyName] || [];
+  },
+  
+  /**
+   * Adds a model definition to the dependencies object if it is waiting for another model to be defined first
+   * @param {String} dependencyName The name of another model which must be created before this one
+   * @param {String} dependentName The name of the new model to be defined after its dependency
+   * @param {Object} config The new model's config object, as sent to ExtMVC.model.define
+   */
+  add: function(dependencyName, dependentName, config) {
+    var arr = this.dependencies[dependencyName] || [];
+    
+    arr.push({name: dependentName, config: config});
+    
+    this.dependencies[dependencyName] = arr;
+  }
+});
+
+/**
+ * @class ExtMVC.Environment
+ * @extends Ext.util.Observable
+ * Represents an application in which to load an application. This is used by the
+ * environment files inside the public/config and public/config/environments directories
+ * 
+ */
+ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
+
+  constructor: function(config) {
+    config = config || {};
+    
+    Ext.apply(this, config, {
+      //TODO: jsdoc these defaults
+      pluginsDir  : '../vendor/plugins',
+      libDir      : '../lib',
+      configDir   : '../config',
+      overridesDir: '../config/overrides',
+      appDir      : '../app',
+      vendor      : ['mvc'],
+      mvcFilename : 'ext-mvc-all-min',
+      config      : ['app/App', 'config/routes'],
+      
+      /**
+       * @property stylesheets
+       * @type Array
+       * The stylesheets to load for this app (defaults to just ext-all)
+       */
+      stylesheets: ['ext-all']
+    });
+    
+    ExtMVC.Environment.superclass.constructor.apply(this, arguments);
+  },
+  
+  /**
+   * Updates this environment by applying the updates argument to itself
+   * @param {Object} updates Any updated values to apply to the Environment
+   * @return {ExtMVC.Environment} The environment object
+   */
+  update: function(updates) {
+    Ext.apply(this, updates);
+  }
+});
+
 /*
  * Adapted from http://snippets.dzone.com/posts/show/3205
  */
@@ -494,125 +999,143 @@ ExtMVC.Inflector = {
 };
 
 /**
- * @class Array
- * Extensions to the array class
+ * @class ExtMVC.router.Route
+ * @extends Object
+ * TODO: [DOCS] Rewrite this horrible nonsense
  */
-
-/**
- * Turns an array into a sentence, joined by a specified connector - e.g.:
- * ['Adama', 'Tigh', 'Roslin'].toSentence(); //'Adama, Tigh and Roslin'
- * ['Adama', 'Tigh', 'Roslin'].toSentence('or'); //'Adama, Tigh or Roslin'
- * @param {String} connector The string to use to connect the last two words. Usually 'and' or 'or', defaults to 'and'
- */
-Array.prototype.toSentence = function(connector) {
-  connector = connector || 'and';
+ExtMVC.router.Route = function(mappingString, options) {
+  this.mappingString = mappingString;
+  this.options       = options || {};
   
-  var sentence = "";
-  if (this.length <= 1) { 
-    sentence = this[0];
-  } else {
-    //we'll join all but the last error with commas
-    var firstErrors = this.slice(0, this.length - 1);
-    
-    //add the last error, with the connector string
-    sentence = String.format("{0} {1} {2}", firstErrors.join(", "), connector, this[this.length - 1]);
-  }
-  return sentence;
-};
-
-/**
- * @class String
- * Extensions to the String class
- **/
-
-/**
- * Capitalizes a string (e.g. ("some test sentence").capitalize() == "Some test sentence")
- * @return {String} The capitalized String
- */
-String.prototype.capitalize = function() {
-  return this.charAt(0).toUpperCase() + this.substr(1).toLowerCase();
-};
-
-/**
- * Puts the string in Title Case (e.g. ("some test sentence").titleize() == "Some Test Sentence")
- * @return {String} The titleized String
- */
-String.prototype.titleize = function() {
-  return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
-};
-
-/**
- * Takes any string and de-underscores and uppercases it
- * e.g. long_underscored_string => LongUnderscoredString
- */
-String.prototype.camelize = function() {
-  return this.replace(/_/g, " ").titleize().replace(/ /g, "");
-};
-
-/**
- * Underscores a string (e.g. (("SomeCamelizedString").underscore() == 'some_camelized_string', 
- *                             ("some normal string").underscore()  == 'some_normal_string')
- * @return {String} The underscored string
- */
-String.prototype.underscore = function() {
-  return this.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/ /g, "_").replace(/^_/, '');
-};
-
-/**
- * Uses the Inflector to singularize itself (e.g. ("cats").singularize() == 'cat')
- * @return {String} The singularized version of this string
- */
-String.prototype.singularize = function() {
-  return ExtMVC.Inflector.singularize(this);
-};
-
-/**
- * Uses the Inflector to pluralize itself (e.g. ("cat").pluralize() == 'cats')
- * @return {String} The pluralized version of this string
- */
-String.prototype.pluralize = function() {
-  return ExtMVC.Inflector.pluralize(this);
-};
-
-/**
- * Attempts to humanize a name by replacing underscores with spaces. Mainly useful for Ext.Model.Base
- * @return {String} The humanized string
- */
-String.prototype.humanize = function() {
-  return this.underscore().replace(/_/g, " ");
-};
-
-/**
- * Replaces instances of the strings &, >, < and " with their escaped versions
- * @return {String} The escaped version of the original text
- */
-String.prototype.escapeHTML = function () {                                       
-  return this.replace(/&/g,'&amp;').replace(/>/g,'&gt;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-};
-
-/**
- * Converts this string into a currency, prepended with the given currency symbol
- * @param {String} symbol The currency symbol to use (defaults to $)
- */
-String.prototype.toCurrency = function(symbol) {
-  if (typeof(symbol) == 'undefined') {var symbol = '$';}
+  //The regular expression we use to match a segment of a route mapping
+  //this will recognise segments starting with a colon,
+  //e.g. on 'namespace/:controller/:action', :controller and :action will be recognised
+  this.paramMatchingRegex = new RegExp(/:([0-9A-Za-z\_]*)/g);
   
-  var beforeDecimal = this.split(".")[0],
-      afterDecimal  = this.split(".")[1];
+  /**
+   * Converts a route string into an array of symbols starting with a colon. e.g.
+   * ":controller/:action/:id" => [':controller', ':action', ':id']
+   */
+  this.paramsInMatchString = this.mappingString.match(this.paramMatchingRegex) || [];
+  this.paramsInStringWithOptions = [];
   
-  var segmentCount      = Math.floor(beforeDecimal.length / 3);
-  var firstSegmentWidth = beforeDecimal.length % 3,
-      pointerPosition   = firstSegmentWidth;
+  /**1
+   * Store and remove any route conditions specified
+   */
+  this.conditions = this.options.conditions || {};
+  if (this.options.conditions) { delete this.options.conditions; }
   
-  var segments = firstSegmentWidth == 0 ? [] : [beforeDecimal.substr(0, firstSegmentWidth)];
-  
-  for (var i=0; i < segmentCount; i++) {
-    segments.push(beforeDecimal.substr(firstSegmentWidth + (i * 3), 3));
+  for (var i=0; i < this.paramsInMatchString.length; i++) {
+    this.paramsInStringWithOptions.push(this.paramsInMatchString[i]);
   };
   
-  beforeDecimal = symbol + segments.join(",");
+  for (var o in options) {
+    this.paramsInStringWithOptions.push(":" + o);
+  }
   
-  return afterDecimal ? String.format("{0}.{1}", beforeDecimal, afterDecimal) : beforeDecimal;
+  this.matcherRegex = this.convertToUsableRegex(mappingString);
+};
+
+ExtMVC.router.Route.prototype = {
+  /**
+   * @param {url} The url we want to match against this route to see if it matches
+   * @return {boolean} Returns true if this route matches the url
+   */
+  recognises: function(url) {
+    return this.matcherRegex.test(url);
+  },
+  
+  /**
+   * @param {url} The url we want to provide matches for
+   * @return {Object} Object of all matches for this url, as well as additional params as defined in the route
+   */
+  matchesFor: function(url) {
+    if (!this.recognises(url)) {return false;};
+    
+    var parameters = {};
+    
+    var keys   = this.paramsInMatchString;
+    var values = url.match(this.matcherRegex);
+    values.shift(); //first value is the entire match so reject
+    
+    for (var i = keys.length - 1; i >= 0; i--){
+      parameters[keys[i].replace(":", "")] = values[i];
+    };
+    
+    //add any additional parameter options specified in the route definition
+    for (option in this.options) {
+      parameters[option] = this.options[option];
+    }
+    
+    return parameters;
+  },
+  
+  urlForNamed: function(options) {
+    var options = options || {};
+    
+    return this.urlFor(Ext.applyIf(options, this.options));
+  },
+  
+  /**
+   * Attempts to build a url with this route, swapping the placeholders with properties of the options hash
+   */
+  urlFor: function(options) {
+    var url = this.mappingString;
+    
+    for (var o in options) {
+      //values in options must match this.options - e.g. this.options.action must be the same as options.action
+      if (options[o] && this.options[o] && options[o] != this.options[o]) { return false; }
+    }
+    
+    
+    //TODO: Tidy this up.  All of it
+
+    var paramsInOptions = [];
+    for (var o in options) {
+      paramsInOptions.push(":" + o);
+    }
+    
+    paramsInOptions = paramsInOptions.sort();
+    var paramsInStringWithOptions = this.paramsInStringWithOptions.sort();
+    
+    //make sure that all match elements in the url string are included.  If not, return false
+    if (paramsInStringWithOptions.length != paramsInOptions.length) { return false; }
+    for (var i=0; i < paramsInOptions.length; i++) {
+      if (paramsInOptions[i] != paramsInStringWithOptions[i]) {
+        return false;
+      }
+    };
+    
+    for (var o in options) {
+      url = url.replace(":" + o, options[o]);
+    }
+    
+    return url;
+  },
+  
+  /**
+   * Private: For a given string, replaces all substrings starting with a colon into
+   * a regex string that can match a url segment. 
+   * e.g. :controller/:action => '^([a-zA-Z0-9\_]+)/([a-zA-Z0-9\_]+)$'
+   * If any conditions have been specified on this route, their regular expressions are used instead:
+   * :controller/:action/:id => '^([a-zA-Z0-9\_]+)/([a-zA-Z0-9\_]+)/([0-9]+)$'
+   * if conditions was set to {":id" =>/[0-9]+]/}
+   * @param {String} regex_string The string we want to turn into a matchable regex
+   * @return {String} The replaced string
+   */
+  convertToUsableRegex: function(regex_string) {
+    var p = this.paramsInMatchString;
+    
+    for (var i = p.length - 1; i >= 0; i--){
+      var cond = this.conditions[p[i]];
+      var matcher = String.format("({0})", cond || "[a-zA-Z0-9\_,]+");
+      
+      regex_string = regex_string.replace(new RegExp(p[i]), matcher);
+    };
+    
+    //we want to match the whole string, so include the anchors
+    return new RegExp("^" + regex_string + "$");
+  }
 };
 
 /**
@@ -882,609 +1405,99 @@ ExtMVC.router.Router.defineRoutes = function(map) {
 };
 
 /**
- * @class ExtMVC.router.Route
- * @extends Object
- * TODO: [DOCS] Rewrite this horrible nonsense
+ * @class String
+ * Extensions to the String class
+ **/
+
+/**
+ * Capitalizes a string (e.g. ("some test sentence").capitalize() == "Some test sentence")
+ * @return {String} The capitalized String
  */
-ExtMVC.router.Route = function(mappingString, options) {
-  this.mappingString = mappingString;
-  this.options       = options || {};
+String.prototype.capitalize = function() {
+  return this.charAt(0).toUpperCase() + this.substr(1).toLowerCase();
+};
+
+/**
+ * Puts the string in Title Case (e.g. ("some test sentence").titleize() == "Some Test Sentence")
+ * @return {String} The titleized String
+ */
+String.prototype.titleize = function() {
+  return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+};
+
+/**
+ * Takes any string and de-underscores and uppercases it
+ * e.g. long_underscored_string => LongUnderscoredString
+ */
+String.prototype.camelize = function() {
+  return this.replace(/_/g, " ").titleize().replace(/ /g, "");
+};
+
+/**
+ * Underscores a string (e.g. (("SomeCamelizedString").underscore() == 'some_camelized_string', 
+ *                             ("some normal string").underscore()  == 'some_normal_string')
+ * @return {String} The underscored string
+ */
+String.prototype.underscore = function() {
+  return this.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/ /g, "_").replace(/^_/, '');
+};
+
+/**
+ * Uses the Inflector to singularize itself (e.g. ("cats").singularize() == 'cat')
+ * @return {String} The singularized version of this string
+ */
+String.prototype.singularize = function() {
+  return ExtMVC.Inflector.singularize(this);
+};
+
+/**
+ * Uses the Inflector to pluralize itself (e.g. ("cat").pluralize() == 'cats')
+ * @return {String} The pluralized version of this string
+ */
+String.prototype.pluralize = function() {
+  return ExtMVC.Inflector.pluralize(this);
+};
+
+/**
+ * Attempts to humanize a name by replacing underscores with spaces. Mainly useful for Ext.Model.Base
+ * @return {String} The humanized string
+ */
+String.prototype.humanize = function() {
+  return this.underscore().replace(/_/g, " ");
+};
+
+/**
+ * Replaces instances of the strings &, >, < and " with their escaped versions
+ * @return {String} The escaped version of the original text
+ */
+String.prototype.escapeHTML = function () {                                       
+  return this.replace(/&/g,'&amp;').replace(/>/g,'&gt;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+};
+
+/**
+ * Converts this string into a currency, prepended with the given currency symbol
+ * @param {String} symbol The currency symbol to use (defaults to $)
+ */
+String.prototype.toCurrency = function(symbol) {
+  if (typeof(symbol) == 'undefined') {var symbol = '$';}
   
-  //The regular expression we use to match a segment of a route mapping
-  //this will recognise segments starting with a colon,
-  //e.g. on 'namespace/:controller/:action', :controller and :action will be recognised
-  this.paramMatchingRegex = new RegExp(/:([0-9A-Za-z\_]*)/g);
+  var beforeDecimal = this.split(".")[0],
+      afterDecimal  = this.split(".")[1];
   
-  /**
-   * Converts a route string into an array of symbols starting with a colon. e.g.
-   * ":controller/:action/:id" => [':controller', ':action', ':id']
-   */
-  this.paramsInMatchString = this.mappingString.match(this.paramMatchingRegex) || [];
-  this.paramsInStringWithOptions = [];
+  var segmentCount      = Math.floor(beforeDecimal.length / 3);
+  var firstSegmentWidth = beforeDecimal.length % 3,
+      pointerPosition   = firstSegmentWidth;
   
-  /**1
-   * Store and remove any route conditions specified
-   */
-  this.conditions = this.options.conditions || {};
-  if (this.options.conditions) { delete this.options.conditions; }
+  var segments = firstSegmentWidth == 0 ? [] : [beforeDecimal.substr(0, firstSegmentWidth)];
   
-  for (var i=0; i < this.paramsInMatchString.length; i++) {
-    this.paramsInStringWithOptions.push(this.paramsInMatchString[i]);
+  for (var i=0; i < segmentCount; i++) {
+    segments.push(beforeDecimal.substr(firstSegmentWidth + (i * 3), 3));
   };
   
-  for (var o in options) {
-    this.paramsInStringWithOptions.push(":" + o);
-  }
+  beforeDecimal = symbol + segments.join(",");
   
-  this.matcherRegex = this.convertToUsableRegex(mappingString);
+  return afterDecimal ? String.format("{0}.{1}", beforeDecimal, afterDecimal) : beforeDecimal;
 };
-
-ExtMVC.router.Route.prototype = {
-  /**
-   * @param {url} The url we want to match against this route to see if it matches
-   * @return {boolean} Returns true if this route matches the url
-   */
-  recognises: function(url) {
-    return this.matcherRegex.test(url);
-  },
-  
-  /**
-   * @param {url} The url we want to provide matches for
-   * @return {Object} Object of all matches for this url, as well as additional params as defined in the route
-   */
-  matchesFor: function(url) {
-    if (!this.recognises(url)) {return false;};
-    
-    var parameters = {};
-    
-    var keys   = this.paramsInMatchString;
-    var values = url.match(this.matcherRegex);
-    values.shift(); //first value is the entire match so reject
-    
-    for (var i = keys.length - 1; i >= 0; i--){
-      parameters[keys[i].replace(":", "")] = values[i];
-    };
-    
-    //add any additional parameter options specified in the route definition
-    for (option in this.options) {
-      parameters[option] = this.options[option];
-    }
-    
-    return parameters;
-  },
-  
-  urlForNamed: function(options) {
-    var options = options || {};
-    
-    return this.urlFor(Ext.applyIf(options, this.options));
-  },
-  
-  /**
-   * Attempts to build a url with this route, swapping the placeholders with properties of the options hash
-   */
-  urlFor: function(options) {
-    var url = this.mappingString;
-    
-    for (var o in options) {
-      //values in options must match this.options - e.g. this.options.action must be the same as options.action
-      if (options[o] && this.options[o] && options[o] != this.options[o]) { return false; }
-    }
-    
-    
-    //TODO: Tidy this up.  All of it
-
-    var paramsInOptions = [];
-    for (var o in options) {
-      paramsInOptions.push(":" + o);
-    }
-    
-    paramsInOptions = paramsInOptions.sort();
-    var paramsInStringWithOptions = this.paramsInStringWithOptions.sort();
-    
-    //make sure that all match elements in the url string are included.  If not, return false
-    if (paramsInStringWithOptions.length != paramsInOptions.length) { return false; }
-    for (var i=0; i < paramsInOptions.length; i++) {
-      if (paramsInOptions[i] != paramsInStringWithOptions[i]) {
-        return false;
-      }
-    };
-    
-    for (var o in options) {
-      url = url.replace(":" + o, options[o]);
-    }
-    
-    return url;
-  },
-  
-  /**
-   * Private: For a given string, replaces all substrings starting with a colon into
-   * a regex string that can match a url segment. 
-   * e.g. :controller/:action => '^([a-zA-Z0-9\_]+)/([a-zA-Z0-9\_]+)$'
-   * If any conditions have been specified on this route, their regular expressions are used instead:
-   * :controller/:action/:id => '^([a-zA-Z0-9\_]+)/([a-zA-Z0-9\_]+)/([0-9]+)$'
-   * if conditions was set to {":id" =>/[0-9]+]/}
-   * @param {String} regex_string The string we want to turn into a matchable regex
-   * @return {String} The replaced string
-   */
-  convertToUsableRegex: function(regex_string) {
-    var p = this.paramsInMatchString;
-    
-    for (var i = p.length - 1; i >= 0; i--){
-      var cond = this.conditions[p[i]];
-      var matcher = String.format("({0})", cond || "[a-zA-Z0-9\_,]+");
-      
-      regex_string = regex_string.replace(new RegExp(p[i]), matcher);
-    };
-    
-    //we want to match the whole string, so include the anchors
-    return new RegExp("^" + regex_string + "$");
-  }
-};
-
-/**
- * @class ExtMVC.lib.Dependencies
- * @extends Ext.util.Observable
- * Very simply dependency management class
- */
-ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
-
-  constructor: function() {
-    
-    /**
-     * @property dependencies
-     * @type Object
-     * An object of model creation configurations awaiting definition because their dependency model(s) have not yet
-     * been defined. e.g. {'User': [{name: 'SuperUser', config: someConfigObject}, {name: 'AdminUser', config: anotherCfgObj}]}
-     * signifies that SuperUser and AdminUser should be defined as soon as User has been defined
-     */
-    this.dependencies = {};    
-    
-    ExtMVC.lib.Dependencies.superclass.constructor.apply(this, arguments);
-  },
-  
-  /**
-   * Returns an array of any Model subclasses waiting for this model to be defined
-   * @param {String} dependencyName The dependency model name to check against
-   * @return {Array} An array of items dependent on this item being defined (e.g. [{name: 'MyModel', config: someObject}])
-   */
-  get: function(dependencyName) {
-    return this.dependencies[dependencyName] || [];
-  },
-  
-  /**
-   * Adds a model definition to the dependencies object if it is waiting for another model to be defined first
-   * @param {String} dependencyName The name of another model which must be created before this one
-   * @param {String} dependentName The name of the new model to be defined after its dependency
-   * @param {Object} config The new model's config object, as sent to ExtMVC.model.define
-   */
-  add: function(dependencyName, dependentName, config) {
-    var arr = this.dependencies[dependencyName] || [];
-    
-    arr.push({name: dependentName, config: config});
-    
-    this.dependencies[dependencyName] = arr;
-  }
-});
-
-/**
- * @class ExtMVC.lib.Booter
- * @extends Ext.util.Observable
- * Boots an Ext MVC application by loading all application files and launching
- */
-ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
-  
-  /**
-   * @property defaultBootParams
-   * @type Object
-   * Contains default boot parameters (e.g. sets the default environment to 'production')
-   */
-  defaultBootParams: {
-    environment: 'production'
-  },
-
-  constructor: function(config) {
-    config = config || {};
-    Ext.applyIf(config, this.parseLocationParams());
-    Ext.apply(this, config, this.defaultBootParams);
-    
-    ExtMVC.lib.Booter.superclass.constructor.apply(this, arguments);
-    
-    this.initEvents();
-    this.initListeners();
-  },
-  
-  /**
-   * The Booter loads some code asynchronously, so uses events to proceed the logic. This sets up
-   * all of the internal event monitoring.
-   */
-  initListeners: function() {
-    this.on('environment-loaded', this.loadApplicationFiles, this);
-    
-    this.on({
-      scope                     : this,
-      'environment-loaded'      : this.loadApplicationFiles,
-      'application-files-loaded': this.launchApp,
-      'boot-complete'           : this.onBootComplete
-    });
-  },
-  
-  /**
-   * Sets up events emitted by this component
-   */
-  initEvents: function() {
-    this.addEvents(
-      /**
-       * @event before-boot
-       * Called just before boot starts. Use this as a hook to tie in any pre-boot logic
-       * @param {ExtMVC.lib.Booter} this The Booter instance
-       */
-      'before-boot',
-      
-      /**
-       * @event boot-complete
-       * Fires when the entire boot sequence has been completed
-       */
-      'boot-complete',
-      
-      /**
-       * @event environment-loaded
-       * Fires when environment config data has been retrieved
-       * @param {ExtMVC.Environment} environment the Ext.Environment object
-       */
-      'environment-loaded',
-      
-      /**
-       * @event app-files-loaded
-       * Fires when all application files (overrides, config, models, views and controllers) 
-       * have been loaded and are available
-       */
-      'application-files-loaded',
-      
-      /**
-       * @event application-launched
-       * Fires after the application has been launched
-       */
-      'application-launched'
-    );
-  },
-  
-  boot: function() {
-    this.fireEvent('before-boot');
-    
-    if (this.useLoadingMask) this.addLoadingMask();
-    
-    this.loadEnvironment();
-  },
-  
-  /**
-   * Called when the app has been fully booted. Override to provide you own logic (defaults to an empty function)
-   */
-  onBootComplete: function() {},
-  
-  /**
-   * Loads up the current environment by loading config/environment.json, and the appropriate file from within
-   * config/environments/ for the current environment (e.g. config/environments/production.json)
-   */
-  loadEnvironment: function() {
-    Ext.Ajax.request({
-      url    : '../config/environment.json',
-      scope  : this,
-      success: function(response, options) {
-        var envName = this.environment;
-        
-        this.environment = new ExtMVC.Environment(Ext.decode(response.responseText));
-
-        Ext.Ajax.request({
-          url   : String.format("../config/environments/{0}.json", envName),
-          success: function(response, options) {
-            this.environment.update(Ext.decode(response.responseText));
-            
-            this.fireEvent('environment-loaded', this.environment);
-          },
-          scope  : this
-        });
-      },
-      failure: function() {
-        Ext.Msg.alert(
-          'Could not load environment',
-          'The environment could not be found'
-        );
-      }
-    });
-  },
-  
-  /**
-   * Loads all required application files, fires the 'app-files-loaded' event when done
-   * @param {ExtMVC.Environment} environment The ExtMVC.Environment to gather file list from
-   */
-  loadApplicationFiles: function(env) {
-    var order           = ['overrides', 'config', 'plugins', 'models', 'controllers', 'views'],
-        baseFiles       = [],
-        pluginFiles     = [],
-        modelFiles      = [],
-        controllerFiles = [],
-        viewFiles       = [];
-    
-    // var groups = {
-    //   'base': {preserveOrder: false, }
-    // };
-    
-    this.loadStylesheets(env);
-    
-    Ext.each(env.overrides, function(file) {
-      baseFiles.push(String.format("{0}/{1}.js", env.overridesDir, file));
-    }, this);
-    
-    Ext.each(env.config, function(file) {
-      baseFiles.push(String.format("../{0}.js", file));
-    }, this);
-    
-    Ext.each(env.plugins, function(file) {
-      pluginFiles.push(String.format("{0}/{1}/{2}-all.js", env.pluginsDir, file, file));
-    }, this);
-    
-    Ext.each(env.models, function(file) {
-      modelFiles.push(String.format("{0}/models/{1}.js", env.appDir, file));
-    }, this);
-    
-    Ext.each(env.controllers, function(file) {
-      controllerFiles.push(String.format("{0}/controllers/{1}Controller.js", env.appDir, file));
-    }, this);
-    
-    Ext.iterate(env.views, function(dir, fileList) {
-      Ext.each(fileList, function(file) {
-        viewFiles.push(String.format("{0}/views/{1}/{2}.js", env.appDir, dir, file));
-      }, this);
-    }, this);
-    
-    var me = this;
-    var doFireEvent = function() {
-      me.fireEvent('application-files-loaded');
-    };
-    
-    this.loadFiles(baseFiles, false, function() {
-      this.loadFiles(pluginFiles, false, function() {
-        this.loadFiles(modelFiles, false, function() {
-          this.loadFiles(controllerFiles, true, function() {
-            this.loadFiles(viewFiles, true, function() {
-              doFireEvent();
-            });
-          });
-        });
-      });
-    });
-  },
-  
-  /**
-   * Once all application files are loaded, this launches the application, hides the loading mask, fires the
-   * 'application-launched' event
-   */
-  launchApp: function() {
-    ExtMVC.app.onReady();
-    
-    if (this.useLoadingMask) this.removeLoadingMask();
-    
-    this.fireEvent('application-launched');
-    this.fireEvent('boot-complete');
-  },
-  
-  /**
-   * @property useLoadingMask
-   * @type Boolean
-   * True to automatically add an application loading mask layer to give the user loading feedback (defaults to true)
-   */
-  useLoadingMask: true,
-  
-  /**
-   * Adds loading mask HTML elements to the page (called at start of bootup)
-   */
-  addLoadingMask: function() {
-    var body = Ext.getBody();
-    
-    body.createChild({
-      id: 'loading-mask'
-    });
-    
-    body.createChild({
-      id: 'loading',
-      cn: [{
-        cls: 'loading-indicator',
-        html: this.getLoadingMaskMessage()
-      }]
-    });
-  },
-  
-  /**
-   * Returns the loading mask message string. Override this to provide your own
-   * @return {String} The message to place inside the loading mask (defaults to "Loading...")
-   */
-  getLoadingMaskMessage: function() {
-    return "Loading...";
-  },
-  
-  /**
-   * @property loadingMaskFadeDelay
-   * @type Number
-   * Number of milliseconds after app launch is called before the loading mask will fade away.
-   * Gives your app a little time to draw its UI (defaults to 250)
-   */
-  loadingMaskFadeDelay: 250,
-  
-  /**
-   * Fades out the loading mask (called after bootup is complete)
-   */
-  removeLoadingMask: function() {
-    (function(){  
-      Ext.get('loading').remove();  
-      Ext.get('loading-mask').fadeOut({remove:true});  
-    }).defer(this.loadingMaskFadeDelay);
-  },
-  
-  /**
-   * @private
-   * Inspects document.location and returns an object containing all of the url params
-   * @return {Object} The url params
-   */
-  parseLocationParams: function() {
-    var args   = window.location.search.split("?")[1],
-        params = {};
-    
-    /**
-     * Read config data from url parameters
-     */
-    if (args != undefined) {
-      Ext.each(args.split("&"), function(arg) {
-        var splits = arg.split("="),
-            key    = splits[0],
-            value  = splits[1];
-
-        params[key] = value;
-      }, this);
-    }
-    
-    return params;
-  },
-  
-  /**
-   * Inserts <link> tags to load stylesheets contained in the environment
-   * @param {ExtMVC.lib.Environment} env The environment to load stylesheets from
-   */
-  loadStylesheets: function(env) {
-    var body = Ext.getBody();
-    Ext.each(env.stylesheets, function(filename) {
-      body.createChild({
-        tag : 'link',
-        rel : 'stylesheet',
-        type: 'text/css',
-        href: String.format("stylesheets/{0}.css", filename)
-      });
-    }, this);
-  },
-  
-  /**
-   * Creates and returns a script tag, but does not place it into the document. If a callback function
-   * is passed, this is called when the script has been loaded
-   * @param {String} filename The name of the file to create a script tag for
-   * @param {Function} callback Optional callback, which is called when the script has been loaded
-   * @return {Element} The new script ta
-   */
-  buildScriptTag: function(filename, callback) {
-    var script = document.createElement('script');
-    script.type = "text/javascript";
-    script.src = filename;
-    
-    //IE has a different way of handling <script> loads, so we need to check for it here
-    if (script.readyState) {
-      script.onreadystatechange = function(){
-        if (script.readyState == "loaded" || script.readyState == "complete") {
-          script.onreadystatechange = null;
-          callback();
-        }
-      };
-    } else {
-      script.onload = callback;
-    }    
-    
-    return script;
-  },
-  
-  /**
-   * Loads a given set of application .js files. Calls the callback function when all files have been loaded
-   * Set preserveOrder to true to ensure non-parallel loading of files, if load ordering is important
-   * @param {Array} fileList Array of all files to load
-   * @param {Boolean} preserveOrder True to make files load in serial, one after the other (defaults to false)
-   * @param {Function} callback Callback to call after all files have been loaded
-   * @param {Object} scope The scope to call the callback in
-   */
-  loadFiles: function(fileList, preserveOrder, callback, scope) {
-    var scope       = scope || this,
-        head        = document.getElementsByTagName("head")[0],
-        fragment    = document.createDocumentFragment(),
-        numFiles    = fileList.length,
-        loadedFiles = 0,
-        me          = this;
-    /**
-     * Loads a particular file from the fileList by index. This is used when preserving order
-     */
-    var loadFileIndex = function(index) {
-      head.appendChild(
-        me.buildScriptTag(fileList[index], onFileLoaded)
-      );
-    };
-
-    /**
-     * Callback function which is called after each file has been loaded. This calls the callback
-     * passed to loadFiles once the final file in the fileList has been loaded
-     */
-    var onFileLoaded = function() {
-      loadedFiles ++;
-
-      //if this was the last file, call the callback, otherwise load the next file
-      if (numFiles == loadedFiles && Ext.isFunction(callback)) {
-        callback.call(scope);
-      } else {
-        if (preserveOrder === true) loadFileIndex(loadedFiles);
-      }
-    };
-    
-    if (preserveOrder === true) {
-      loadFileIndex.call(this, 0);
-    } else {
-      //load each file (most browsers will do this in parallel)
-      Ext.each(fileList, function(file, index) {
-        fragment.appendChild(
-          this.buildScriptTag(file, onFileLoaded)
-        );  
-      }, this);
-
-      head.appendChild(fragment);
-    }
-  }
-});
-
-/**
- * @class ExtMVC.Environment
- * @extends Ext.util.Observable
- * Represents an application in which to load an application. This is used by the
- * environment files inside the public/config and public/config/environments directories
- * 
- */
-ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
-
-  constructor: function(config) {
-    config = config || {};
-    
-    Ext.apply(this, config, {
-      //TODO: jsdoc these defaults
-      pluginsDir  : '../vendor/plugins',
-      libDir      : '../lib',
-      configDir   : '../config',
-      overridesDir: '../config/overrides',
-      appDir      : '../app',
-      vendor      : ['mvc'],
-      mvcFilename : 'ext-mvc-all-min',
-      config      : ['app/App', 'config/routes'],
-      
-      /**
-       * @property stylesheets
-       * @type Array
-       * The stylesheets to load for this app (defaults to just ext-all)
-       */
-      stylesheets: ['ext-all']
-    });
-    
-    ExtMVC.Environment.superclass.constructor.apply(this, arguments);
-  },
-  
-  /**
-   * Updates this environment by applying the updates argument to itself
-   * @param {Object} updates Any updated values to apply to the Environment
-   * @return {ExtMVC.Environment} The environment object
-   */
-  update: function(updates) {
-    Ext.apply(this, updates);
-  }
-});
 
 /**
  * An extension to Ext.extend which calls the extended object's onExtended function, if it exists
@@ -2881,6 +2894,110 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
 };
 
 /**
+ * @class ExtMVC.model.plugin.adapter.MemoryAdapter
+ * @extends ExtMVC.model.plugin.adapter.Abstract
+ * Provides a very basic storage system where model data get stored to an object in memory
+ */
+ExtMVC.model.plugin.adapter.MemoryAdapter = Ext.extend(ExtMVC.model.plugin.adapter.Abstract, {
+  
+  /**
+   * @property store
+   * @type Object
+   * A simple object that models get saved to
+   */
+  store: {},
+  
+  primaryKeys: {},
+    
+  /**
+   * Performs the actual save request.  Uses POST for new records, PUT when updating existing ones
+   */
+  doSave: function(instance, options) {
+    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
+    options = options || {};
+    
+    //if this model doesn't have a primary key yet, give it one now and mark it as saved
+    var id = instance.get(instance.primaryKey);
+    if (typeof id == 'undefined') {
+      id = this.primaryKeyFor(instance);
+      instance.set(instance.primaryKey, id);
+    }
+    
+    //put the model data into its store
+    this.store[instance.tableName] = this.store[instance.tableName] || {};
+    this.store[instance.tableName][id.toString()] = instance.data;
+  },
+  
+  /**
+   * Performs the actual find request.
+   * @param {Object} conditions An object containing find conditions. If a primaryKey is set this will be used
+   * to build the url for that particular instance, otherwise the collection url will be used
+   * @param {Object} options Callbacks (use callback, success and failure)
+   */
+  doFind: function(conditions, options, constructor) {
+    conditions = conditions || {}; options = options || {};
+    
+    //helper function to cut down repetition in Ajax request callback
+    var callIf = function(callback, args) {
+      if (typeof callback == 'function') callback.apply(options.scope, args);
+    };
+    
+    var modelStore = this.store[constructor.prototype.tableName] || {};
+    
+    if (typeof conditions.primaryKey == 'undefined') {
+      //return everything
+      var records = [];
+      
+      for (primaryKey in modelStore) {
+        records.push((modelStore[primaryKey]));
+      }
+      
+      console.log(records);
+      
+      return new Ext.data.Store({
+        autoLoad: true,
+        data: {'rows': records},
+        // proxy: new Ext.data.MemoryProxy({'rows': records}),
+        fields: constructor.prototype.fields.items,
+        reader: new Ext.data.JsonReader({root: 'rows'}, constructor)
+      });
+      
+    } else {
+      var data = modelStore[conditions.primaryKey.toString()];
+      
+      if (typeof data == 'undefined') {
+        callIf(options.failure);
+      } else {
+        callIf(options.success, [new constructor(data)]);
+      }
+    }
+  },
+  
+  doDestroy: function(instance, options) {
+    if (typeof instance == 'undefined') throw new Error('No instance provided to REST Adapter save');
+    options = options || {};
+    
+    Ext.Ajax.request(
+      Ext.applyIf(options, {
+        method: this.destroyMethod,
+        url:    this.instanceUrl(instance)
+      })
+    );
+  },
+  
+  /**
+   * Returns the next available primary key for a model instance
+   * @param {ExtMVC.model.Base} instance The model instance
+   * @return {Number} The primary key to use for this instance
+   */
+  primaryKeyFor: function(instance) {
+    this.primaryKeys[instance.tableName] = this.primaryKeys[instance.tableName] || 1;
+    
+    return this.primaryKeys[instance.tableName] ++;
+  }
+});
+
+/**
  * @class ExtMVC.model.plugin.adapter.RESTAdapter
  * @extends ExtMVC.model.plugin.adapter.Abstract
  * An adapter which hooks into a RESTful server side API for its data storage. This is the recommended
@@ -3842,6 +3959,334 @@ ExtMVC.model.plugin.validation.Plugin = {
 ExtMVC.model.addPlugin(ExtMVC.model.plugin.validation.Plugin);
 
 /**
+ * @class ExtMVC.view.FormWindow
+ * @extends Ext.Window
+ * Convenience class for creating a window with a default form.  Example:
+ * 
+<pre>
+MyApp.views.MyFormWindow = Ext.extend(ExtMVC.view.FormWindow, {
+
+ height: 200,
+
+ width : 400,
+
+ 
+  buildForm: function() {
+    //return your Ext.form.FormPanel here
+  }
+});
+</pre>
+ * 
+ */
+ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
+  modal  : true,
+  height : 230,
+  width  : 400,
+  
+  initComponent: function() {
+    /**
+     * @property form
+     * @type Ext.form.FormPanel
+     * The new POLN form
+     */
+    this.form = this.buildForm();
+    
+    Ext.apply(this, {
+      items : [
+        this.form
+      ],
+      buttons: [
+        {
+          text   : 'Save',
+          iconCls: 'save',
+          scope  : this,
+          handler: this.onSave
+        },
+        {
+          text   : 'Cancel',
+          iconCls: 'cancel',
+          scope  : this,
+          handler: this.onCancel
+        }
+      ],
+      layout: 'fit',
+      closeAction: 'hide'
+    });
+    
+    ExtMVC.view.FormWindow.superclass.initComponent.apply(this, arguments);
+  },
+  
+  /**
+   * Creates and returns a FormPanel instance to go inside the window. Override this yourself
+   * @return {Ext.form.FormPanel} The form panel
+   */
+  buildForm: function() {
+    return new Ext.form.FormPanel({});
+  },
+  
+  /**
+   * Loads an instance into the form
+   * @param {GetIt.models.PurchaseOrderLineNote} instance The POLN instance to load
+   */
+  loadRecord: function(instance) {
+    /**
+     * @property instance
+     * @type ExtMVC.model.Base
+     * The instance currently loaded into the form
+     */
+    this.instance = instance;
+    
+    this.form.form.loadRecord(instance);
+  },
+  
+  /**
+   * Called when the user clicks the save button
+   */
+  onSave: function() {
+    this.fireEvent('save', this.getFormValues(), this);
+  },
+  
+  /**
+   * Called when the usre clicks the cancel button. By default this just hides the window
+   */
+  onCancel: function() {
+    this.hide();
+  },
+  
+  /**
+   * Gets form values in a nicer way than getForm.getValues() does - calls getValue on each field.
+   * See http://www.diloc.de/blog/2008/03/05/how-to-submit-ext-forms-the-right-way/
+   * @return {Object} key: value pairings of form values
+   */
+  getFormValues: function() {
+    var form   = this.form.getForm(),
+        values = {};
+    
+    form.items.each(function(item) {
+      var func = (typeof item.getSubmitValue == "function") ? 'getSubmitValue' : 'getValue';
+      
+      values[item.getName()] = item[func]();
+    }, this);
+    
+    return values;
+  }
+});
+
+Ext.reg('formwindow', ExtMVC.view.FormWindow);
+
+/**
+ * @class ExtMVC.view.HasManyEditorGridPanel
+ * @extends Ext.grid.EditorGridPanel
+ * Provides some sensible defaults for a HasMany editor grid.  For example, given the following models:
+ * ExtMVC.model.define("MyApp.models.User", {
+ *   ...
+ *   hasMany: "Post"
+ * });
+ *
+ * ExtMVC.model.define("MyApp.models.Post", {
+ *   ...
+ *   belongsTo: "User"
+ * });
+ *
+ * Inside the edit User view, if we wanted to be able to quickly edit any of that User's Posts, we can insert
+ * a HasManyEditorGridPanel like this:
+ *
+ * items: [
+ *   {
+ *     xtype:       'hasmany_editorgrid',
+ *     modelObj:    userObj,
+ *     association: userObj.posts,
+ *     columns:     [... set up editor columns as per a normal EditorGridPanel]
+ *   }
+ * ]
+ *
+ * In the example above, userObj refers to the loaded User instance tied to the edit form.  The HasMany editor grid
+ * automatically listens to afteredit events and saves the HasMany model (Post in this case).
+ */
+ExtMVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
+  
+  initComponent: function() {
+    Ext.applyIf(this, {
+      autoScroll: true,
+      store:      this.association.findAll(),
+      viewConfig: { forceFit: true }
+    });
+    
+    if (this.hasTopToolbar) { this.addTopToolbar(); }
+    
+    ExtMVC.view.HasManyEditorGridPanel.superclass.initComponent.apply(this, arguments);
+    
+    /**
+     * Set up listening on the afteredit event.  Simply saves the model instance
+     */
+    this.on('afteredit', function(args) {
+      args.record.save({
+        success: function() {
+          args.record.commit();
+        }
+      });
+    }, this);
+    
+    /**
+     * Set up listening to selection change to activate the Remove button
+     */
+    this.getSelectionModel().on('selectionchange', function(selModel, selection) {
+      if (this.deleteButton) {
+        this.deleteButton.enable();
+      };
+    }, this);
+  },
+  
+  /**
+   * @property hasTopToolbar
+   * @type Boolean
+   * True to automatically show a toolbar at the top of the grid with Add and Delete buttons (defaults to true)
+   */
+  hasTopToolbar: true,
+  
+  /**
+   * @property hasNewButton
+   * @type Boolean
+   * True to add a 'New' button to the top toolbar if the top toolbar is present (defaults to true)
+   */
+  hasNewButton: true,
+  
+  /**
+   * @property hasDeleteButton
+   * @type Boolean
+   * True to add a 'Delete' button to the top toolbar if the top toolbar is present (defaults to true)
+   */
+  hasDeleteButton: true,
+  
+  /**
+   * Private.
+   * Creates a top toolbar and applies it to 'this'.  Should only be called from inside initComponent
+   */
+  addTopToolbar: function(paramName) {
+    var items = [];
+    
+    if (this.hasNewButton) {
+      this.newButton = new Ext.Toolbar.Button({
+        iconCls: 'add',
+        text:    'Add',
+        scope:   this,
+        handler: this.onAdd
+      });
+      
+      items.push(this.newButton);
+      items.push('-');
+    };
+    
+    if (this.hasDeleteButton) {
+      this.deleteButton = new Ext.Toolbar.Button({
+        text:     'Remove selected',
+        disabled: true,
+        iconCls:  'delete',
+        scope:    this,
+        handler:  this.onDelete
+      });
+      
+      items.push(this.deleteButton);
+    };
+    
+    Ext.applyIf(this, {
+      tbar: items
+    });
+  },
+  
+  /**
+   * @property windowConfig
+   * @type Object
+   * Config object passed when creating the New Association window.  Override this to customise
+   * the window that appears
+   */
+  windowConfig: {},
+  
+  /**
+   * Called when the Add button is clicked on the top toolbar
+   */
+  onAdd: function(btn) {
+    if (!this.addWindow) {
+      this.addWindow = new Ext.Window(
+        Ext.applyIf(this.windowConfig, {
+          title:  'New',
+          layout: 'fit',
+          modal:  true,
+          height: 300,
+          width:  400,
+          items:  [this.form],
+          closeAction: 'hide',
+          buttons: [
+            {
+              text:    'Save',
+              iconCls: 'save',
+              scope:   this,
+              handler: this.onSaveNew
+            },
+            {
+              text:    'Cancel',
+              iconCls: 'cancel',
+              scope:   this,
+              handler: this.onCancelNew
+            }
+          ]
+        })
+      );
+    }
+    
+    this.addWindow.show();
+  },
+  
+  /**
+   * Called when a row is selected and the delete button is clicked
+   */
+  onDelete: function(btn) {
+    var record = this.getSelectionModel().selection.record;
+    
+    if (record) {
+      record.destroy({
+        scope:   this,
+        success: function() {
+          this.store.reload();
+        },
+        failure: function() {
+          Ext.Msg.alert('Delete failed', "Something went wrong while trying to delete - please try again");
+          this.store.reload();
+        }
+      });
+    };
+    
+    this.deleteButton.disable();
+  },
+  
+  /**
+   * Called when the user clicks the save button to create a new record
+   */
+  onSaveNew: function() {
+    this.association.create(this.form.getForm().getValues(), {
+      scope:   this,
+      success: function(modelObj, response) {
+        this.store.reload();
+        this.addWindow.hide();
+      },
+      failure: function(modelObj, response) {
+        this.form.getForm().clearInvalid();
+        this.form.getForm().markInvalid(modelObj.errors.forForm());
+      }
+    });
+  },
+  
+  /**
+   * Called when the user cancels adding a new association model
+   */
+  onCancelNew: function(paramName) {
+    this.addWindow.hide();
+  }
+});
+
+Ext.reg('hasmany_editorgrid', ExtMVC.view.HasManyEditorGridPanel);
+
+/**
  * @class ExtMVC.view.scaffold.ScaffoldFormPanel
  * @extends Ext.form.FormPanel
  * Base class for any scaffold form panel (e.g. new and edit forms)
@@ -4086,6 +4531,53 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
 });
 
 Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);
+
+/**
+ * @class ExtMVC.view.scaffold.Edit
+ * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
+ * Shows a generic edit form for a given model
+ */
+ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
+  
+  /**
+   * Sets the panel's title, if not already set
+   */
+  initComponent: function() {
+    Ext.applyIf(this, {
+      title: 'Edit ' + this.model.prototype.singularHumanName
+    });
+    
+    ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+  },
+  
+  /**
+   * Loads the given record into the form and maintains a reference to it so that it can be returned
+   * when the 'save' event is fired
+   * @param {ExtMVC.Model.Base} instance The model instance to load into this form
+   */
+  loadRecord: function(instance) {
+    this.instance = instance;
+    this.getForm().loadRecord(instance);
+  },
+  
+  /**
+   * Called when the save button is clicked or CTRL + s pressed.  By default this simply fires
+   * the 'save' event, passing this.getForm().getValues() as the sole argument
+   */
+  onSave: function() {
+    this.fireEvent('save', this.instance, this.getFormValues(), this);
+  }
+  
+  /**
+   * @event save
+   * Fired when the user clicks the save button, or presses ctrl + s
+   * @param {ExtMVC.model.Base} instance The existing instance that is to be updated
+   * @param {Object} values The values entered into the form
+   * @param {ExtMVC.view.scaffold.ScaffoldFormPanel} this The form panel
+   */
+});
+
+Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);
 
 /**
  * @class ExtMVC.view.scaffold.Index
@@ -4657,379 +5149,4 @@ ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
 });
 
 Ext.reg('scaffold_new', ExtMVC.view.scaffold.New);
-
-/**
- * @class ExtMVC.view.scaffold.Edit
- * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
- * Shows a generic edit form for a given model
- */
-ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
-  
-  /**
-   * Sets the panel's title, if not already set
-   */
-  initComponent: function() {
-    Ext.applyIf(this, {
-      title: 'Edit ' + this.model.prototype.singularHumanName
-    });
-    
-    ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
-  },
-  
-  /**
-   * Loads the given record into the form and maintains a reference to it so that it can be returned
-   * when the 'save' event is fired
-   * @param {ExtMVC.Model.Base} instance The model instance to load into this form
-   */
-  loadRecord: function(instance) {
-    this.instance = instance;
-    this.getForm().loadRecord(instance);
-  },
-  
-  /**
-   * Called when the save button is clicked or CTRL + s pressed.  By default this simply fires
-   * the 'save' event, passing this.getForm().getValues() as the sole argument
-   */
-  onSave: function() {
-    this.fireEvent('save', this.instance, this.getFormValues(), this);
-  }
-  
-  /**
-   * @event save
-   * Fired when the user clicks the save button, or presses ctrl + s
-   * @param {ExtMVC.model.Base} instance The existing instance that is to be updated
-   * @param {Object} values The values entered into the form
-   * @param {ExtMVC.view.scaffold.ScaffoldFormPanel} this The form panel
-   */
-});
-
-Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);
-
-/**
- * @class ExtMVC.view.HasManyEditorGridPanel
- * @extends Ext.grid.EditorGridPanel
- * Provides some sensible defaults for a HasMany editor grid.  For example, given the following models:
- * ExtMVC.model.define("MyApp.models.User", {
- *   ...
- *   hasMany: "Post"
- * });
- *
- * ExtMVC.model.define("MyApp.models.Post", {
- *   ...
- *   belongsTo: "User"
- * });
- *
- * Inside the edit User view, if we wanted to be able to quickly edit any of that User's Posts, we can insert
- * a HasManyEditorGridPanel like this:
- *
- * items: [
- *   {
- *     xtype:       'hasmany_editorgrid',
- *     modelObj:    userObj,
- *     association: userObj.posts,
- *     columns:     [... set up editor columns as per a normal EditorGridPanel]
- *   }
- * ]
- *
- * In the example above, userObj refers to the loaded User instance tied to the edit form.  The HasMany editor grid
- * automatically listens to afteredit events and saves the HasMany model (Post in this case).
- */
-ExtMVC.view.HasManyEditorGridPanel = Ext.extend(Ext.grid.EditorGridPanel, {
-  
-  initComponent: function() {
-    Ext.applyIf(this, {
-      autoScroll: true,
-      store:      this.association.findAll(),
-      viewConfig: { forceFit: true }
-    });
-    
-    if (this.hasTopToolbar) { this.addTopToolbar(); }
-    
-    ExtMVC.view.HasManyEditorGridPanel.superclass.initComponent.apply(this, arguments);
-    
-    /**
-     * Set up listening on the afteredit event.  Simply saves the model instance
-     */
-    this.on('afteredit', function(args) {
-      args.record.save({
-        success: function() {
-          args.record.commit();
-        }
-      });
-    }, this);
-    
-    /**
-     * Set up listening to selection change to activate the Remove button
-     */
-    this.getSelectionModel().on('selectionchange', function(selModel, selection) {
-      if (this.deleteButton) {
-        this.deleteButton.enable();
-      };
-    }, this);
-  },
-  
-  /**
-   * @property hasTopToolbar
-   * @type Boolean
-   * True to automatically show a toolbar at the top of the grid with Add and Delete buttons (defaults to true)
-   */
-  hasTopToolbar: true,
-  
-  /**
-   * @property hasNewButton
-   * @type Boolean
-   * True to add a 'New' button to the top toolbar if the top toolbar is present (defaults to true)
-   */
-  hasNewButton: true,
-  
-  /**
-   * @property hasDeleteButton
-   * @type Boolean
-   * True to add a 'Delete' button to the top toolbar if the top toolbar is present (defaults to true)
-   */
-  hasDeleteButton: true,
-  
-  /**
-   * Private.
-   * Creates a top toolbar and applies it to 'this'.  Should only be called from inside initComponent
-   */
-  addTopToolbar: function(paramName) {
-    var items = [];
-    
-    if (this.hasNewButton) {
-      this.newButton = new Ext.Toolbar.Button({
-        iconCls: 'add',
-        text:    'Add',
-        scope:   this,
-        handler: this.onAdd
-      });
-      
-      items.push(this.newButton);
-      items.push('-');
-    };
-    
-    if (this.hasDeleteButton) {
-      this.deleteButton = new Ext.Toolbar.Button({
-        text:     'Remove selected',
-        disabled: true,
-        iconCls:  'delete',
-        scope:    this,
-        handler:  this.onDelete
-      });
-      
-      items.push(this.deleteButton);
-    };
-    
-    Ext.applyIf(this, {
-      tbar: items
-    });
-  },
-  
-  /**
-   * @property windowConfig
-   * @type Object
-   * Config object passed when creating the New Association window.  Override this to customise
-   * the window that appears
-   */
-  windowConfig: {},
-  
-  /**
-   * Called when the Add button is clicked on the top toolbar
-   */
-  onAdd: function(btn) {
-    if (!this.addWindow) {
-      this.addWindow = new Ext.Window(
-        Ext.applyIf(this.windowConfig, {
-          title:  'New',
-          layout: 'fit',
-          modal:  true,
-          height: 300,
-          width:  400,
-          items:  [this.form],
-          closeAction: 'hide',
-          buttons: [
-            {
-              text:    'Save',
-              iconCls: 'save',
-              scope:   this,
-              handler: this.onSaveNew
-            },
-            {
-              text:    'Cancel',
-              iconCls: 'cancel',
-              scope:   this,
-              handler: this.onCancelNew
-            }
-          ]
-        })
-      );
-    }
-    
-    this.addWindow.show();
-  },
-  
-  /**
-   * Called when a row is selected and the delete button is clicked
-   */
-  onDelete: function(btn) {
-    var record = this.getSelectionModel().selection.record;
-    
-    if (record) {
-      record.destroy({
-        scope:   this,
-        success: function() {
-          this.store.reload();
-        },
-        failure: function() {
-          Ext.Msg.alert('Delete failed', "Something went wrong while trying to delete - please try again");
-          this.store.reload();
-        }
-      });
-    };
-    
-    this.deleteButton.disable();
-  },
-  
-  /**
-   * Called when the user clicks the save button to create a new record
-   */
-  onSaveNew: function() {
-    this.association.create(this.form.getForm().getValues(), {
-      scope:   this,
-      success: function(modelObj, response) {
-        this.store.reload();
-        this.addWindow.hide();
-      },
-      failure: function(modelObj, response) {
-        this.form.getForm().clearInvalid();
-        this.form.getForm().markInvalid(modelObj.errors.forForm());
-      }
-    });
-  },
-  
-  /**
-   * Called when the user cancels adding a new association model
-   */
-  onCancelNew: function(paramName) {
-    this.addWindow.hide();
-  }
-});
-
-Ext.reg('hasmany_editorgrid', ExtMVC.view.HasManyEditorGridPanel);
-
-/**
- * @class ExtMVC.view.FormWindow
- * @extends Ext.Window
- * Convenience class for creating a window with a default form.  Example:
- * 
-<pre>
-MyApp.views.MyFormWindow = Ext.extend(ExtMVC.view.FormWindow, {
-
- height: 200,
-
- width : 400,
-
- 
-  buildForm: function() {
-    //return your Ext.form.FormPanel here
-  }
-});
-</pre>
- * 
- */
-ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
-  modal  : true,
-  height : 230,
-  width  : 400,
-  
-  initComponent: function() {
-    /**
-     * @property form
-     * @type Ext.form.FormPanel
-     * The new POLN form
-     */
-    this.form = this.buildForm();
-    
-    Ext.apply(this, {
-      items : [
-        this.form
-      ],
-      buttons: [
-        {
-          text   : 'Save',
-          iconCls: 'save',
-          scope  : this,
-          handler: this.onSave
-        },
-        {
-          text   : 'Cancel',
-          iconCls: 'cancel',
-          scope  : this,
-          handler: this.onCancel
-        }
-      ],
-      layout: 'fit',
-      closeAction: 'hide'
-    });
-    
-    ExtMVC.view.FormWindow.superclass.initComponent.apply(this, arguments);
-  },
-  
-  /**
-   * Creates and returns a FormPanel instance to go inside the window. Override this yourself
-   * @return {Ext.form.FormPanel} The form panel
-   */
-  buildForm: function() {
-    return new Ext.form.FormPanel({});
-  },
-  
-  /**
-   * Loads an instance into the form
-   * @param {GetIt.models.PurchaseOrderLineNote} instance The POLN instance to load
-   */
-  loadRecord: function(instance) {
-    /**
-     * @property instance
-     * @type ExtMVC.model.Base
-     * The instance currently loaded into the form
-     */
-    this.instance = instance;
-    
-    this.form.form.loadRecord(instance);
-  },
-  
-  /**
-   * Called when the user clicks the save button
-   */
-  onSave: function() {
-    this.fireEvent('save', this.getFormValues(), this);
-  },
-  
-  /**
-   * Called when the usre clicks the cancel button. By default this just hides the window
-   */
-  onCancel: function() {
-    this.hide();
-  },
-  
-  /**
-   * Gets form values in a nicer way than getForm.getValues() does - calls getValue on each field.
-   * See http://www.diloc.de/blog/2008/03/05/how-to-submit-ext-forms-the-right-way/
-   * @return {Object} key: value pairings of form values
-   */
-  getFormValues: function() {
-    var form   = this.form.getForm(),
-        values = {};
-    
-    form.items.each(function(item) {
-      var func = (typeof item.getSubmitValue == "function") ? 'getSubmitValue' : 'getValue';
-      
-      values[item.getName()] = item[func]();
-    }, this);
-    
-    return values;
-  }
-});
-
-Ext.reg('formwindow', ExtMVC.view.FormWindow);
 

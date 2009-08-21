@@ -1,4 +1,9 @@
 require 'vendor/mvc/scripts/builder'
+require 'vendor/mvc/scripts/builders/plugin_builder'
+require 'vendor/mvc/scripts/builders/mvc_builder'
+require 'vendor/mvc/scripts/builders/app_builder'
+require 'vendor/mvc/scripts/builders/all_builder'
+
 require 'vendor/mvc/scripts/generator'
 require 'vendor/mvc/scripts/plugin'
 require 'vendor/mvc/scripts/settings'

@@ -1,0 +1,22 @@
+# Defines the build order of Ext MVC. Comments indicated with a hash.
+# Each line denotes either a single file, or a directory glob. If a glob, all matching files are included
+# (unless they have already been defined)
+
+MVC.js
+App.js
+lib/*.js
+overrides/*.js
+controller/*.js
+
+model/Model.js
+model/Base.js
+
+model/adapters/AbstractAdapter.js
+model/adapters/*.js
+
+model/validations/Validations.js
+model/validations/*.js
+
+view/*.js
+view/scaffold/ScaffoldFormPanel.js
+view/scaffold/*.js
