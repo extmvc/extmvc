@@ -1209,6 +1209,8 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
     //   'base': {preserveOrder: false, }
     // };
     
+    this.loadStylesheets(env);
+    
     Ext.each(env.overrides, function(file) {
       baseFiles.push(String.format("{0}/{1}.js", env.overridesDir, file));
     }, this);
@@ -1344,6 +1346,22 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
   },
   
   /**
+   * Inserts <link> tags to load stylesheets contained in the environment
+   * @param {ExtMVC.lib.Environment} env The environment to load stylesheets from
+   */
+  loadStylesheets: function(env) {
+    var body = Ext.getBody();
+    Ext.each(env.stylesheets, function(filename) {
+      body.createChild({
+        tag : 'link',
+        rel : 'stylesheet',
+        type: 'text/css',
+        href: String.format("stylesheets/{0}.css", filename)
+      });
+    }, this);
+  },
+  
+  /**
    * Creates and returns a script tag, but does not place it into the document. If a callback function
    * is passed, this is called when the script has been loaded
    * @param {String} filename The name of the file to create a script tag for
@@ -1446,7 +1464,14 @@ ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
       appDir      : '../app',
       vendor      : ['mvc'],
       mvcFilename : 'ext-mvc-all-min',
-      config      : ['app/App', 'config/routes']
+      config      : ['app/App', 'config/routes'],
+      
+      /**
+       * @property stylesheets
+       * @type Array
+       * The stylesheets to load for this app (defaults to just ext-all)
+       */
+      stylesheets: ['ext-all']
     });
   },
   
