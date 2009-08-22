@@ -1,3 +1,5 @@
+require 'rubygems'
+require 'json'
 require 'yaml'
 
 module ExtMVC
@@ -16,13 +18,40 @@ module ExtMVC
     puts environment.inspect
   end
   
-  def self.add_script
-    filename = environment['homepage'] || 'index.html'
+  def self.application_files_for(environment)
+    files = []
     
-    doc = Hpricot(open(filename))
+    [
+      environment["overrides"].collect {|o| "config/overrides/#{o}.js"},
+      environment["config"].collect {|o| "#{o}.js"},
+      environment["plugins"].collect {|o| "vendor/plugins/#{o}/#{o}-all.js"},
+      environment["models"].collect {|o| "app/models/#{o}.js"},
+      environment["controllers"].collect {|o| "app/controllers/#{o}Controller.js"},
+      environment["views"].collect {|o| o.collect {|dir, fileList| fileList.collect {|fileName| "app/views/#{dir}/#{fileName}.js"}.flatten}}.flatten
+    ].each {|f| files.concat(f)}
     
-    doc.search("#ext-mvc-application-views").append "test"
+    files
+  end
+  
+  def self.mvc_production_environment
+    environment = {
+      'pluginsDir'   => '../vendor/plugins',
+      'libDir'       => '../lib',
+      'configDir'    => '../config',
+      'overridesDir' => '../config/overrides',
+      'appDir'       => '../app',
+      'vendor'       => ['mvc'],
+      'mvcFilename'  => 'ext-mvc-all-min',
+      'config'       => ['app/App', 'config/routes'],
+      'stylesheets'  => ['ext-all']
+    }
     
-    doc.search("#ext-mvc-application-views")
+    default     = JSON::Parser.new(File.read('config/environment.json')).parse()
+    production  = JSON::Parser.new(File.read('config/environments/production.json')).parse()
+    
+    environment.merge!(default)
+    environment.merge!(production)
+    
+    environment
   end
 end

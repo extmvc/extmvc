@@ -139,7 +139,7 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 
 ExtMVC = new ExtMVC();
 
-Ext.ns('ExtMVC.router', 'ExtMVC.plugin', 'ExtMVC.controller', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib');
+Ext.ns('ExtMVC.router', 'ExtMVC.plugin', 'ExtMVC.controller', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib', 'ExtMVC.test');
 
 /**
  * @class ExtMVC.App
@@ -5149,4 +5149,856 @@ ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
 });
 
 Ext.reg('scaffold_new', ExtMVC.view.scaffold.New);
+
+/**
+ * @class ExtMVC.test.TestRunner
+ * @extends Ext.util.Observable
+ * Wraps JSpec to provide normal Ext-style events
+ */
+ExtMVC.test.TestRunner = Ext.extend(Ext.util.Observable, {
+
+  constructor: function(config) {
+    ExtMVC.test.TestRunner.superclass.constructor.apply(this, arguments);
+    
+    Ext.apply(this, {
+      /**
+       * @property hasRecentFailures
+       * @type Boolean
+       * True if the last full suite run had failures
+       */
+      hasRecentFailures: false,
+      
+      /**
+       * @property fullRun
+       * @type Boolean
+       * True if the last run was a full run (as opposed to only running a subset of suites)
+       */
+      fullRun: false
+    });
+    
+    this.addEvents(
+      /**
+       * @event starting
+       * Fires when the runner starts running specs
+       */
+      'starting',
+      
+      /**
+       * @event finished
+       * Fires when the runner has finished running a batch of tests
+       * @param {Object} stats Test pass stats
+       */
+      'finished'
+    );
+    
+    this.tests = [];
+  },
+  
+  onJSpecFinish: function(options) {
+    runner.fireEvent('finished', JSpec.stats);
+    
+    if (runner.fullRun == true) {
+      runner.hasRecentFailures = JSpec.stats.failures > 0;
+    }
+  },
+  
+  /**
+   * Adds an array of test suites
+   * @param {Array} tests Array of urls to load test suites from
+   */
+  addTests: function(tests) {
+    this.tests = this.tests.concat(tests);
+  },
+  
+  /**
+   * Executes an array of test files and fires the 'finished' event when complete
+   * @param {Array} tests Optional array of test files to run (defaults to all tests)
+   */
+  runTests: function(tests) {
+    //we're doing a full run if a test subset array was not passed in
+    this.fullRun = !Ext.isArray(tests);
+    
+    tests = tests || this.tests;
+    
+    delete JSpec;
+    var filename = "../vendor/jspec/lib/jspec.js",
+        callback = function() {
+          this.fireEvent('starting');
+          
+          JSpec.options.formatter = ExtMVC.test.JSpecFormatter;
+          
+          Ext.each(tests, function(test) {
+            JSpec.exec(test);
+          }, this);
+
+          JSpec.include({
+            utilities : {
+              runner: this
+            },
+            reporting : this.onJSpecFinish
+          });
+
+          JSpec.run({ failuresOnly: false }).report();
+        }.createDelegate(this);
+    
+    var script = document.createElement('script');
+    script.type = "text/javascript";
+    script.src = filename;
+    
+    //IE has a different way of handling <script> loads, so we need to check for it here
+    if (script.readyState) {
+      script.onreadystatechange = function(){
+        if (script.readyState == "loaded" || script.readyState == "complete") {
+          script.onreadystatechange = null;
+          callback();
+        }
+      };
+    } else {
+      script.onload = callback;
+    }
+    
+    document.getElementsByTagName("head")[0].appendChild(script);
+  }
+});
+
+/**
+ * @class ExtMVC.test.JSpecFormatter
+ * @extends Object
+ * A JSpec formatter which can be used to extract failure data from JSpec
+ */
+ExtMVC.test.JSpecFormatter = Ext.extend(Object, {
+
+  constructor: function(results, options) {
+    this.suites = results.suites;
+  },
+  
+  /**
+   * Returns an array of all failing Spec objects for all suites
+   */
+  getFailingSpecs: function(suites) {
+    var suites = suites || this.suites;
+    var failures = [];
+    
+    Ext.each(suites, function(suite) {
+      failures = failures.concat(this.getFailuresForSuite(suite));
+      
+      if (suite.hasSuites()) {
+        failures = failures.concat(this.getFailingSpecs(suite.suites));
+      }
+    }, this);
+    
+    return failures;
+  },
+  
+  /**
+   * Returns an array of failing Spec objects for a given suite
+   */
+  getFailuresForSuite: function(suite) {
+    if (suite.ran && suite.passed()) {
+      return [];
+    } else {
+      var failures = [];
+      
+      Ext.each(suite.specs, function(spec) {
+        if (!spec.passed()) {
+          Ext.apply(spec, {
+            code: this.bodyContents(spec.body)
+          });
+          
+          failures.push(spec);
+        }
+      }, this);
+      
+      return failures;
+    }
+  },
+  
+  bodyContents: function(body) {
+    return JSpec.
+      escape(JSpec.contentsOf(body)).
+      replace(/^ */gm, function(a){ 
+        return (new Array(Math.round(a.length / 3))).join(' ');
+      }).
+      replace("\n", '<br/>');
+  }
+});
+
+// DOM : function(results, options) {
+//   var id = option('reportToId') || 'jspec'
+//   var report = document.getElementById(id)
+//   var failuresOnly = option('failuresOnly')
+//   var classes = results.stats.failures ? 'has-failures' : ''
+//   if (!report) throw 'JSpec requires the element #' + id + ' to output its reports'
+// 
+//   var markup =
+//   '<div id="jspec-report" class="' + classes + '"><div class="heading">           \
+//   <span class="passes">Passes: <em>' + results.stats.passes + '</em></span>       \
+//   <span class="failures">Failures: <em>' + results.stats.failures + '</em></span> \
+//   </div><table class="suites">'
+//   
+//   bodyContents = function(body) {
+//     return JSpec.
+//       escape(JSpec.contentsOf(body)).
+//       replace(/^ */gm, function(a){ return (new Array(Math.round(a.length / 3))).join(' ') }).
+//       replace("\n", '<br/>')
+//   }
+//   
+//   renderSuite = function(suite) {
+//     var displaySuite = failuresOnly ? suite.ran && !suite.passed() : suite.ran
+//     if (displaySuite && suite.hasSpecs()) {
+//       markup += '<tr class="description"><td colspan="2">' + escape(suite.description) + '</td></tr>'
+//       each(suite.specs, function(i, spec){
+//         markup += '<tr class="' + (i % 2 ? 'odd' : 'even') + '">'
+//         if (spec.requiresImplementation())
+//           markup += '<td class="requires-implementation" colspan="2">' + escape(spec.description) + '</td>'
+//         else if (spec.passed() && !failuresOnly)
+//           markup += '<td class="pass">' + escape(spec.description)+ '</td><td>' + spec.assertionsGraph() + '</td>'
+//         else if(!spec.passed())
+//           markup += '<td class="fail">' + escape(spec.description) + ' <em>' + spec.failure().message + '</em>' + '</td><td>' + spec.assertionsGraph() + '</td>'
+//         markup += '<tr class="body"><td colspan="2"><pre>' + bodyContents(spec.body) + '</pre></td></tr>'
+//       })
+//       markup += '</tr>'
+//     }
+//   }  
+//   
+//   renderSuites = function(suites) {
+//     each(suites, function(suite){
+//       renderSuite(suite)
+//       if (suite.hasSuites()) renderSuites(suite.suites)
+//     })
+//   }
+//   
+//   renderSuites(results.suites)
+//   markup += '</table></div>'
+//   report.innerHTML = markup
+// },
+
+/**
+ * @class ExtMVC.test.TestClient
+ * @extends Ext.util.Observable
+ * Simple client which interacts with a test server, polling for new tests to run and posting results
+ */
+ExtMVC.test.TestClient = Ext.extend(Ext.util.Observable, {
+
+  constructor: function(config) {
+    config = config || {};
+          
+    Ext.applyIf(config, {
+      /**
+       * @property currentCallbackId
+       * @type Number
+       * The current callback number. This is incremented on every request, and allows for a unique
+       */
+      currentCallbackId: 1,
+      
+      /**
+       * @property lastChangesReceived
+       * @type Date
+       * Time the last changes array was received from the server
+       */
+      lastChangesReceived: new Date()
+    });
+    
+    Ext.apply(this, config);
+    
+    ExtMVC.test.TestClient.superclass.constructor.apply(this, arguments);
+    
+    this.initEvents();
+    this.initListeners();
+    
+    /**
+     * @property runner
+     * @type ExtMVC.test.TestRunner
+     * The test runner instance used to actually run the tests
+     */
+    this.runner = new ExtMVC.test.TestRunner();
+    this.runner.on('finished', this.postResults, this);
+    
+    this.loadTestFiles();
+    
+    Ext.TaskMgr.start({
+      interval: 1000,
+      scope   : this,
+      run     : function() {
+        this.jsonpRequest("http://192.168.4.3:5000/changes", {
+          since: Math.floor(this.lastChangesReceived.getTime() / 1000)
+        }, this.onChangePoll);
+      }
+    });
+  },
+  
+  /**
+   * Sets up events emitted by TestClient
+   */
+  initEvents: function() {
+    this.addEvents(
+      /**
+       * @event results-posted
+       * Fires when results have been successfully sent to the test server
+       * @param {Object} stats The stats object that was sent
+       */
+      'results-posted',
+      
+      /**
+       * @event changes-received
+       * Fires when the server has notified this client that files have changed and the appropriate
+       * suites must be run again
+       * @param {Array} changes The files that have changed
+       */
+      'changes-received'
+    );
+  },
+  
+  /**
+   * Sets up internal listeners
+   */
+  initListeners: function() {
+    this.on('changes-received', this.onChangesReceived, this);
+  },
+  
+  /**
+   * Retrieves the array of all test files from the server, then tells JSpec to run them
+   * @param {Boolean} autoRun True to run test files as soon as they are loaded (defaults to true)
+   */
+  loadTestFiles: function() {
+    this.jsonpRequest('http://192.168.4.3:5000/all_test_files', {}, function(response) {
+      this.runner.addTests(response.files);
+      this.runner.runTests();
+    });
+  },
+  
+  /**
+   * Posts results back to the server
+   * @param {Object} stats Stats object
+   */
+  postResults: function(stats) {
+    this.jsonpRequest('http://192.168.4.3:5000/results', stats, function() {
+      this.fireEvent('results-posted', stats);
+      
+      var runner = this.runner;
+      
+      if (stats.failures == 0 && runner.hasRecentFailures && !runner.fullRun) {
+        console.log('running full suite after failures');
+        // runner.runTests();
+      };
+    });
+  },
+  
+  /**
+   * Called after the client has polled the server for changes. Fires the 'changes-received' event if any files have changed
+   * @param {Object} response The server response, should include a 'changes' property with an array of changes
+   */
+  onChangePoll: function(response) {
+    var changes = response.files;
+    
+    if (Ext.isArray(changes) && changes.length > 0) {
+      this.fireEvent('changes-received', changes);
+    };
+  },
+  
+  /**
+   * Called when the server has indicated that app or spec files have been modified.
+   * Runs the test suite again.
+   * @param {Array} changes The array of changed file names
+   */
+  onChangesReceived: function(changes) {
+    this.lastChangesReceived = new Date();
+    this.runner.runTests(changes);
+  },
+  
+  jsonpRequest: function(url, params, callback, scope) {
+    scope = scope || this;
+    
+    var head = document.getElementsByTagName("head")[0];
+    
+    var callbackName = "stProxyCallback" + this.currentCallbackId;
+    this.currentCallbackId += 1;
+    
+    window[callbackName] = function() {
+      callback.apply(scope, arguments);
+    };
+    
+    var urlParams = ["callback=" + callbackName];
+    
+    Ext.iterate(params, function(key, value) {
+      urlParams.push(String.format("{0}={1}", key, value));
+    }, this);
+    
+    url = String.format("{0}?{1}", url, urlParams.join("&"));
+    
+    head.appendChild(
+      this.buildScriptTag(url)
+    );
+  },
+  
+  
+  buildScriptTag: function(filename, callback) {
+    callback = callback || Ext.emptyFn;
+    
+    var script = document.createElement('script');
+    script.type = "text/javascript";
+    script.src = filename;
+    
+    //IE has a different way of handling <script> loads, so we need to check for it here
+    if (script.readyState) {
+      script.onreadystatechange = function(){
+        if (script.readyState == "loaded" || script.readyState == "complete") {
+          script.onreadystatechange = null;
+          callback();
+        }
+      };
+    } else {
+      script.onload = callback;
+    }    
+    
+    return script;
+  }
+});
+
+/**
+ * @class ExtMVC.test.TestGrid
+ * @extends Ext.grid.GridPanel
+ * Customised GridPanel which shows the results of unit tests
+ */
+ExtMVC.test.TestGrid = Ext.extend(Ext.grid.GridPanel, {
+
+  initComponent: function() {
+    var expander = new Ext.ux.grid.RowExpander({
+      tpl : new Ext.XTemplate(
+        '<tpl for="failingSpecs">',
+          '<div class="detail">',
+            '<tpl for="suite">',
+              '<h2>Suite: {name}</h2>',
+            '</tpl>',
+            'Expectation: {description}',
+            '<ul class="assertions">',
+              '<tpl for="assertions">',
+                '<li>',
+                  '{message}',
+                '</li>',
+              '</tpl>',
+            '</ul>',
+            '<div class="code">',
+              '{code}',
+            '</div>',
+          '</div>',
+        '</tpl>'
+      )
+    });
+    
+    Ext.applyIf(this, {
+      plugins: expander,
+      
+      store: new Ext.data.JsonStore({
+        data  : [],
+        fields: [
+          {name: 'passes',   type: 'int'},
+          {name: 'failures', type: 'int'},
+          {name: 'time',     type: 'int'},
+          {name: 'total',    type: 'int', mapping: 'specs'},
+          {name: 'failingSpecs'}
+        ]
+      }),
+      
+      cm: new Ext.grid.ColumnModel({
+        defaults: {
+          sortable: false
+        },
+        columns: [
+          expander,
+          {
+            header   : "Passes",
+            dataIndex: 'passes'
+          },
+          {
+            header   : "Failures",
+            dataIndex: 'failures'
+          },
+          {
+            header   : "Total",
+            dataIndex: 'total'
+          },
+          {
+            header   : "Time (ms)",
+            dataIndex: 'time'
+          }
+        ]
+      }),
+      
+      viewConfig: {
+        forceFit: true,
+        getRowClass: function(record, index) {
+          return record.get('failures') == 0 ? 'pass' : 'fail';
+        }
+      }
+    });
+    
+    ExtMVC.test.TestGrid.superclass.initComponent.apply(this, arguments);
+    
+    /**
+     * When a new row has been inserted, expand it if the tests didn't all pass
+     * We have to do a little hack to set the rowIndex inside here, as the RowExpander
+     * plugin errors otherwise :/
+     */
+    this.getView().on('rowsinserted', function(view, firstRow, lastRow) {
+      var record = this.store.getAt(firstRow);
+      
+      if (record.get('failures') > 0) {
+        //first, collapse all rows
+        this.store.each(function(record, index) {
+          var row = view.getRow(index);
+          row.rowIndex = index;
+          
+          expander.collapseRow(row);
+        });
+
+        //now, expand the last row as it contains errors
+        var row = view.getRow(firstRow);
+        row.rowIndex = firstRow;
+
+        expander.expandRow(row);
+        
+        row.scrollIntoView(this.ownerCt);
+      };
+    }, this);
+  }
+});
+
+
+/*!
+ * Ext JS Library 3.0+
+ * Copyright(c) 2006-2009 Ext JS, LLC
+ * licensing@extjs.com
+ * http://www.extjs.com/license
+ */
+Ext.ns('Ext.ux.grid');
+
+/**
+ * @class Ext.ux.grid.RowExpander
+ * @extends Ext.util.Observable
+ * Plugin (ptype = 'rowexpander') that adds the ability to have a Column in a grid which enables
+ * a second row body which expands/contracts.  The expand/contract behavior is configurable to react
+ * on clicking of the column, double click of the row, and/or hitting enter while a row is selected.
+ *
+ * @ptype rowexpander
+ */
+Ext.ux.grid.RowExpander = Ext.extend(Ext.util.Observable, {
+    /**
+     * @cfg {Boolean} expandOnEnter
+     * <tt>true</tt> to toggle selected row(s) between expanded/collapsed when the enter
+     * key is pressed (defaults to <tt>true</tt>).
+     */
+    expandOnEnter : true,
+    /**
+     * @cfg {Boolean} expandOnDblClick
+     * <tt>true</tt> to toggle a row between expanded/collapsed when double clicked
+     * (defaults to <tt>true</tt>).
+     */
+    expandOnDblClick : true,
+
+    header : '',
+    width : 20,
+    sortable : false,
+    fixed : true,
+    menuDisabled : true,
+    dataIndex : '',
+    id : 'expander',
+    lazyRender : true,
+    enableCaching : true,
+
+    constructor: function(config){
+        Ext.apply(this, config);
+
+        this.addEvents({
+            /**
+             * @event beforeexpand
+             * Fires before the row expands. Have the listener return false to prevent the row from expanding.
+             * @param {Object} this RowExpander object.
+             * @param {Object} Ext.data.Record Record for the selected row.
+             * @param {Object} body body element for the secondary row.
+             * @param {Number} rowIndex The current row index.
+             */
+            beforeexpand: true,
+            /**
+             * @event expand
+             * Fires after the row expands.
+             * @param {Object} this RowExpander object.
+             * @param {Object} Ext.data.Record Record for the selected row.
+             * @param {Object} body body element for the secondary row.
+             * @param {Number} rowIndex The current row index.
+             */
+            expand: true,
+            /**
+             * @event beforecollapse
+             * Fires before the row collapses. Have the listener return false to prevent the row from collapsing.
+             * @param {Object} this RowExpander object.
+             * @param {Object} Ext.data.Record Record for the selected row.
+             * @param {Object} body body element for the secondary row.
+             * @param {Number} rowIndex The current row index.
+             */
+            beforecollapse: true,
+            /**
+             * @event collapse
+             * Fires after the row collapses.
+             * @param {Object} this RowExpander object.
+             * @param {Object} Ext.data.Record Record for the selected row.
+             * @param {Object} body body element for the secondary row.
+             * @param {Number} rowIndex The current row index.
+             */
+            collapse: true
+        });
+
+        Ext.ux.grid.RowExpander.superclass.constructor.call(this);
+
+        if(this.tpl){
+            if(typeof this.tpl == 'string'){
+                this.tpl = new Ext.Template(this.tpl);
+            }
+            this.tpl.compile();
+        }
+
+        this.state = {};
+        this.bodyContent = {};
+    },
+
+    getRowClass : function(record, rowIndex, p, ds){
+        p.cols = p.cols-1;
+        var content = this.bodyContent[record.id];
+        if(!content && !this.lazyRender){
+            content = this.getBodyContent(record, rowIndex);
+        }
+        if(content){
+            p.body = content;
+        }
+        return this.state[record.id] ? 'x-grid3-row-expanded' : 'x-grid3-row-collapsed';
+    },
+
+    init : function(grid){
+        this.grid = grid;
+
+        var view = grid.getView();
+        view.getRowClass = view.getRowClass.createSequence(this.getRowClass, this);
+
+        view.enableRowBody = true;
+
+
+        grid.on('render', this.onRender, this);
+        grid.on('destroy', this.onDestroy, this);
+    },
+
+    // @private
+    onRender: function() {
+        var grid = this.grid;
+        var mainBody = grid.getView().mainBody;
+        mainBody.on('mousedown', this.onMouseDown, this, {delegate: '.x-grid3-row-expander'});
+        if (this.expandOnEnter) {
+            this.keyNav = new Ext.KeyNav(this.grid.getGridEl(), {
+                'enter' : this.onEnter,
+                scope: this
+            });
+        }
+        if (this.expandOnDblClick) {
+            grid.on('rowdblclick', this.onRowDblClick, this);
+        }
+    },
+    
+    // @private    
+    onDestroy: function() {
+        if(this.keyNav){
+            this.keyNav.disable();
+            delete this.keyNav;
+        }
+        /*
+         * A majority of the time, the plugin will be destroyed along with the grid,
+         * which means the mainBody won't be available. On the off chance that the plugin
+         * isn't destroyed with the grid, take care of removing the listener.
+         */
+        var mainBody = this.grid.getView().mainBody;
+        if(mainBody){
+            mainBody.un('mousedown', this.onMouseDown, this);
+        }
+    },
+    // @private
+    onRowDblClick: function(grid, rowIdx, e) {
+        this.toggleRow(rowIdx);
+    },
+
+    onEnter: function(e) {
+        var g = this.grid;
+        var sm = g.getSelectionModel();
+        var sels = sm.getSelections();
+        for (var i = 0, len = sels.length; i < len; i++) {
+            var rowIdx = g.getStore().indexOf(sels[i]);
+            this.toggleRow(rowIdx);
+        }
+    },
+
+    getBodyContent : function(record, index){
+        if(!this.enableCaching){
+            return this.tpl.apply(record.data);
+        }
+        var content = this.bodyContent[record.id];
+        if(!content){
+            content = this.tpl.apply(record.data);
+            this.bodyContent[record.id] = content;
+        }
+        return content;
+    },
+
+    onMouseDown : function(e, t){
+        e.stopEvent();
+        var row = e.getTarget('.x-grid3-row');
+        this.toggleRow(row);
+    },
+
+    renderer : function(v, p, record){
+        p.cellAttr = 'rowspan="2"';
+        return '<div class="x-grid3-row-expander">&#160;</div>';
+    },
+
+    beforeExpand : function(record, body, rowIndex){
+        if(this.fireEvent('beforeexpand', this, record, body, rowIndex) !== false){
+            if(this.tpl && this.lazyRender){
+                body.innerHTML = this.getBodyContent(record, rowIndex);
+            }
+            return true;
+        }else{
+            return false;
+        }
+    },
+
+    toggleRow : function(row){
+        if(typeof row == 'number'){
+            row = this.grid.view.getRow(row);
+        }
+        this[Ext.fly(row).hasClass('x-grid3-row-collapsed') ? 'expandRow' : 'collapseRow'](row);
+    },
+
+    expandRow : function(row){
+        if(typeof row == 'number'){
+            row = this.grid.view.getRow(row);
+        }
+        
+        var record = this.grid.store.getAt(row.rowIndex);
+        var body = Ext.DomQuery.selectNode('tr:nth(2) div.x-grid3-row-body', row);
+        if(this.beforeExpand(record, body, row.rowIndex)){
+            this.state[record.id] = true;
+            Ext.fly(row).replaceClass('x-grid3-row-collapsed', 'x-grid3-row-expanded');
+            this.fireEvent('expand', this, record, body, row.rowIndex);
+        }
+    },
+
+    collapseRow : function(row){
+        if(typeof row == 'number'){
+            row = this.grid.view.getRow(row);
+        }
+        var record = this.grid.store.getAt(row.rowIndex);
+        var body = Ext.fly(row).child('tr:nth(1) div.x-grid3-row-body', true);
+        if(this.fireEvent('beforecollapse', this, record, body, row.rowIndex) !== false){
+            this.state[record.id] = false;
+            Ext.fly(row).replaceClass('x-grid3-row-expanded', 'x-grid3-row-collapsed');
+            this.fireEvent('collapse', this, record, body, row.rowIndex);
+        }
+    }
+});
+
+Ext.preg('rowexpander', Ext.ux.grid.RowExpander);
+
+//backwards compat
+Ext.grid.RowExpander = Ext.ux.grid.RowExpander;
+
+/**
+ * @class ExtMVC.test.TestViewport
+ * @extends Ext.Viewport
+ * Specialised Viewport which manages the running and reporting of tests
+ */
+ExtMVC.test.TestViewport = Ext.extend(Ext.Viewport, {
+
+  constructor: function(config) {
+    config = config || {};
+    
+    /**
+     * @property header
+     * @type Ext.Panel
+     * Ext MVC test suite banner Panel
+     */
+    this.header = new Ext.Panel({
+      html  : 'Ext MVC Application Test suite',
+      region: 'north'
+    });
+    
+    /**
+     * @property statusText
+     * @type Ext.Toolbar.TextItem
+     * Displays the current status of the test suite in the bottom toolbar
+     */
+    this.statusText = new Ext.Toolbar.TextItem({
+      text: "Ready"
+    });
+    
+    /**
+     * @property rerunButton
+     * @type Ext.Button
+     * Button attached to the toolbar which re-runs the whole suite
+     */
+    this.rerunButton = new Ext.Button({
+      text    : 'Rerun all tests',
+      iconCls : 'all',
+      scope   : this,
+      handler : function() {
+        this.client.runner.runTests();
+      }
+    });
+    
+    /**
+     * @property main
+     * @type Ext.Panel
+     * The main Ext.grid.GridPanel that shows results from browsers as they come in
+     */
+    this.main = new ExtMVC.test.TestGrid({
+      region: 'center',
+      tbar  : [this.rerunButton],
+      bbar  : [this.statusText]
+    });
+          
+    Ext.applyIf(config, {
+      layout: 'border',
+      items: [
+        this.header,
+        this.main
+      ]
+    });
+    
+    ExtMVC.test.TestViewport.superclass.constructor.call(this, config);
+    
+    this.initListeners();
+  },
+  
+  /**
+   * Initialises listeners on the Test Client
+   */
+  initListeners: function() {
+    if (this.client != undefined) {
+      //used in calculating run time
+      var startTime;
+      
+      this.client.runner.on({
+        scope: this,
+        starting: function() {
+          startTime = new Date();
+          this.statusText.setText("Running specs");
+        },
+        finished: function(stats) {
+          Ext.apply(stats, {
+            time        : new Date() - startTime,
+            failingSpecs: new ExtMVC.test.JSpecFormatter(JSpec, JSpec.options).getFailingSpecs()
+          });
+          
+          this.main.store.loadData([stats], true);
+          this.statusText.setText("Ready");
+        }
+      });
+    }
+  }
+});
 

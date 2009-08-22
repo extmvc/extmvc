@@ -164,6 +164,8 @@ module ExtMVC
     # Takes an array of Builder instances and checks their files every second to see if any changed
     # if they did, rebuild that package. Also builds all packages immediately when first run
     def self.auto(instances)
+      puts
+      
       # Force rebuild on all packages on startup
       instances.each {|i| i.build}
       

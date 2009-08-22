@@ -20,3 +20,6 @@ model/validations/*.js
 view/*.js
 view/scaffold/ScaffoldFormPanel.js
 view/scaffold/*.js
+
+testrunner/TestRunner.js
+testrunner/*.js
