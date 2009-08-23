@@ -4,6 +4,7 @@
 
 MVC.js
 App.js
+lib/ClassManager.js
 lib/*.js
 overrides/*.js
 controller/*.js
