@@ -86,7 +86,7 @@ module Rack
     end
     
     def file_list
-      Dir["spec/models/*.js"].concat(Dir["spec/controllers/*.js"]).concat(Dir["spec/views/**/*.js"])
+      Dir["spec/models/*.js"].concat(Dir["spec/controllers/*.js"]) #.concat(Dir["spec/views/**/*.js"])
     end
   end
 end
