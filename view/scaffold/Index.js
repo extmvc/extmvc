@@ -3,8 +3,11 @@
  * @extends Ext.grid.GridPanel
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
-ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
-  
+// ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
+ExtMVC.registerView('scaffold', 'index', {
+  xtype        : 'grid',
+  registerXType: 'scaffold_index',
+
   constructor: function(config) {
     config = config || {};
 
@@ -26,7 +29,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       loadMask: true
     });
 
-    ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
+    Ext.grid.GridPanel.prototype.constructor.call(this, config);
     
     this.initListeners();
   },
@@ -59,7 +62,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       ]
     });
     
-    ExtMVC.view.scaffold.Index.superclass.initComponent.apply(this, arguments);
+    Ext.grid.GridPanel.prototype.initComponent.apply(this, arguments);
   },
   
   /**
@@ -88,7 +91,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       'delete'
     );
     
-    ExtMVC.view.scaffold.Index.superclass.initEvents.apply(this, arguments);
+    Ext.grid.GridPanel.prototype.initEvents.apply(this, arguments);
   },
   
   /**
@@ -112,7 +115,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       this.controller.un('delete', this.refreshStore, this);
     }
     
-    ExtMVC.view.scaffold.Index.superclass.destroy.apply(this, arguments);
+    Ext.grid.GridPanel.destroy.apply(this, arguments);
   },
 
   /**
@@ -547,4 +550,4 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   }
 });
 
-Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);
+// Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);

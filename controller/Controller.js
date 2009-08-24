@@ -102,28 +102,19 @@ MyApp.controllers.PagesController = Ext.extend(ExtMVC.controller.Controller, {
  * <h4>Rendering strategies</h4>
  * Not all applications will render views in the same way
  */
-ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
-  
-  /**
-   * @property name
-   * @type String
-   * The string name for this controller. Used to automatically register the controller with ExtMVC,
-   * and to include all views under the view package of the same name.  For example, if your application is
-   * called MyApp and the controller name is users, all views in the MyApp.views.users namespace will be 
-   * registered automatically for use with this.render().
-   */
-  name: null,
-  
-  onExtended: function() {
-    if (this.name != null) {
-      this.viewsPackage = Ext.ns(String.format("{0}.views.{1}", ExtMVC.name, this.name));
-      
-      ExtMVC.registerController(this.name, this.constructor);
-    }
-  },
+// ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable,
+ExtMVC.registerController('controller', {
+
+  // onExtended: function() {
+  //   if (this.name != null) {
+  //     this.viewsPackage = Ext.ns(String.format("{0}.views.{1}", ExtMVC.name, this.name));
+  //     
+  //     ExtMVC.registerController(this.name, this.constructor);
+  //   }
+  // },
   
   constructor: function(config) {
-    ExtMVC.controller.Controller.superclass.constructor.apply(this, arguments);
+    Ext.util.Observable.prototype.constructor.apply(this, arguments);
     
     Ext.apply(this, config || {});
     
@@ -156,8 +147,8 @@ ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
    * @param {String} viewName The name registered for this view with this controller
    * @return {Function/null} The view class (or null if not present)
    */
-  getViewClass: function(viewName) {
-    return this.viewsPackage[viewName];
+  getViewClass: function getViewClass(viewName) {
+    return ExtMVC.getView(this.name, viewName);
   },
   
   /**
@@ -178,35 +169,52 @@ ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
    * @param {Object} config Configuration options passed through to the view class' constructor
    * @return {Ext.Component} The view object that was just created
    */
-  render: function(viewName, config) {
+  render: function render(viewName, config) {
+    //config for the view constructor
+    config = config || {};
+    
+    //we also use this constructor object to define whether or not the view should be added to the default
+    //container or not
+    Ext.applyIf(config, { 
+      autoAdd: true,
+      addTo  : ExtMVC.app.addToTarget
+    });
+
     var viewC = this.getViewClass(viewName);
     
     if (typeof viewC == "function") {
       var view = new viewC(config);
+      
+      //add to the Application's main container unless specifically told not do
+      if (config.autoAdd === true) {
+        config.addTo.removeAll();
+        config.addTo.doLayout();
+        
+        config.addTo.add(view);
+        config.addTo.doLayout();
+      }
       if (this.addTo) this.renderViaAddTo(view);
       
       return view;
     } else {
       throw new Error(String.format("View '{0}' not found", viewName));
     }
-  },
-  
-  /**
-   * Adds the given component to this application's main container.  This is usually a TabPanel
-   * or similar, and must be assigned to the controllers addTo property.  By default,
-   * this method removes any other items from the container first, then adds the new component
-   * and calls doLayout
-   * @param {Ext.Component} component The component to add to the controller's container
-   */
-  renderViaAddTo: function(component) {
-    if (this.addTo != undefined) {
-      this.addTo.removeAll();
-      this.addTo.doLayout();        
-      
-      this.addTo.add(component);
-      this.addTo.doLayout();
-    }
   }
+  
+  // /**
+  //  * Adds the given component to this application's main container.  This is usually a TabPanel
+  //  * or similar, and must be assigned to the controllers addTo property.  By default,
+  //  * this method removes any other items from the container first, then adds the new component
+  //  * and calls doLayout
+  //  * @param {Ext.Component} component The component to add to the controller's container
+  //  */
+  // renderViaAddTo: function renderViaAddTo(component) {
+  //   if (this.addTo != undefined) {
+  //     this.addTo.removeAll();
+  //     this.addTo.doLayout();        
+  //     
+  //     this.addTo.add(component);
+  //     this.addTo.doLayout();
+  //   }
+  // }
 });
-
-Ext.reg('controller', ExtMVC.controller.Controller); 

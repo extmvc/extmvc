@@ -53,7 +53,9 @@ MyApp.views.pages.Index = Ext.extend(Ext.Panel, {
  * <p>The same applies with Edit and New classes within the appropriate views namespace. See more on view namespaces in
  * {@link ExtMVC.controller.Controller Controller}.</p>
  */
-ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
+ExtMVC.registerController('crud', {
+  extend: "controller",
+  
   /**
    * @property model
    * @type Function/Null
@@ -66,7 +68,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to create a new instance of this controller's associated model
    * @param {Object} data A fields object (e.g. {title: 'My instance'})
    */
-  create: function(data, form) {
+  create: function create(data, form) {
     var instance = new this.model(data);
 
     instance.save({
@@ -80,7 +82,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to find (read) a single model instance by ID
    * @param {Number} id The Id of the instance to read
    */
-  read: function(id) {
+  read: function read(id) {
     this.model.findById(id, {
       scope: this,
       success: function(instance) {
@@ -99,7 +101,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {ExtMVC.model.Base} instance The existing instance object
    * @param {Object} updates An object containing updates to apply to the instance
    */
-  update: function(instance, updates) {
+  update: function update(instance, updates) {
     for (var key in updates) {
       instance.set(key, updates[key]);
     }
@@ -119,7 +121,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to delete an existing instance
    * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
-  destroy: function(instance) {
+  destroy: function destroy(instance) {
     if (instance.destroy == undefined) {
       //if we're passed an ID instead of an instance, make a fake model instance
       var config = {};
@@ -137,8 +139,8 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
    */
-  index: function() {
-    var index = this.render('Index', {
+  index: function index() {
+    var index = this.render('index', {
       model       : this.model,
       controller  : this,
       listeners   : this.getIndexViewListeners(),
@@ -153,7 +155,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
-  build: function() {
+  build: function build() {
     var buildView = this.render('New', {
       model       : this.model,
       controller  : this,
@@ -172,7 +174,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * instance, a findById() will be called on this controller's associated model
    * @param {Object} viewConfig Optional config object to pass to the view class constructor
    */
-  edit: function(instance, viewConfig) {
+  edit: function edit(instance, viewConfig) {
     viewConfig = viewConfig || {};
     
     if (instance instanceof Ext.data.Record) {
@@ -209,7 +211,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * default listeners, but can be overridden in subclasses to provide custom behaviour
    * @return {Object} The listeners object
    */
-  getIndexViewListeners: function() {
+  getIndexViewListeners: function getIndexViewListeners() {
     return {
       scope   : this,
       'delete': this.destroy,
@@ -223,7 +225,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * default listeners, but can be overridden in subclasses to provide custom behaviour
    * @return {Object} The listeners object
    */
-  getEditViewListeners: function() {
+  getEditViewListeners: function getEditViewListeners() {
     return {
       scope : this,
       cancel: this.index,
@@ -236,7 +238,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * default listeners, but can be overridden in subclasses to provide custom behaviour
    * @return {Object} The listeners object
    */
-  getBuildViewListeners: function() {
+  getBuildViewListeners: function getBuildViewListeners() {
     return {
       scope : this,
       cancel: this.index,
@@ -429,8 +431,8 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {String} viewName The name of the view to return a constructor function for
    * @return {Function} A reference to the custom view, or the scaffold fallback
    */
-  getViewClass: function(viewName) {
-    var userView = ExtMVC.controller.CrudController.superclass.getViewClass.call(this, viewName);
+  getViewClass: function getViewClass(viewName) {
+    var userView = ExtMVC.getController("controller").getViewClass.call(this, viewName);
     
     return (userView == undefined) ? this.scaffoldViewName(viewName) : userView;
   },
@@ -440,7 +442,8 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {String} viewName The name of the view to return a class for (index, new, edit or show)
    * @return {Function} A reference to the view class to instantiate to render this scaffold view
    */
-  scaffoldViewName: function(viewName) {
-    return ExtMVC.view.scaffold[viewName.titleize()];
+  scaffoldViewName: function scaffoldViewName(viewName) {
+    // return ExtMVC.view.scaffold[viewName.titleize()];
+    return ExtMVC.getView('scaffold', viewName);
   }
 });

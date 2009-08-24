@@ -6,25 +6,6 @@
 ExtMVC = Ext.extend(Ext.util.Observable, {
   version: "0.7a",
   
-  constructor: function() {
-    ExtMVC.superclass.constructor.apply(this, arguments);
-    
-    this.addEvents(
-      /**
-       * @event environment-changed
-       * Fired whenever the environment is changed
-       * @param {String} name The name of the new environment
-       * @param {Object} config The configuration of the new environment
-       */
-      'environment-changed'
-    );
-    
-    /**
-     * Set up aliases
-     */
-    this.getEnvSettings = this.getCurrentEnvironmentSettings;
-  },
-  
   /**
    * Sets the Ext.Application instance currently in use. This is currently required :/
    * @param {Ext.Application} app The application currently in use
@@ -36,108 +17,205 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
     ExtMVC.model.modelNamespace = window[app.name].models;
   },
   
-  /**
-   * @property controllers
-   * When this.registerController('application', MyApp.ApplicationController) is called,
-   * the ApplicationController class is registered here under the 'application' key.
-   * When this.getController('application') is called, it checks here to see if the 
-   * controller has been instantiated yet.  If it has, it is returned.  If not it is
-   * instantiated, then returned.
-   */
-  controllers: {},
+  
   
   /**
-   * Registers a controller for use with this OS.  The controller is instantiated lazily
-   * when needed, through the use of this.getController('MyController')
-   * @param {String} controllerName A string name for this controller, used as a key to reference this controller with this.getController
-   * @param {Function} controllerClass A reference to the controller class, which is later instantiated lazily
+   * Registers a model class with Ext MVC
+   * @param {String} name The name to give this model
+   * @param {Object} config Model definition configuration
    */
-  registerController: function(controllerName, controllerClass) {
-    this.controllers[controllerName] = controllerClass;
+  registerModel: function(name, config) {
+    this.registerClass('model', arguments);
   },
-
+  
   /**
-   * Returns a controller instance for the given controller name.
-   * Instantiates the controller first if it has not yet been instantiated.
-   * @param {String} controllerName The registered name of the controller to get
-   * @return {Object} The controller instance, or null if not found
+   * Registers a controller class with Ext MVC
+   * @param {String} name The name to give this controller
+   * @param {Object} config Controller definition configuration
    */
-  getController: function(controllerName) {
-    var c = this.controllers[controllerName];
-    if (c) {
-      //instantiate the controller first, if required
-      if (typeof c === 'function') {
-        this.controllers[controllerName] = new this.controllers[controllerName]();
+  registerController: function(name, config) {
+    this.registerClass('controller', arguments);
+  },
+  
+  /**
+   * Registers a view class with Ext MVC.
+   * @param {String} namesapce The namespace to add this view to
+   * @param {String} name The name to give this view
+   * @param {Object} config View definition configuration
+   */
+  registerView: function(namespace, name, config) {
+    this.registerClass('view', arguments);
+  },
+  
+  /**
+   * Abstraction for registering views, models and controllers
+   * @param {String} managerName The name of the class manager to register with
+   * @param {Array} args The args to pass to the manager's register method
+   */
+  registerClass: function(managerName, args) {
+    var manager = this.getClassManager(managerName);
+    
+    manager.register.apply(manager, args);
+  },
+  
+  /**
+   * @property classManagers
+   * @type Object
+   * {name: classManager} mappings used by this.getClassManager and this.registerClassManager
+   */
+  classManagers: {},
+  
+  /**
+   * @private
+   * Sets up model, view and controller class managers
+   */
+  initializeClassManagers: function() {
+    this.registerClassManager('model',      new ExtMVC.lib.ModelClassManager());
+    this.registerClassManager('view',       new ExtMVC.lib.ViewClassManager());
+    this.registerClassManager('controller', new ExtMVC.lib.ControllerClassManager());
+  },
+  
+  /**
+   * Returns the class manager for the given name
+   * @param {String} name The name of the manager (model, view or controller)
+   * @return {ExtMVC.lib.ClassManager} The class manager instance
+   */
+  getClassManager: function(name) {
+    return this.classManagers[name];
+  },
+  
+  /**
+   * Registers a class manager instance under a given name
+   * @param {String} name The name of the class manager
+   * @param {ExtMVC.lib.ClassManager} manager The ClassManager instance to register
+   */
+  registerClassManager: function(name, manager) {
+    this.classManagers[name] = manager;
+  },
+  
+  /**
+   * Returns the canonical controller instance for the given controller name
+   * @return {ExtMVC.Controller} The controller instance
+   */
+  getController: function(name) {
+    return this.getClassManager('controller').getInstance(name);
+  },
+  
+  /**
+   * Returns the constructor for a given model name
+   * @param {String} name The name of the model
+   * @return {Function} The model constructor
+   */
+  getModel: function(name) {
+    return this.getClassManager('model').getConstructor(name);
+  },
+  
+  /**
+   * Instantiates a model of the given name with the data supplied
+   * @param {String} modelName The name of the model to instantiate
+   * @param {Object} data Data object to instantiate the instance with
+   * @return {ExtMVC.Model} The new model instance
+   */
+  buildModel: function(modelName, data) {
+    return new (this.getModel(modelName))(data);
+  },
+  
+  /**
+   * Returns the constructor for a given view namespace/name combination
+   * @param {String} namespace The view namespace to look in
+   * @param {String} name The name of the view within the view namespace
+   * @return {Function} The view constructor
+   */
+  getView: function getView(namespace, name) {
+    return this.getClassManager('view').getConstructor(namespace, name);
+  },
+  
+  /**
+   * Returns a new view instance for the given namespace/name combo, using the supplied config
+   * @param {String} namespace The namespace to find the view from
+   * @param {String} name The view name
+   * @param {Object} config Optional config object
+   * @return {Ext.Component} The new view instance
+   */
+  buildView: function buildView(namespace, name, config) {
+    var constructor = this.getView(namespace, name);
+    
+    return new (constructor)(config);
+  },
+  
+  /**
+   * Loads packaged classes from a given url, calling a callback when they have been registered. Sample return:
+  <pre>
+  {
+    controllers: [
+      {
+        name: 'comments',
+        superclass: 'crud',
+        config: {
+          index: function() {
+            this.render('index', {
+              title: "Loaded on demand!"
+            });
+          }
+        }
       }
-      return this.controllers[controllerName];
-    } else {
-      return null;
-    }
-  },
-  
-  /**
-   * @property currentEnvironment
-   * @type String
-   * The current code environment (defaults to production).  Read-only - use setCurrentEnvironment to change
+    ],
+    views: [
+      {
+        name: 'new',
+        namespace: 'comments',
+        config: {
+          xtype: 'scaffoldnew',
+          title: "New Comment"
+        }
+      }
+    ],
+    models: [
+      {
+        name  : 'Comment',
+        config: {
+          fields: [
+            {name: 'id',      type: 'int'},
+            {name: 'title',   type: 'string'},
+            {name: 'message', type: 'string'}
+          ]
+        }
+      }
+    ]
+  }
+  </pre>
+   * @param {String} url The url to retrieve the package from
+   * @param {Function} callback Optional callback function, called after the package has been read and registered
+   * @param {Object} scope The scope to execute the callback function in
    */
-  currentEnvironment: 'production',
-  
-  /**
-   * Used internally to manage environment variables... user addEnvironmentSettings and 
-   * getEnvironmentSettings to change
-   */
-  environments: {'production': {}},
-  
-  /**
-   * Sets the MVC environment to the specified name.  Usually one of 'production' or 'development'
-   * Ignored if the environment has not yet been defined
-   * @param {String} name The name of the environment to set.
-   */
-  setCurrentEnvironment: function(name) {
-    if (this.getEnvironmentSettings(name)) {
-      this.currentEnvironment = name;
-      this.fireEvent('environment-changed', name, this.getEnvironmentSettings(name));
-    }
-  },
-  
-  /**
-   * Returns the name of the current environment
-   * @return {String} The name of the current environment
-   */
-  getCurrentEnvironment: function() {
-    return ExtMVC.currentEnvironment;
-  },
-  
-  /**
-   * Returns settings for the current environment (aliased as getEnvSettings)
-   * @return {Object} The settings for the current environment
-   */
-  getCurrentEnvironmentSettings: function() {
-    return this.getEnvironmentSettings(this.getCurrentEnvironment());
-  },
-  
-  /**
-   * Adds settings for a given environment name
-   * @param {String} name The name of the environment to add settings for
-   * @param {Object} config The settings object to apply to this environment
-   */
-  addEnvironmentSettings: function(name, config) {
-    ExtMVC.environments[name] = ExtMVC.environments[name] || {};
-    Ext.apply(ExtMVC.environments[name], config);
-  },
-  
-  /**
-   * Retrieves all settings for a given environment (defaults to the current environment)
-   * @param {String} name The name of the environment to get settings from
-   * @return {Object} The settings object for the given environment, or null if not found
-   */
-  getEnvironmentSettings: function(name) {
-    name = name || ExtMVC.environment;
-    return ExtMVC.environments[name];
+  loadOnDemand: function(url, callback, scope) {
+    Ext.Ajax.request({
+      url     : url,
+      scope   : scope    || this,
+      success: function(response) {
+        var pkg = Ext.decode(response.responseText);
+
+        Ext.each(pkg.controllers || [], function(config) {
+          this.registerController(config.name, config);
+        }, this);
+
+        Ext.each(pkg.models || [], function(config) {
+          this.registerModel(config.name, config);
+        }, this);
+
+        Ext.each(pkg.views || [], function(config) {
+          this.registerView(config.namespace, config.name, config);
+        }, this);
+
+        if (Ext.isFunction(callback)) callback.call(scope, pkg);
+      }
+    });
   }
 });
 
 ExtMVC = new ExtMVC();
+
+// ExtMVC.initializeClassManagers();
 
 Ext.ns('ExtMVC.router', 'ExtMVC.plugin', 'ExtMVC.controller', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib', 'ExtMVC.test');
 
@@ -247,7 +325,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * @param {Object} scope The scope in which to fire the event (defaults to the controller)
    * @param {Array} args An array of arguments which are passed to the controller action.
    */
-  dispatch: function(dispatchConfig, scope, args) {
+  dispatch: function dispatch(dispatchConfig, scope, args) {
     var dispatchConfig = dispatchConfig || {};
     Ext.applyIf(dispatchConfig, {
       action: 'index'
@@ -280,7 +358,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * E.g. if name = 'Blog' or this.name = 'Blog', this is the same as:
    * Ext.ns('Blog', 'Blog.controllers', 'Blog.models', 'Blog.views')
    */
-  initializeNamespaces: function(name) {
+  initializeNamespaces: function initializeNamespaces(name) {
     var name = name || this.name;
     if (name) {
       Ext.ns(name, name + '.controllers', name + '.models', name + '.views');
@@ -292,7 +370,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * Sets up listeners on Ext.History's change event to fire the dispatch() action in the normal way.
    * This is not called automatically as not all applications will need it
    */
-  initializeHistory: function() {
+  initializeHistory: function initializeHistory() {
     this.historyForm = Ext.getBody().createChild({
       tag:    'form',
       action: '#',
@@ -324,7 +402,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * to the appropriate controller and action if a match was found
    * @param {String} token The url token (e.g. the token would be cont/act/id for a url like mydomain.com/#cont/act/id)
    */
-  onHistoryChange: function(token) {
+  onHistoryChange: function onHistoryChange(token) {
     var match = this.router.recognise(token);
     
     if (match) {
@@ -335,7 +413,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   /**
    * Sets up events emitted by the Application
    */
-  initializeEvents: function() {
+  initializeEvents: function initializeEvents() {
     this.addEvents(
       /**
        * @event before-launch
@@ -354,25 +432,22 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   }
 });
 
+ExtMVC.App.define = function(config) {
+  ExtMVC.app = new ExtMVC.App(config);
+};
+
 ExtMVC.lib.ClassManager = Ext.extend(Ext.util.Observable, {
-  constructor: function(config) {
+  /**
+   * @property autoDefine
+   * @type Boolean
+   * If true, the ClassManager will attempt to define classes immediately via this.define (defaults to true)
+   */
+  autoDefine: true,
+  
+  constructor: function constructor(config) {
     config = config || {};
           
-    Ext.applyIf(config, {
-      /**
-       * @property autoDefine
-       * @type Boolean
-       * If true, the ClassManager will attempt to define classes immediately via this.define (defaults to true)
-       */
-      autoDefine: true,
-      
-      /**
-       * @property autoInstantiate
-       * @type Boolean
-       * If true, the ClassManager will attempt to instantiate classes immediately after they are defined (defaults to false)
-       */
-      autoInstantiate: false,
-      
+    Ext.applyIf(config, {    
       /**
        * @property registeredClasses
        * @type Object
@@ -385,15 +460,7 @@ ExtMVC.lib.ClassManager = Ext.extend(Ext.util.Observable, {
        * @type Object
        * {name: Function} mapping of all registered classes to their constructor functions
        */
-      constructors: {},
-      
-      /**
-       * @property instances
-       * @type Object
-       * {name: instance} mapping of any classes which have been instantiated with this manager
-       * This is only really used for controllers, where there is only ever one instance at a time
-       */
-      instances: {}
+      constructors: {}
     });
     
     Ext.apply(this, config);
@@ -413,23 +480,14 @@ ExtMVC.lib.ClassManager = Ext.extend(Ext.util.Observable, {
        * @param {String} name The name of the class
        * @param {Function} constructor The class constructor
        */
-      'class-defined',
-      
-      /**
-       * @event class-instantiated
-       * Fires when a class in this manager has been instantiated by the manager. This is mostly 
-       * useful when using autoInstantiate, e.g. for classes for which there should only be one instance
-       * @param {String} name The name of the class that was instantiated
-       * @param {Object} instance The instance that was just created
-       */
-      'class-instantiated'
+      'class-defined'
     );
     
-    this.on({
-      scope             : this,
-      'class-registered': this.afterRegister,
-      'class-defined'   : this.afterDefine
-    });
+    // this.on({
+    //   scope             : this,
+    //   'class-registered': this.afterRegister,
+    //   'class-defined'   : this.afterDefine
+    // });
   },
   
   /**
@@ -437,10 +495,12 @@ ExtMVC.lib.ClassManager = Ext.extend(Ext.util.Observable, {
    * @param {String} name The name to register this class under
    * @param {Object/Function} config Either a config object or a constructor function
    */
-  register: function(name, config) {
+  register: function register(name, config) {
     this.registeredClasses[name] = config;
     
     this.fireEvent('class-registered', name, config);
+    
+    if (this.autoDefine === true) this.define(name);
   },
   
   /**
@@ -448,7 +508,7 @@ ExtMVC.lib.ClassManager = Ext.extend(Ext.util.Observable, {
    * @param {String} name The name of the class
    * @return {Object} The config object for this class
    */
-  getRegistered: function(name) {
+  getRegistered: function getRegistered(name) {
     return this.registeredClasses[name];
   },
   
@@ -458,7 +518,10 @@ ExtMVC.lib.ClassManager = Ext.extend(Ext.util.Observable, {
    * @param {String} name The name of the class to define
    * @return {Function} The newly defined class constructor
    */
-  define: function(name) {
+  define: function define(name) {
+    console.log('defining');
+    console.log(name);
+    
     var overrides = this.getRegistered(name);
     
     //extend the parent object and register the constructor
@@ -476,222 +539,10 @@ ExtMVC.lib.ClassManager = Ext.extend(Ext.util.Observable, {
    * @param {String} name The name of the class to return the constructor for
    * @return {Function} The constructor function
    */
-  getConstructor: function(name) {
+  getConstructor: function getConstructor(name) {
     return this.constructors[name] || this.define(name);
-  },
-  
-  /**
-   * Instantiates the given class name, with an optional config object (usually the config is not needed)
-   * 
-   */
-  instantiate: function(name, config) {
-    //get the controller instance that has already been created
-    var instance = this.instances[name];
-    
-    //if the instance isn't defined yet, instantiate it now and cache it
-    if (instance == undefined) {
-      instance = new (this.getConstructor(name))(config);
-      this.instances[name] = instance;
-      
-      this.fireEvent('class-instantiated', name, instance);
-    }
-    
-    return instance;    
-  },
-  
-  /**
-   * Only really useful for controllers, this returns the canonical instance for a given
-   * class name (e.g. getInstance('funds') would return the Funds Controller, instaniating first if required)
-   * @param {String} name The name of the class to instantiate
-   * @return {Object} The canonical instance of this class
-   */
-  getInstance: function(name) {
-    return this.instances[name] || this.instantiate(name);
   }
 });
-// 
-// Ext.apply(ExtMVC, {
-//   /**
-//    * Registers a model class with Ext MVC
-//    * @param {String} name The name to give this model
-//    * @param {Object} config Model definition configuration
-//    */
-//   registerModel: function(name, config) {
-//     this.registerClass('model', arguments);
-//   },
-//   
-//   /**
-//    * Registers a controller class with Ext MVC
-//    * @param {String} name The name to give this controller
-//    * @param {Object} config Controller definition configuration
-//    */
-//   registerController: function(name, config) {
-//     this.registerClass('controller', arguments);
-//   },
-//   
-//   /**
-//    * Registers a view class with Ext MVC.
-//    * @param {String} namesapce The namespace to add this view to
-//    * @param {String} name The name to give this view
-//    * @param {Object} config View definition configuration
-//    */
-//   registerView: function(namespace, name, config) {
-//     this.registerClass('view', arguments);
-//   },
-//   
-//   /**
-//    * Abstraction for registering views, models and controllers
-//    * @param {String} managerName The name of the class manager to register with
-//    * @param {Array} args The args to pass to the manager's register method
-//    */
-//   registerClass: function(managerName, args) {
-//     var manager = this.getClassManager(managerName);
-//     
-//     manager.register.apply(manager, args);
-//   },
-//   
-//   /**
-//    * @property classManagers
-//    * @type Object
-//    * {name: classManager} mappings used by this.getClassManager and this.registerClassManager
-//    */
-//   classManagers: {},
-//   
-//   /**
-//    * @private
-//    * Sets up model, view and controller class managers
-//    */
-//   initializeClassManagers: function() {
-//     this.registerClassManager('model',      new ExtMVC.lib.ModelClassManager());
-//     this.registerClassManager('view',       new ExtMVC.lib.ViewClassManager());
-//     this.registerClassManager('controller', new ExtMVC.lib.ControllerClassManager());
-//   },
-//   
-//   /**
-//    * Returns the class manager for the given name
-//    * @param {String} name The name of the manager (model, view or controller)
-//    * @return {ExtMVC.lib.ClassManager} The class manager instance
-//    */
-//   getClassManager: function(name) {
-//     return this.classManagers[name];
-//   },
-//   
-//   /**
-//    * Registers a class manager instance under a given name
-//    * @param {String} name The name of the class manager
-//    * @param {ExtMVC.lib.ClassManager} manager The ClassManager instance to register
-//    */
-//   registerClassManager: function(name, manager) {
-//     this.classManagers[name] = manager;
-//   },
-//   
-//   /**
-//    * Returns the canonical controller instance for the given controller name
-//    * @return {ExtMVC.Controller} The controller instance
-//    */
-//   getController: function(name) {
-//     return this.controllerManager.getInstance(name);
-//   },
-//   
-//   /**
-//    * Returns the constructor for a given model name
-//    * @param {String} name The name of the model
-//    * @return {Function} The model constructor
-//    */
-//   getModel: function(name) {
-//     return this.getClassManager('model').getConstructor(name);
-//   },
-//   
-//   /**
-//    * Instantiates a model of the given name with the data supplied
-//    * @param {String} modelName The name of the model to instantiate
-//    * @param {Object} data Data object to instantiate the instance with
-//    * @return {ExtMVC.Model} The new model instance
-//    */
-//   buildModel: function(modelName, data) {
-//     return new (this.getModel(modelName))(data);
-//   },
-//   
-//   /**
-//    * Returns the constructor for a given view namespace/name combination
-//    * @param {String} namespace The view namespace to look in
-//    * @param {String} name The name of the view within the view namespace
-//    * @return {Function} The view constructor
-//    */
-//   getView: function(namespace) {
-//     return this.getClassManager('view').getConstructor(namespace, name);
-//   },
-//   
-//   /**
-//    * Loads packaged classes from a given url, calling a callback when they have been registered. Sample return:
-//   <pre>
-//   {
-//     controllers: [
-//       {
-//         name: 'comments',
-//         superclass: 'crud',
-//         config: {
-//           index: function() {
-//             this.render('index', {
-//               title: "Loaded on demand!"
-//             });
-//           }
-//         }
-//       }
-//     ],
-//     views: [
-//       {
-//         name: 'new',
-//         namespace: 'comments',
-//         config: {
-//           xtype: 'scaffoldnew',
-//           title: "New Comment"
-//         }
-//       }
-//     ],
-//     models: [
-//       {
-//         name  : 'Comment',
-//         config: {
-//           fields: [
-//             {name: 'id',      type: 'int'},
-//             {name: 'title',   type: 'string'},
-//             {name: 'message', type: 'string'}
-//           ]
-//         }
-//       }
-//     ]
-//   }
-//   </pre>
-//    * @param {String} url The url to retrieve the package from
-//    * @param {Function} callback Optional callback function, called after the package has been read and registered
-//    * @param {Object} scope The scope to execute the callback function in
-//    */
-//   loadOnDemand: function(url, callback, scope) {
-//     Ext.Ajax.request({
-//       url     : url,
-//       scope   : scope    || this,
-//       success: function(response) {
-//         var pkg = Ext.decode(response.responseText);
-// 
-//         Ext.each(pkg.controllers || [], function(config) {
-//           this.registerController(config.name, config);
-//         }, this);
-// 
-//         Ext.each(pkg.models || [], function(config) {
-//           this.registerModel(config.name, config);
-//         }, this);
-// 
-//         Ext.each(pkg.views || [], function(config) {
-//           this.registerView(config.namespace, config.name, config);
-//         }, this);
-// 
-//         if (Ext.isFunction(callback)) callback.call(scope, pkg);
-//       }
-//     });
-//   }
-// });
-
 
 /**
  * Ideal syntax after these changes:
@@ -1199,8 +1050,91 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
  * Customised class manager for managing Controllers
  */
 ExtMVC.lib.ControllerClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
-  autoInstantiate: true
+  constructor: function(config) {
+    config = config || {};
+          
+    Ext.applyIf(config, {
+      /**
+       * @property instances
+       * @type Object
+       * {name: instance} mapping of any classes which have been instantiated with this manager
+       * This is only really used for controllers, where there is only ever one instance at a time
+       */
+      instances: {},
+      
+      /**
+       * @property autoInstantiate
+       * @type Boolean
+       * If true, the ClassManager will attempt to instantiate controllers immediately after they are defined (defaults to true)
+       */
+      autoInstantiate: true
+    });
+    
+    ExtMVC.lib.ControllerClassManager.superclass.constructor.call(this, config);
+    
+    this.addEvents(
+      /**
+       * @event class-instantiated
+       * Fires when a class in this manager has been instantiated by the manager. This is mostly 
+       * useful when using autoInstantiate, e.g. for classes for which there should only be one instance
+       * @param {String} name The name of the class that was instantiated
+       * @param {Object} instance The instance that was just created
+       */
+      'class-instantiated'
+    );
+  },
+  
+  define: function(name) {
+    var overrides  = this.getRegistered(name);
+    
+    //set 'application' as the default controller to inherit from
+    var superclass = name == "controller" ? Ext.util.Observable : this.getConstructor(overrides.extend || "application");
+    
+    //extend the parent object and register the constructor
+    var klass = Ext.extend(superclass, overrides);
+    this.constructors[name] = klass;
+    
+    if (this.autoInstantiate === true) this.instantiate(name);
+    
+    this.fireEvent('class-defined', name, klass);
+    
+    return klass;
+  },
+  
+  /**
+   * Instantiates the given class name, with an optional config object (usually the config is not needed)
+   * 
+   */
+  instantiate: function(name, config) {
+    //get the controller instance that has already been created
+    var instance = this.instances[name];
+    
+    //if the instance isn't defined yet, instantiate it now and cache it
+    if (instance == undefined) {
+      instance = new (this.getConstructor(name))(config);
+      instance.name = name;
+      // instance.superclass = 
+      
+      this.instances[name] = instance;
+      
+      this.fireEvent('class-instantiated', name, instance);
+    }
+    
+    return instance;    
+  },
+  
+  /**
+   * Only really useful for controllers, this returns the canonical instance for a given
+   * class name (e.g. getInstance('funds') would return the Funds Controller, instaniating first if required)
+   * @param {String} name The name of the class to instantiate
+   * @return {Object} The canonical instance of this class
+   */
+  getInstance: function(name) {
+    return this.instances[name] || this.instantiate(name);
+  }
 });
+
+ExtMVC.registerClassManager('controller', new ExtMVC.lib.ControllerClassManager());
 
 /**
  * @class ExtMVC.lib.Dependencies
@@ -1438,9 +1372,13 @@ ExtMVC.Inflector = {
 ExtMVC.lib.ModelClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
   //usual model definition stuff to go here
   define: function(name) {
+    var overrides = this.getRegistered(name);
     
+    return this.constructors[name] = ExtMVC.model.define(name, overrides);
   }
 });
+
+ExtMVC.registerClassManager('model', new ExtMVC.lib.ModelClassManager());
 
 /**
  * @class ExtMVC.router.Route
@@ -1946,29 +1884,219 @@ String.prototype.toCurrency = function(symbol) {
 /**
  * @class ExtMVC.lib.ViewClassManager
  * @extends ExtMVC.lib.ClassManager
- * Customised class manager for views, which take namespace as well as name
+ * Customised class manager for views. Views differ from most other classes as they are namespaced
+ * by view package, so they take namespace and name when registering.
+ * VCM will attempt to recursively define view classes that extend others, so if a view's xtype hasn't
+ * been registered with Ext.ComponentMgr yet, VCM will attempt to find that xtype by seeing if any of 
+ * the other registered views have declared that xtype via the 'registerXType' property. If one is found,
+ * VCM will either return its constructor if it is already defined, otherwise it will try to define it first,
+ * again recursing up the inheritance stack if necessary. Example:
+<pre>
+  vcm.register('somePackage', 'someView', {
+    xtype: 'anotherview' //this doesn't exist yet
+  });
+  
+  //anotherview extends the 'myxtype' type, which hasn't been defined yet
+  vcm.register('somePackage', 'someOtherView', {
+    xtype: 'myxtype',
+    registerXType: 'anotherview'
+  });
+  
+  //myview extends panel, and is registered with the 'myxtype' xtype
+  vcm.register('somepackage', 'myview', {
+    xtype: 'panel',
+    registerXType: 'myxtype'
+  });
+  
+  When vcm.getConstructor('somepackage', 'someview') is called, it looks to see if 'anotherview' has
+  been registered with Ext.ComponentMgr first. If it has, it just calls Ext.extend with the config included
+  when registering 'someview', extending the constructor of 'anotherview', and returns the result.
+  
+  If 'anotherview' hasn't yet been registered with Ext.ComponentMgr, it is automatically defined first with
+  this.define. In this case, the parent class of 'anotherview' ('myxtype') hasn't been defined yet either,
+  so again the inheritance chain is automatically traversed, 'myview' is defined and registered to 'myxtype',
+  and the resulting extended class constructor returned so that 'anotherview' can in turn be extended.
+</pre>
  */
 ExtMVC.lib.ViewClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
   autoDefine: false,
+  
+  define: function define(name) {
+    var overrides = this.getRegistered(name);
+    var klass;
+    
+    console.log('defining ' + name);
+    
+    if (Ext.ComponentMgr.isRegistered(overrides.xtype)) {
+      var constructor = this.getConstructorForXType(overrides.xtype);
+      delete overrides.xtype;
+      
+      //extend the class, register it if required
+      klass = Ext.extend(constructor, overrides);
+      
+      var newXType = overrides.registerXType;
+      if (newXType) {
+        Ext.reg(newXType, klass);
+        this.xtypeLookup[newXType] = klass;
+      }
+      
+    } else {
+      for (var className in this.registeredClasses) {
+        var value = this.registeredClasses[className];
+        
+        //extend the parent object and register the constructor
+        if (value.registerXType == overrides.xtype) {
+          klass = this.getConstructor(className.split('-')[0], className.split('-')[1]);
+        }
+      }
+    }
+    
+    console.log(klass);
+    
+    this.constructors[name] = klass;
+    
+    this.fireEvent('class-defined', name, klass);
+    
+    return klass;
+  },
   
   /**
    * Register works slightly differently for views because we use a namespace too,
    * so convert it here first
    */
-  register: function(namespace, name, config) {
+  register: function register(namespace, name, config) {
     var viewName = this.buildName(namespace, name);
     
-    this.registeredClasses[viewName] = config;
+    ExtMVC.lib.ViewClassManager.superclass.register.call(this, viewName, config);
   },
   
-  getRegistered: function(namespace, name) {
-    return this.registeredClasses[this.buildName(namespace, name)];
-  },
+  // getRegistered: function(namespace, name) {
+  //   var viewName = this.buildName(namespace, name);
+  //   
+  //   return ExtMVC.lib.ViewClassManager.superclass.getRegistered.call(this, viewName);
+  // },
   
-  getConstructor: function(namespace, name) {
+  getConstructor: function getConstructor(namespace, name) {
     var viewName = this.buildName(namespace, name);
     
-    ExtMVC.lib.ViewClassManager.superclass.getConstructor.call(this, viewName);
+    console.log('getting ' + viewName);
+    
+    return ExtMVC.lib.ViewClassManager.superclass.getConstructor.call(this, viewName);
+  },
+  
+  xtypeLookup: {
+    box           : Ext.BoxComponent,
+    button        : Ext.Button,
+    buttongroup   : Ext.ButtonGroup,
+    colorpalette  : Ext.ColorPalette,
+    component     : Ext.Component,
+    container     : Ext.Container,
+    cycle         : Ext.CycleButton,
+    dataview      : Ext.DataView,
+    datepicker    : Ext.DatePicker,
+    editor        : Ext.Editor,
+    editorgrid    : Ext.grid.EditorGridPanel,
+    flash         : Ext.FlashComponent,
+    grid          : Ext.grid.GridPanel,
+    listview      : Ext.ListView,
+    panel         : Ext.Panel,
+    progress      : Ext.ProgressBar,
+    propertygrid  : Ext.grid.PropertyGrid,
+    slider        : Ext.Slider,
+    spacer        : Ext.Spacer,
+    splitbutton   : Ext.SplitButton,
+    tabpanel      : Ext.TabPanel,
+    treepanel     : Ext.tree.TreePanel,
+    viewport      : Ext.ViewPort,
+    'window'      : Ext.Window,
+    
+    paging        : Ext.PagingToolbar,
+    toolbar       : Ext.Toolbar,
+    tbbutton      : Ext.Toolbar.Button,
+    tbfill        : Ext.Toolbar.Fill,
+    tbitem        : Ext.Toolbar.Item,
+    tbseparator   : Ext.Toolbar.Separator,
+    tbspacer      : Ext.Toolbar.Spacer,
+    tbsplit       : Ext.Toolbar.SplitButton,
+    tbtext        : Ext.Toolbar.TextItem,
+
+    menu          : Ext.menu.Menu,
+    colormenu     : Ext.menu.ColorMenu,
+    datemenu      : Ext.menu.DateMenu,
+    menubaseitem  : Ext.menu.BaseItem,
+    menucheckitem : Ext.menu.CheckItem,
+    menuitem      : Ext.menu.Item,
+    menuseparator : Ext.menu.Separator,
+    menutextitem  : Ext.menu.TextItem,
+    
+    form          : Ext.FormPanel,
+    checkbox      : Ext.form.Checkbox,
+    checkboxgroup : Ext.form.CheckboxGroup,
+    combo         : Ext.form.ComboBox,
+    datefield     : Ext.form.DateField,
+    displayfield  : Ext.form.DisplayField,
+    field         : Ext.form.Field,
+    fieldset      : Ext.form.FieldSet,
+    hidden        : Ext.form.Hidden,
+    htmleditor    : Ext.form.HtmlEditor,
+    label         : Ext.form.Label,
+    numberfield   : Ext.form.NumberField,
+    radio         : Ext.form.Radio,
+    radiogroup    : Ext.form.RadioGroup,
+    textarea      : Ext.form.TextArea,
+    textfield     : Ext.form.TextField,
+    timefield     : Ext.form.TimeField,
+    trigger       : Ext.form.TriggerField,
+
+    chart         : Ext.chart.Chart,
+    barchart      : Ext.chart.BarChart,
+    cartesianchart: Ext.chart.CartesianChart,
+    columnchart   : Ext.chart.ColumnChart,
+    linechart     : Ext.chart.LineChart,
+    piechart      : Ext.chart.PieChart,
+
+    arraystore    : Ext.data.ArrayStore,
+    directstore   : Ext.data.DirectStore,
+    groupingstore : Ext.data.GroupingStore,
+    jsonstore     : Ext.data.JsonStore,
+    simplestore   : Ext.data.SimpleStore,
+    store         : Ext.data.Store,
+    xmlstore      : Ext.data.XmlStore
+  },
+
+  /**
+   * Finds the constructor for a registered xtype.
+   * FIXME: This uses a horrible hack and really shouldn't be here at all - the reason being that Ext.ComponentMgr
+   * hides its registered types locally, 
+   * @param {String} xtype The xtype to retrieve a constructor for
+   * @return {Function} The constructor for the xtype requested
+   */
+  getConstructorForXType: function getConstructorForXType(xtype) {
+    // //recursive function declared locally as it shouldn't be needed and therefore shouldn't be in the api...
+    // var r = function(obj) {
+    //   var constructor;
+    //   
+    //   for (var key in obj) {
+    //     var value = obj[key];
+    //     
+    //     if (value != undefined && key != 'prototype' && key != 'createInterceptor' && key != 'createCallback' && key != 'createDelegate' && key != "defer" && key != 'createSequence') {
+    //       if (value.xtype != undefined) {
+    //         constructor = value;
+    //       } else if (Ext.isObject(value) || Ext.isFunction(value)) {
+    //         console.log(value);
+    //         constructor = r(value);
+    //       }
+    //     }
+    //   }
+    //   
+    //   return constructor;
+    // };
+    // 
+    // var a = r(Ext);
+    // 
+    // return a;
+    
+    return this.xtypeLookup[xtype];
   },
   
   /**
@@ -1978,57 +2106,155 @@ ExtMVC.lib.ViewClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
    * @param {String} name The view name
    * @return {String} The composited view name (defaults to "{namespace}-{name}")
    */
-  buildName: function(namespace, name) {
+  buildName: function buildName(namespace, name) {
     return String.format("{0}-{1}", namespace, name);
   }
 });
 
-/**
- * An extension to Ext.extend which calls the extended object's onExtended function, if it exists
- * The only lines that are different from vanilla Ext.extend are the 2 before the return sb statement
- */
-Ext.extend = function(){
-    // inline overrides
-    var io = function(o){
-        for(var m in o){
-            this[m] = o[m];
-        }
-    };
-    var oc = Object.prototype.constructor;
+ExtMVC.registerClassManager('view', new ExtMVC.lib.ViewClassManager());
 
-    return function(sb, sp, overrides){
-        if(Ext.isObject(sp)){
-            overrides = sp;
-            sp = sb;
-            sb = overrides.constructor!= oc ? overrides.constructor : function(){sp.apply(this, arguments);};
-        }
-        var F = function(){},
-            sbp,
-            spp = sp.prototype;
+// /**
+//  * An extension to Ext.extend which calls the extended object's onExtended function, if it exists
+//  * The only lines that are different from vanilla Ext.extend are the 2 before the return sb statement
+//  */
+// Ext.extend = function(){
+//     // inline overrides
+//     var io = function(o){
+//         for(var m in o){
+//             this[m] = o[m];
+//         }
+//     };
+//     var oc = Object.prototype.constructor;
+//     
+//     return function(sb, sp, overrides){
+//         if(Ext.isObject(sp)){
+//             overrides = sp;
+//             sp = sb;
+//             sb = overrides.constructor!= oc ? overrides.constructor : function(){sp.apply(this, arguments);};
+//         }
+//         var F = function(){},
+//             sbp,
+//             spp = sp.prototype;
+// 
+//         F.prototype = spp;
+//         sbp = sb.prototype = new F();
+//         sbp.constructor=sb;
+//         sb.superclass=spp;
+//         if(spp.constructor == oc){
+//             spp.constructor=sp;
+//         }
+//         sb.override = function(o){
+//             Ext.override(sb, o);
+//         };
+//         sbp.superclass = sbp.supr = (function(){
+//             return spp;
+//         });
+//         sbp.override = io;
+//         Ext.override(sb, overrides);
+//         sb.extend = function(o){Ext.extend(sb, o);};
+//         
+//         var extendFunction = sb.prototype.onExtended;
+//         if (extendFunction) extendFunction.call(sb.prototype);
+//         
+//         return sb;
+//     };
+// }();
 
-        F.prototype = spp;
-        sbp = sb.prototype = new F();
-        sbp.constructor=sb;
-        sb.superclass=spp;
-        if(spp.constructor == oc){
-            spp.constructor=sp;
-        }
-        sb.override = function(o){
-            Ext.override(sb, o);
-        };
-        sbp.superclass = sbp.supr = (function(){
-            return spp;
-        });
-        sbp.override = io;
-        Ext.override(sb, overrides);
-        sb.extend = function(o){Ext.extend(sb, o);};
-        
-        var extendFunction = sb.prototype.onExtended;
-        if (extendFunction) extendFunction.call(sb.prototype);
-        
-        return sb;
+(function() {
+  var inlineOverrides = function(o) {
+    for(var m in o){
+      this[m] = o[m];
+    }
+  };
+  
+  //reference to the constructor of Object - we can match against this so as not to extend improperly
+  var objectConstructor = Object.prototype.constructor;
+  
+  /**
+   * Returns true if the given function is the bottom level Object object. We use this to test if we are
+   * extending Object directly, or some subclass of Object.
+   * @param {Object} superclass The superclass constructor function
+   */
+  var superclassIsObject = function(superclass) {
+    return superclass.prototype.constructor == objectConstructor;
+  };
+  
+  Ext.extend = function() {
+    //this method has two different signatures - 2 or 3 arguments
+    if (arguments.length == 3) {
+      // 3 arguments - where we're given the subclass constructor function, the superclass and some overrides
+      var subclassConstructor = arguments[0],
+          superclass          = arguments[1],
+          overrides           = arguments[2];
+    } else {
+      // 2 arguments - where we're just given the superclass and some overrides
+      var superclass          = arguments[0],
+          overrides           = arguments[1];
+      
+      // Because we weren't given a subclass constructor, make one now
+      var subclassConstructor = overrides.constructor == objectConstructor
+                              ? function(){superclass.apply(this, arguments);} //TODO: Explain this
+                              : overrides.constructor;
+    }
+    
+    //This is the beginnings of our new class - just an empty function for now
+    var F = function() {};
+    
+    //set our new class' prototype to the same as the superclass
+    F.prototype = superclass.prototype;
+    
+    // This is where the actual 'inheritance' happens. In JavaScript we extend objects by setting the prototype
+    // of a new object to an instance of an existing one
+    subclassConstructor.prototype =  new F();
+    
+    // We'll use the subclass and superclass prototypes a lot, so get references to them here
+    var subclassProto   = subclassConstructor.prototype,
+        superclassProto = superclass.prototype;
+    
+    //Tell our new subclass its constructor
+    subclassProto.constructor = subclassConstructor;
+    
+    //TODO: Here we're giving the subclass's constructor FUNCTION a supertype property, which is set to the prototype
+    //of the supertype... why?
+    subclassConstructor.superclass = superclass.prototype;
+    
+    // TODO: Explain this
+    if (superclassIsObject(superclass)) superclassProto.constructor = superclass;
+    
+    //This is what enables your to do things like MyExtendedClass.superclass.initComponent.apply(this, arguments);
+    subclassProto.superclass = subclassProto.supr = function() {
+      return superclassProto;
     };
-}();
+    
+    subclassProto.override = inlineOverrides;
+    Ext.override(subclassConstructor, overrides);
+    
+    //Here we're adding override and extend to the constructor Function itself... for some reason (e.g. Ext.Window.override({}))
+    Ext.apply(subclassConstructor, {
+      extend: function(o){
+        Ext.extend(subclassConstructor, o);
+      },
+      override: function(o) {
+        Ext.override(subclassConstructor, o);
+      }
+    });
+    
+    return subclassConstructor;
+  };
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * @class ExtMVC.controller.Controller
@@ -2134,28 +2360,19 @@ MyApp.controllers.PagesController = Ext.extend(ExtMVC.controller.Controller, {
  * <h4>Rendering strategies</h4>
  * Not all applications will render views in the same way
  */
-ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
-  
-  /**
-   * @property name
-   * @type String
-   * The string name for this controller. Used to automatically register the controller with ExtMVC,
-   * and to include all views under the view package of the same name.  For example, if your application is
-   * called MyApp and the controller name is users, all views in the MyApp.views.users namespace will be 
-   * registered automatically for use with this.render().
-   */
-  name: null,
-  
-  onExtended: function() {
-    if (this.name != null) {
-      this.viewsPackage = Ext.ns(String.format("{0}.views.{1}", ExtMVC.name, this.name));
-      
-      ExtMVC.registerController(this.name, this.constructor);
-    }
-  },
+// ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable,
+ExtMVC.registerController('controller', {
+
+  // onExtended: function() {
+  //   if (this.name != null) {
+  //     this.viewsPackage = Ext.ns(String.format("{0}.views.{1}", ExtMVC.name, this.name));
+  //     
+  //     ExtMVC.registerController(this.name, this.constructor);
+  //   }
+  // },
   
   constructor: function(config) {
-    ExtMVC.controller.Controller.superclass.constructor.apply(this, arguments);
+    Ext.util.Observable.prototype.constructor.apply(this, arguments);
     
     Ext.apply(this, config || {});
     
@@ -2188,8 +2405,8 @@ ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
    * @param {String} viewName The name registered for this view with this controller
    * @return {Function/null} The view class (or null if not present)
    */
-  getViewClass: function(viewName) {
-    return this.viewsPackage[viewName];
+  getViewClass: function getViewClass(viewName) {
+    return ExtMVC.getView(this.name, viewName);
   },
   
   /**
@@ -2210,38 +2427,55 @@ ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable, {
    * @param {Object} config Configuration options passed through to the view class' constructor
    * @return {Ext.Component} The view object that was just created
    */
-  render: function(viewName, config) {
+  render: function render(viewName, config) {
+    //config for the view constructor
+    config = config || {};
+    
+    //we also use this constructor object to define whether or not the view should be added to the default
+    //container or not
+    Ext.applyIf(config, { 
+      autoAdd: true,
+      addTo  : ExtMVC.app.addToTarget
+    });
+
     var viewC = this.getViewClass(viewName);
     
     if (typeof viewC == "function") {
       var view = new viewC(config);
+      
+      //add to the Application's main container unless specifically told not do
+      if (config.autoAdd === true) {
+        config.addTo.removeAll();
+        config.addTo.doLayout();
+        
+        config.addTo.add(view);
+        config.addTo.doLayout();
+      }
       if (this.addTo) this.renderViaAddTo(view);
       
       return view;
     } else {
       throw new Error(String.format("View '{0}' not found", viewName));
     }
-  },
-  
-  /**
-   * Adds the given component to this application's main container.  This is usually a TabPanel
-   * or similar, and must be assigned to the controllers addTo property.  By default,
-   * this method removes any other items from the container first, then adds the new component
-   * and calls doLayout
-   * @param {Ext.Component} component The component to add to the controller's container
-   */
-  renderViaAddTo: function(component) {
-    if (this.addTo != undefined) {
-      this.addTo.removeAll();
-      this.addTo.doLayout();        
-      
-      this.addTo.add(component);
-      this.addTo.doLayout();
-    }
   }
+  
+  // /**
+  //  * Adds the given component to this application's main container.  This is usually a TabPanel
+  //  * or similar, and must be assigned to the controllers addTo property.  By default,
+  //  * this method removes any other items from the container first, then adds the new component
+  //  * and calls doLayout
+  //  * @param {Ext.Component} component The component to add to the controller's container
+  //  */
+  // renderViaAddTo: function renderViaAddTo(component) {
+  //   if (this.addTo != undefined) {
+  //     this.addTo.removeAll();
+  //     this.addTo.doLayout();        
+  //     
+  //     this.addTo.add(component);
+  //     this.addTo.doLayout();
+  //   }
+  // }
 });
-
-Ext.reg('controller', ExtMVC.controller.Controller); 
 
 /**
  * @class ExtMVC.controller.CrudController
@@ -2298,7 +2532,9 @@ MyApp.views.pages.Index = Ext.extend(Ext.Panel, {
  * <p>The same applies with Edit and New classes within the appropriate views namespace. See more on view namespaces in
  * {@link ExtMVC.controller.Controller Controller}.</p>
  */
-ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
+ExtMVC.registerController('crud', {
+  extend: "controller",
+  
   /**
    * @property model
    * @type Function/Null
@@ -2311,7 +2547,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to create a new instance of this controller's associated model
    * @param {Object} data A fields object (e.g. {title: 'My instance'})
    */
-  create: function(data, form) {
+  create: function create(data, form) {
     var instance = new this.model(data);
 
     instance.save({
@@ -2325,7 +2561,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to find (read) a single model instance by ID
    * @param {Number} id The Id of the instance to read
    */
-  read: function(id) {
+  read: function read(id) {
     this.model.findById(id, {
       scope: this,
       success: function(instance) {
@@ -2344,7 +2580,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {ExtMVC.model.Base} instance The existing instance object
    * @param {Object} updates An object containing updates to apply to the instance
    */
-  update: function(instance, updates) {
+  update: function update(instance, updates) {
     for (var key in updates) {
       instance.set(key, updates[key]);
     }
@@ -2364,7 +2600,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * Attempts to delete an existing instance
    * @param {Mixed} instance The ExtMVC.model.Base subclass instance to delete.  Will also accept a string/number ID
    */
-  destroy: function(instance) {
+  destroy: function destroy(instance) {
     if (instance.destroy == undefined) {
       //if we're passed an ID instead of an instance, make a fake model instance
       var config = {};
@@ -2382,8 +2618,8 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
    */
-  index: function() {
-    var index = this.render('Index', {
+  index: function index() {
+    var index = this.render('index', {
       model       : this.model,
       controller  : this,
       listeners   : this.getIndexViewListeners(),
@@ -2398,7 +2634,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
   /**
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
-  build: function() {
+  build: function build() {
     var buildView = this.render('New', {
       model       : this.model,
       controller  : this,
@@ -2417,7 +2653,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * instance, a findById() will be called on this controller's associated model
    * @param {Object} viewConfig Optional config object to pass to the view class constructor
    */
-  edit: function(instance, viewConfig) {
+  edit: function edit(instance, viewConfig) {
     viewConfig = viewConfig || {};
     
     if (instance instanceof Ext.data.Record) {
@@ -2454,7 +2690,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * default listeners, but can be overridden in subclasses to provide custom behaviour
    * @return {Object} The listeners object
    */
-  getIndexViewListeners: function() {
+  getIndexViewListeners: function getIndexViewListeners() {
     return {
       scope   : this,
       'delete': this.destroy,
@@ -2468,7 +2704,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * default listeners, but can be overridden in subclasses to provide custom behaviour
    * @return {Object} The listeners object
    */
-  getEditViewListeners: function() {
+  getEditViewListeners: function getEditViewListeners() {
     return {
       scope : this,
       cancel: this.index,
@@ -2481,7 +2717,7 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * default listeners, but can be overridden in subclasses to provide custom behaviour
    * @return {Object} The listeners object
    */
-  getBuildViewListeners: function() {
+  getBuildViewListeners: function getBuildViewListeners() {
     return {
       scope : this,
       cancel: this.index,
@@ -2674,8 +2910,8 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {String} viewName The name of the view to return a constructor function for
    * @return {Function} A reference to the custom view, or the scaffold fallback
    */
-  getViewClass: function(viewName) {
-    var userView = ExtMVC.controller.CrudController.superclass.getViewClass.call(this, viewName);
+  getViewClass: function getViewClass(viewName) {
+    var userView = ExtMVC.getController("controller").getViewClass.call(this, viewName);
     
     return (userView == undefined) ? this.scaffoldViewName(viewName) : userView;
   },
@@ -2685,8 +2921,9 @@ ExtMVC.controller.CrudController = Ext.extend(ExtMVC.controller.Controller, {
    * @param {String} viewName The name of the view to return a class for (index, new, edit or show)
    * @return {Function} A reference to the view class to instantiate to render this scaffold view
    */
-  scaffoldViewName: function(viewName) {
-    return ExtMVC.view.scaffold[viewName.titleize()];
+  scaffoldViewName: function scaffoldViewName(viewName) {
+    // return ExtMVC.view.scaffold[viewName.titleize()];
+    return ExtMVC.getView('scaffold', viewName);
   }
 });
 
@@ -2861,7 +3098,7 @@ ExtMVC.model = {
       };
     };
     
-    if (createNow) this.create.apply(this, arguments);
+    if (createNow) return this.create.apply(this, arguments);
   },
   
   /**
@@ -2914,6 +3151,8 @@ ExtMVC.model = {
 
     this.initializePlugins(model);
     this.afterCreate(modelName);
+    
+    return model;
   },
   
   /**
@@ -5068,8 +5307,11 @@ Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);
  * @extends Ext.grid.GridPanel
  * A default index view for a scaffold (a paging grid with double-click to edit)
  */
-ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
-  
+// ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
+ExtMVC.registerView('scaffold', 'index', {
+  xtype        : 'grid',
+  registerXType: 'scaffold_index',
+
   constructor: function(config) {
     config = config || {};
 
@@ -5091,7 +5333,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       loadMask: true
     });
 
-    ExtMVC.view.scaffold.Index.superclass.constructor.call(this, config);
+    Ext.grid.GridPanel.prototype.constructor.call(this, config);
     
     this.initListeners();
   },
@@ -5124,7 +5366,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       ]
     });
     
-    ExtMVC.view.scaffold.Index.superclass.initComponent.apply(this, arguments);
+    Ext.grid.GridPanel.prototype.initComponent.apply(this, arguments);
   },
   
   /**
@@ -5153,7 +5395,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       'delete'
     );
     
-    ExtMVC.view.scaffold.Index.superclass.initEvents.apply(this, arguments);
+    Ext.grid.GridPanel.prototype.initEvents.apply(this, arguments);
   },
   
   /**
@@ -5177,7 +5419,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
       this.controller.un('delete', this.refreshStore, this);
     }
     
-    ExtMVC.view.scaffold.Index.superclass.destroy.apply(this, arguments);
+    Ext.grid.GridPanel.destroy.apply(this, arguments);
   },
 
   /**
@@ -5612,7 +5854,7 @@ ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
   }
 });
 
-Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);
+// Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);
 
 /**
  * @class ExtMVC.view.scaffold.New

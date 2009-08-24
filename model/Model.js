@@ -169,7 +169,7 @@ ExtMVC.model = {
       };
     };
     
-    if (createNow) this.create.apply(this, arguments);
+    if (createNow) return this.create.apply(this, arguments);
   },
   
   /**
@@ -222,6 +222,8 @@ ExtMVC.model = {
 
     this.initializePlugins(model);
     this.afterCreate(modelName);
+    
+    return model;
   },
   
   /**

@@ -104,7 +104,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * @param {Object} scope The scope in which to fire the event (defaults to the controller)
    * @param {Array} args An array of arguments which are passed to the controller action.
    */
-  dispatch: function(dispatchConfig, scope, args) {
+  dispatch: function dispatch(dispatchConfig, scope, args) {
     var dispatchConfig = dispatchConfig || {};
     Ext.applyIf(dispatchConfig, {
       action: 'index'
@@ -137,7 +137,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * E.g. if name = 'Blog' or this.name = 'Blog', this is the same as:
    * Ext.ns('Blog', 'Blog.controllers', 'Blog.models', 'Blog.views')
    */
-  initializeNamespaces: function(name) {
+  initializeNamespaces: function initializeNamespaces(name) {
     var name = name || this.name;
     if (name) {
       Ext.ns(name, name + '.controllers', name + '.models', name + '.views');
@@ -149,7 +149,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * Sets up listeners on Ext.History's change event to fire the dispatch() action in the normal way.
    * This is not called automatically as not all applications will need it
    */
-  initializeHistory: function() {
+  initializeHistory: function initializeHistory() {
     this.historyForm = Ext.getBody().createChild({
       tag:    'form',
       action: '#',
@@ -181,7 +181,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
    * to the appropriate controller and action if a match was found
    * @param {String} token The url token (e.g. the token would be cont/act/id for a url like mydomain.com/#cont/act/id)
    */
-  onHistoryChange: function(token) {
+  onHistoryChange: function onHistoryChange(token) {
     var match = this.router.recognise(token);
     
     if (match) {
@@ -192,7 +192,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   /**
    * Sets up events emitted by the Application
    */
-  initializeEvents: function() {
+  initializeEvents: function initializeEvents() {
     this.addEvents(
       /**
        * @event before-launch
@@ -210,3 +210,7 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
     );
   }
 });
+
+ExtMVC.App.define = function(config) {
+  ExtMVC.app = new ExtMVC.App(config);
+};
