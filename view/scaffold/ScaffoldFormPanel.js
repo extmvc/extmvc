@@ -3,7 +3,10 @@
  * @extends Ext.form.FormPanel
  * Base class for any scaffold form panel (e.g. new and edit forms)
  */
-ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
+ExtMVC.registerView('scaffold', 'form', {
+  xtype        : 'form',
+  registerXType: 'scaffold_form',
+  
   autoScroll: true,
   
   /**
@@ -13,9 +16,12 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     var config = config || {};
     
     this.model = config.model;
-    if (this.model == undefined) throw new Error("No model supplied to scaffold Form view");
     
-    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
+    if (this.model == undefined) {
+      throw new Ext.Error(String.format("No model supplied to scaffold Form {0}", config.title), config);
+    }
+    
+    Ext.form.FormPanel.prototype.constructor.call(this, config);
   },
   
   /**
@@ -62,7 +68,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
       });
     }
     
-    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
+    Ext.form.FormPanel.prototype.initComponent.apply(this, arguments);
     
     this.initEvents();
     this.initListeners();
@@ -241,5 +247,3 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     this.fireEvent('cancel', this.instance, this);
   }
 });
-
-Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);

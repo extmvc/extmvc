@@ -3,7 +3,9 @@
  * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic new form for a given model
  */
-ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
+ExtMVC.registerView('scaffold', 'new', {
+  xtype        : 'scaffold_form',
+  registerXType: 'scaffold_new',
 
   /**
    * Sets this panel's title, if not already set.  Also specifies the save handler to use
@@ -12,8 +14,7 @@ ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
     Ext.applyIf(this, {
       title: 'New ' + this.model.prototype.singularHumanName
     });
-    ExtMVC.view.scaffold.New.superclass.initComponent.apply(this, arguments);
+    
+    ExtMVC.getView('scaffold', 'form').prototype.initComponent.apply(this, arguments);
   }
 });
-
-Ext.reg('scaffold_new', ExtMVC.view.scaffold.New);

@@ -156,7 +156,7 @@ ExtMVC.registerController('crud', {
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
   build: function build() {
-    var buildView = this.render('New', {
+    var buildView = this.render('new', {
       model       : this.model,
       controller  : this,
       listeners   : this.getBuildViewListeners(),
@@ -186,7 +186,7 @@ ExtMVC.registerController('crud', {
         id          : String.format("{0}_edit_{1}", this.name, instance.get(instance.primaryKey))        
       });
       
-      var editView = this.render('Edit', viewConfig);
+      var editView = this.render('edit', viewConfig);
       
       editView.loadRecord(instance);
       

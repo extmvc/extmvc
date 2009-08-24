@@ -3,7 +3,9 @@
  * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic edit form for a given model
  */
-ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
+ExtMVC.registerView('scaffold', 'edit', {
+  xtype        : 'scaffold_form',
+  registerXType: 'scaffold_edit',
   
   /**
    * Sets the panel's title, if not already set
@@ -13,7 +15,7 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
       title: 'Edit ' + this.model.prototype.singularHumanName
     });
     
-    ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+    ExtMVC.getView('scaffold', 'form').prototype.initComponent.apply(this, arguments);
   },
   
   /**
@@ -42,5 +44,3 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    * @param {ExtMVC.view.scaffold.ScaffoldFormPanel} this The form panel
    */
 });
-
-Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);

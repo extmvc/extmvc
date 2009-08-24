@@ -6,12 +6,13 @@
 // ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
 ExtMVC.registerView('scaffold', 'index', {
   xtype        : 'grid',
-  registerXType: 'scaffold_index',
+  registerXType: 'scaffold_grid',
 
   constructor: function(config) {
     config = config || {};
 
     this.model = config.model;
+    
     if (this.model == undefined) throw new Error("No model supplied to scaffold Index view");
     
     this.controller = this.controller || config.controller;
@@ -115,7 +116,7 @@ ExtMVC.registerView('scaffold', 'index', {
       this.controller.un('delete', this.refreshStore, this);
     }
     
-    Ext.grid.GridPanel.destroy.apply(this, arguments);
+    Ext.grid.GridPanel.prototype.destroy.apply(this, arguments);
   },
 
   /**
@@ -549,5 +550,3 @@ ExtMVC.registerView('scaffold', 'index', {
     );
   }
 });
-
-// Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);

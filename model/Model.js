@@ -122,7 +122,11 @@ ExtMVC.model = {
    * will create models globally scoped unless this is modified.  Setting this instead to MyApp.models would 
    * mean that a model called 'User' would be defined as MyApp.models.User instead
    */
-  modelNamespace: window,
+  modelNamespace: function() {
+    Ext.ns('ExtMVC.modelsTemp');
+    
+    return ExtMVC.modelsTemp;
+  }(),
 
   /**
    * Sets a model up for creation.  If this model doesn't extend any other Models that haven't been defined yet

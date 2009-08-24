@@ -187,13 +187,14 @@ ExtMVC.registerController('controller', {
       
       //add to the Application's main container unless specifically told not do
       if (config.autoAdd === true) {
-        config.addTo.removeAll();
-        config.addTo.doLayout();
+        // config.addTo.removeAll();
+        // config.addTo.doLayout();
         
         config.addTo.add(view);
         config.addTo.doLayout();
+        config.addTo.activate(view);
       }
-      if (this.addTo) this.renderViaAddTo(view);
+      // if (this.addTo) this.renderViaAddTo(view);
       
       return view;
     } else {

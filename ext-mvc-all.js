@@ -17,6 +17,18 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
     ExtMVC.model.modelNamespace = window[app.name].models;
   },
   
+  fields: {
+    
+  },
+  
+  registerFields: function(name, fields) {
+    this.fields[name] = fields;
+  },
+  
+  getFields: function(name) {
+    return this.fields[name];
+  },
+  
   
   
   /**
@@ -1087,6 +1099,10 @@ ExtMVC.lib.ControllerClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
   define: function(name) {
     var overrides  = this.getRegistered(name);
     
+    if (overrides == undefined) {
+      throw new Ext.Error(String.format("The {0} controller could not be found", name));
+    }
+    
     //set 'application' as the default controller to inherit from
     var superclass = name == "controller" ? Ext.util.Observable : this.getConstructor(overrides.extend || "application");
     
@@ -1373,6 +1389,10 @@ ExtMVC.lib.ModelClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
   //usual model definition stuff to go here
   define: function(name) {
     var overrides = this.getRegistered(name);
+    
+    if (overrides == undefined) {
+      throw new Ext.Error(String.format("The {0} model has not been registered yet", name));
+    }
     
     return this.constructors[name] = ExtMVC.model.define(name, overrides);
   }
@@ -1925,7 +1945,22 @@ ExtMVC.lib.ViewClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
     var overrides = this.getRegistered(name);
     var klass;
     
-    console.log('defining ' + name);
+    if (overrides == undefined) {
+      var dir  = name.split("-")[0],
+          file = name.split("-")[1];
+      
+      var msg = String.format(
+        "The {0} view could not be found, please check that your app/views/{1} directory contains a file called {2}, " +
+        "that the file contains \"{3}\" and that config/environment.json includes this file",
+        name,
+        dir,
+        file,
+        String.format("Ext.registerView('{0}', '{1}')", dir, file)
+      );
+      throw new Ext.Error(msg);
+    }
+    
+    // console.log('defining ' + name);
     
     if (Ext.ComponentMgr.isRegistered(overrides.xtype)) {
       var constructor = this.getConstructorForXType(overrides.xtype);
@@ -1951,7 +1986,13 @@ ExtMVC.lib.ViewClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
       }
     }
     
-    console.log(klass);
+    if (klass == undefined) {
+      throw new Ext.Error(
+        String.format("The {0} view could not be instantiated because the xtype you supplied ('{1}') could not be found", name, overrides.xtype)
+      );
+    }
+    
+    // console.log(klass);
     
     this.constructors[name] = klass;
     
@@ -1979,7 +2020,7 @@ ExtMVC.lib.ViewClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
   getConstructor: function getConstructor(namespace, name) {
     var viewName = this.buildName(namespace, name);
     
-    console.log('getting ' + viewName);
+    // console.log('getting ' + viewName);
     
     return ExtMVC.lib.ViewClassManager.superclass.getConstructor.call(this, viewName);
   },
@@ -2160,88 +2201,88 @@ ExtMVC.registerClassManager('view', new ExtMVC.lib.ViewClassManager());
 //     };
 // }();
 
-(function() {
-  var inlineOverrides = function(o) {
-    for(var m in o){
-      this[m] = o[m];
-    }
-  };
-  
-  //reference to the constructor of Object - we can match against this so as not to extend improperly
-  var objectConstructor = Object.prototype.constructor;
-  
-  /**
-   * Returns true if the given function is the bottom level Object object. We use this to test if we are
-   * extending Object directly, or some subclass of Object.
-   * @param {Object} superclass The superclass constructor function
-   */
-  var superclassIsObject = function(superclass) {
-    return superclass.prototype.constructor == objectConstructor;
-  };
-  
-  Ext.extend = function() {
-    //this method has two different signatures - 2 or 3 arguments
-    if (arguments.length == 3) {
-      // 3 arguments - where we're given the subclass constructor function, the superclass and some overrides
-      var subclassConstructor = arguments[0],
-          superclass          = arguments[1],
-          overrides           = arguments[2];
-    } else {
-      // 2 arguments - where we're just given the superclass and some overrides
-      var superclass          = arguments[0],
-          overrides           = arguments[1];
-      
-      // Because we weren't given a subclass constructor, make one now
-      var subclassConstructor = overrides.constructor == objectConstructor
-                              ? function(){superclass.apply(this, arguments);} //TODO: Explain this
-                              : overrides.constructor;
-    }
-    
-    //This is the beginnings of our new class - just an empty function for now
-    var F = function() {};
-    
-    //set our new class' prototype to the same as the superclass
-    F.prototype = superclass.prototype;
-    
-    // This is where the actual 'inheritance' happens. In JavaScript we extend objects by setting the prototype
-    // of a new object to an instance of an existing one
-    subclassConstructor.prototype =  new F();
-    
-    // We'll use the subclass and superclass prototypes a lot, so get references to them here
-    var subclassProto   = subclassConstructor.prototype,
-        superclassProto = superclass.prototype;
-    
-    //Tell our new subclass its constructor
-    subclassProto.constructor = subclassConstructor;
-    
-    //TODO: Here we're giving the subclass's constructor FUNCTION a supertype property, which is set to the prototype
-    //of the supertype... why?
-    subclassConstructor.superclass = superclass.prototype;
-    
-    // TODO: Explain this
-    if (superclassIsObject(superclass)) superclassProto.constructor = superclass;
-    
-    //This is what enables your to do things like MyExtendedClass.superclass.initComponent.apply(this, arguments);
-    subclassProto.superclass = subclassProto.supr = function() {
-      return superclassProto;
-    };
-    
-    subclassProto.override = inlineOverrides;
-    Ext.override(subclassConstructor, overrides);
-    
-    //Here we're adding override and extend to the constructor Function itself... for some reason (e.g. Ext.Window.override({}))
-    Ext.apply(subclassConstructor, {
-      extend: function(o){
-        Ext.extend(subclassConstructor, o);
-      },
-      override: function(o) {
-        Ext.override(subclassConstructor, o);
-      }
-    });
-    
-    return subclassConstructor;
-  };
-})();
+// (function() {
+//   var inlineOverrides = function(o) {
+//     for(var m in o){
+//       this[m] = o[m];
+//     }
+//   };
+//   
+//   //reference to the constructor of Object - we can match against this so as not to extend improperly
+//   var objectConstructor = Object.prototype.constructor;
+//   
+//   /**
+//    * Returns true if the given function is the bottom level Object object. We use this to test if we are
+//    * extending Object directly, or some subclass of Object.
+//    * @param {Object} superclass The superclass constructor function
+//    */
+//   var superclassIsObject = function(superclass) {
+//     return superclass.prototype.constructor == objectConstructor;
+//   };
+//   
+//   Ext.extend = function() {
+//     //this method has two different signatures - 2 or 3 arguments
+//     if (arguments.length == 3) {
+//       // 3 arguments - where we're given the subclass constructor function, the superclass and some overrides
+//       var subclassConstructor = arguments[0],
+//           superclass          = arguments[1],
+//           overrides           = arguments[2];
+//     } else {
+//       // 2 arguments - where we're just given the superclass and some overrides
+//       var superclass          = arguments[0],
+//           overrides           = arguments[1];
+//       
+//       // Because we weren't given a subclass constructor, make one now
+//       var subclassConstructor = overrides.constructor == objectConstructor
+//                               ? function(){superclass.apply(this, arguments);} //TODO: Explain this
+//                               : overrides.constructor;
+//     }
+//     
+//     //This is the beginnings of our new class - just an empty function for now
+//     var F = function() {};
+//     
+//     //set our new class' prototype to the same as the superclass
+//     F.prototype = superclass.prototype;
+//     
+//     // This is where the actual 'inheritance' happens. In JavaScript we extend objects by setting the prototype
+//     // of a new object to an instance of an existing one
+//     subclassConstructor.prototype =  new F();
+//     
+//     // We'll use the subclass and superclass prototypes a lot, so get references to them here
+//     var subclassProto   = subclassConstructor.prototype,
+//         superclassProto = superclass.prototype;
+//     
+//     //Tell our new subclass its constructor
+//     subclassProto.constructor = subclassConstructor;
+//     
+//     //TODO: Here we're giving the subclass's constructor FUNCTION a supertype property, which is set to the prototype
+//     //of the supertype... why?
+//     subclassConstructor.superclass = superclass.prototype;
+//     
+//     // TODO: Explain this
+//     if (superclassIsObject(superclass)) superclassProto.constructor = superclass;
+//     
+//     //This is what enables your to do things like MyExtendedClass.superclass.initComponent.apply(this, arguments);
+//     subclassProto.superclass = subclassProto.supr = function() {
+//       return superclassProto;
+//     };
+//     
+//     subclassProto.override = inlineOverrides;
+//     Ext.override(subclassConstructor, overrides);
+//     
+//     //Here we're adding override and extend to the constructor Function itself... for some reason (e.g. Ext.Window.override({}))
+//     Ext.apply(subclassConstructor, {
+//       extend: function(o){
+//         Ext.extend(subclassConstructor, o);
+//       },
+//       override: function(o) {
+//         Ext.override(subclassConstructor, o);
+//       }
+//     });
+//     
+//     return subclassConstructor;
+//   };
+// })();
 
 
 
@@ -2445,13 +2486,14 @@ ExtMVC.registerController('controller', {
       
       //add to the Application's main container unless specifically told not do
       if (config.autoAdd === true) {
-        config.addTo.removeAll();
-        config.addTo.doLayout();
+        // config.addTo.removeAll();
+        // config.addTo.doLayout();
         
         config.addTo.add(view);
         config.addTo.doLayout();
+        config.addTo.activate(view);
       }
-      if (this.addTo) this.renderViaAddTo(view);
+      // if (this.addTo) this.renderViaAddTo(view);
       
       return view;
     } else {
@@ -2635,7 +2677,7 @@ ExtMVC.registerController('crud', {
    * Renders the custom New view if present, otherwise falls back to the default scaffold New form
    */
   build: function build() {
-    var buildView = this.render('New', {
+    var buildView = this.render('new', {
       model       : this.model,
       controller  : this,
       listeners   : this.getBuildViewListeners(),
@@ -2665,7 +2707,7 @@ ExtMVC.registerController('crud', {
         id          : String.format("{0}_edit_{1}", this.name, instance.get(instance.primaryKey))        
       });
       
-      var editView = this.render('Edit', viewConfig);
+      var editView = this.render('edit', viewConfig);
       
       editView.loadRecord(instance);
       
@@ -3051,7 +3093,11 @@ ExtMVC.model = {
    * will create models globally scoped unless this is modified.  Setting this instead to MyApp.models would 
    * mean that a model called 'User' would be defined as MyApp.models.User instead
    */
-  modelNamespace: window,
+  modelNamespace: function() {
+    Ext.ns('ExtMVC.modelsTemp');
+    
+    return ExtMVC.modelsTemp;
+  }(),
 
   /**
    * Sets a model up for creation.  If this model doesn't extend any other Models that haven't been defined yet
@@ -4701,7 +4747,10 @@ MyApp.views.MyFormWindow = Ext.extend(ExtMVC.view.FormWindow, {
 </pre>
  * 
  */
-ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
+ExtMVC.registerView('extmvc', 'formwindow', {
+  xtype        : 'window',
+  registerXType: 'formwindow',
+
   modal  : true,
   height : 230,
   width  : 400,
@@ -4736,7 +4785,7 @@ ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
       closeAction: 'hide'
     });
     
-    ExtMVC.view.FormWindow.superclass.initComponent.apply(this, arguments);
+    Ext.Window.prototype.initComponent.apply(this, arguments);
   },
   
   /**
@@ -4794,8 +4843,6 @@ ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
     return values;
   }
 });
-
-Ext.reg('formwindow', ExtMVC.view.FormWindow);
 
 /**
  * @class ExtMVC.view.HasManyEditorGridPanel
@@ -5014,7 +5061,10 @@ Ext.reg('hasmany_editorgrid', ExtMVC.view.HasManyEditorGridPanel);
  * @extends Ext.form.FormPanel
  * Base class for any scaffold form panel (e.g. new and edit forms)
  */
-ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
+ExtMVC.registerView('scaffold', 'form', {
+  xtype        : 'form',
+  registerXType: 'scaffold_form',
+  
   autoScroll: true,
   
   /**
@@ -5024,9 +5074,12 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
     var config = config || {};
     
     this.model = config.model;
-    if (this.model == undefined) throw new Error("No model supplied to scaffold Form view");
     
-    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.constructor.call(this, config);
+    if (this.model == undefined) {
+      throw new Ext.Error(String.format("No model supplied to scaffold Form {0}", config.title), config);
+    }
+    
+    Ext.form.FormPanel.prototype.constructor.call(this, config);
   },
   
   /**
@@ -5073,7 +5126,7 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
       });
     }
     
-    ExtMVC.view.scaffold.ScaffoldFormPanel.superclass.initComponent.apply(this, arguments);
+    Ext.form.FormPanel.prototype.initComponent.apply(this, arguments);
     
     this.initEvents();
     this.initListeners();
@@ -5253,14 +5306,14 @@ ExtMVC.view.scaffold.ScaffoldFormPanel = Ext.extend(Ext.form.FormPanel, {
   }
 });
 
-Ext.reg('scaffold_form_panel', ExtMVC.view.scaffold.ScaffoldFormPanel);
-
 /**
  * @class ExtMVC.view.scaffold.Edit
  * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic edit form for a given model
  */
-ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
+ExtMVC.registerView('scaffold', 'edit', {
+  xtype        : 'scaffold_form',
+  registerXType: 'scaffold_edit',
   
   /**
    * Sets the panel's title, if not already set
@@ -5270,7 +5323,7 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
       title: 'Edit ' + this.model.prototype.singularHumanName
     });
     
-    ExtMVC.view.scaffold.Edit.superclass.initComponent.apply(this, arguments);
+    ExtMVC.getView('scaffold', 'form').prototype.initComponent.apply(this, arguments);
   },
   
   /**
@@ -5300,8 +5353,6 @@ ExtMVC.view.scaffold.Edit = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
    */
 });
 
-Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);
-
 /**
  * @class ExtMVC.view.scaffold.Index
  * @extends Ext.grid.GridPanel
@@ -5310,12 +5361,13 @@ Ext.reg('scaffold_edit', ExtMVC.view.scaffold.Edit);
 // ExtMVC.view.scaffold.Index = Ext.extend(Ext.grid.GridPanel, {
 ExtMVC.registerView('scaffold', 'index', {
   xtype        : 'grid',
-  registerXType: 'scaffold_index',
+  registerXType: 'scaffold_grid',
 
   constructor: function(config) {
     config = config || {};
 
     this.model = config.model;
+    
     if (this.model == undefined) throw new Error("No model supplied to scaffold Index view");
     
     this.controller = this.controller || config.controller;
@@ -5419,7 +5471,7 @@ ExtMVC.registerView('scaffold', 'index', {
       this.controller.un('delete', this.refreshStore, this);
     }
     
-    Ext.grid.GridPanel.destroy.apply(this, arguments);
+    Ext.grid.GridPanel.prototype.destroy.apply(this, arguments);
   },
 
   /**
@@ -5854,14 +5906,14 @@ ExtMVC.registerView('scaffold', 'index', {
   }
 });
 
-// Ext.reg('scaffold_index', ExtMVC.view.scaffold.Index);
-
 /**
  * @class ExtMVC.view.scaffold.New
  * @extends ExtMVC.view.scaffold.ScaffoldFormPanel
  * Shows a generic new form for a given model
  */
-ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
+ExtMVC.registerView('scaffold', 'new', {
+  xtype        : 'scaffold_form',
+  registerXType: 'scaffold_new',
 
   /**
    * Sets this panel's title, if not already set.  Also specifies the save handler to use
@@ -5870,11 +5922,10 @@ ExtMVC.view.scaffold.New = Ext.extend(ExtMVC.view.scaffold.ScaffoldFormPanel, {
     Ext.applyIf(this, {
       title: 'New ' + this.model.prototype.singularHumanName
     });
-    ExtMVC.view.scaffold.New.superclass.initComponent.apply(this, arguments);
+    
+    ExtMVC.getView('scaffold', 'form').prototype.initComponent.apply(this, arguments);
   }
 });
-
-Ext.reg('scaffold_new', ExtMVC.view.scaffold.New);
 
 /**
  * @class ExtMVC.test.TestRunner

@@ -18,7 +18,10 @@ MyApp.views.MyFormWindow = Ext.extend(ExtMVC.view.FormWindow, {
 </pre>
  * 
  */
-ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
+ExtMVC.registerView('extmvc', 'formwindow', {
+  xtype        : 'window',
+  registerXType: 'formwindow',
+
   modal  : true,
   height : 230,
   width  : 400,
@@ -53,7 +56,7 @@ ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
       closeAction: 'hide'
     });
     
-    ExtMVC.view.FormWindow.superclass.initComponent.apply(this, arguments);
+    Ext.Window.prototype.initComponent.apply(this, arguments);
   },
   
   /**
@@ -111,5 +114,3 @@ ExtMVC.view.FormWindow = Ext.extend(Ext.Window, {
     return values;
   }
 });
-
-Ext.reg('formwindow', ExtMVC.view.FormWindow);

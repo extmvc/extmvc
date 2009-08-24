@@ -17,6 +17,18 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
     ExtMVC.model.modelNamespace = window[app.name].models;
   },
   
+  fields: {
+    
+  },
+  
+  registerFields: function(name, fields) {
+    this.fields[name] = fields;
+  },
+  
+  getFields: function(name) {
+    return this.fields[name];
+  },
+  
   
   
   /**
