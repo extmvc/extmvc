@@ -2484,16 +2484,20 @@ ExtMVC.registerController('controller', {
     if (typeof viewC == "function") {
       var view = new viewC(config);
       
-      //add to the Application's main container unless specifically told not do
-      if (config.autoAdd === true) {
-        // config.addTo.removeAll();
-        // config.addTo.doLayout();
-        
-        config.addTo.add(view);
-        config.addTo.doLayout();
-        config.addTo.activate(view);
+      if (view.isXType('window')) {
+        view.show();
+      } else {
+        //add to the Application's main container unless specifically told not do
+        if (config.autoAdd === true) {
+          // config.addTo.removeAll();
+          // config.addTo.doLayout();
+
+          config.addTo.add(view);
+          config.addTo.doLayout();
+          config.addTo.activate(view);
+        }
+        // if (this.addTo) this.renderViaAddTo(view);
       }
-      // if (this.addTo) this.renderViaAddTo(view);
       
       return view;
     } else {
