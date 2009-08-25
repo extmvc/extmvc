@@ -2661,21 +2661,60 @@ MyApp.controllers.PagesController = Ext.extend(ExtMVC.controller.Controller, {
 // ExtMVC.controller.Controller = Ext.extend(Ext.util.Observable,
 ExtMVC.registerController('controller', {
 
-  // onExtended: function() {
-  //   if (this.name != null) {
-  //     this.viewsPackage = Ext.ns(String.format("{0}.views.{1}", ExtMVC.name, this.name));
-  //     
-  //     ExtMVC.registerController(this.name, this.constructor);
-  //   }
-  // },
-  
   constructor: function(config) {
     Ext.util.Observable.prototype.constructor.apply(this, arguments);
     
-    Ext.apply(this, config || {});
+    Ext.apply(this, {
+      /**
+       * @property renderStrategies
+       * @type Object
+       * An object of the form {xtype: function} which keys a container's xtype to the function to use
+       * when rendering a view to that container (see registerRenderStrategy)
+       */
+      renderStrategies: {}
+    }, config || {});
+    
+    this.registerDefaultRenderStrategies();
     
     this.initEvents();
     this.initListeners();
+  },
+  
+  /**
+   * Registers a rendering function for a given container xtype. When a view is rendered via this.render,
+   * the xtype of the container it is being rendered to is compared to the registered strategy xtypes, and
+   * the most specific match will be used to perform the rendering.
+   * @param {String} xtype The container xtype to register
+   * @param {Function} strategy The function to call when rendering to a container of the given xtype
+   */
+  registerRenderStrategy: function(xtype, strategy) {
+    this.renderStrategies[xtype] = strategy;
+  },
+  
+  /**
+   * Returns the strategy function to use when rendering to the given container instance.
+   * @param {Ext.Container} container The container to add to
+   * @return {Function} The rendering strategy to use
+   */
+  getRenderStrategy: function(container) {
+    var xtypes = container.getXTypes().split("/");
+    
+    for (var i = xtypes.length - 1; i >= 0; i--){
+      var strategy = this.renderStrategies[xtypes[i]];
+      
+      if (strategy != undefined) return strategy;
+    };
+    
+    throw new Ext.Error("No render strategy could be found for the container you specified");
+  },
+  
+  /**
+   * @private
+   * Adds the default strategies for panel and tabpanel
+   */
+  registerDefaultRenderStrategies: function() {
+    this.registerRenderStrategy('panel', this.panelRenderStragegy);
+    this.registerRenderStrategy('tabpanel', this.tabPanelRenderStragegy);
   },
   
   /**
@@ -2733,7 +2772,7 @@ ExtMVC.registerController('controller', {
     //container or not
     Ext.applyIf(config, { 
       autoAdd: true,
-      addTo  : ExtMVC.app.addToTarget
+      addTo  : ExtMVC.app.main
     });
 
     var viewC = this.getViewClass(viewName);
@@ -2744,22 +2783,33 @@ ExtMVC.registerController('controller', {
       if (view.isXType('window')) {
         view.show();
       } else {
-        //add to the Application's main container unless specifically told not do
-        if (config.autoAdd === true) {
-          // config.addTo.removeAll();
-          // config.addTo.doLayout();
-
-          config.addTo.add(view);
-          config.addTo.doLayout();
-          config.addTo.activate(view);
-        }
-        // if (this.addTo) this.renderViaAddTo(view);
+        this.getRenderStrategy(config.addTo)(config.addTo, view);
       }
       
       return view;
     } else {
       throw new Error(String.format("View '{0}' not found", viewName));
     }
+  },
+  
+  /**
+   * @private
+   * The tabpanel render strategy
+   */
+  tabPanelRenderStragegy: function(container, view) {
+    container.add(view);
+    container.doLayout();
+    container.activate(view);
+  },
+  
+  /**
+   * @private
+   * The panel render strategy
+   */
+  panelRenderStragegy: function(container, view) {
+    container.removeAll();
+    container.add(view);
+    container.doLayout();
   }
   
   // /**
