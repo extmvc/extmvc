@@ -10,10 +10,10 @@ ExtMVC.model.plugin.adapter = {
     Ext.apply(model, adapter.classMethods());
     
     //associations are optional so only add them if they are present
-    try {
-      Ext.override(ExtMVC.model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
-      Ext.override(ExtMVC.model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
-    } catch(e) {};
+    // try {
+    //   Ext.override(ExtMVC.model.plugin.association.HasMany,   adapter.hasManyAssociationMethods());
+    //   Ext.override(ExtMVC.model.plugin.association.BelongsTo, adapter.belongsToAssociationMethods());
+    // } catch(e) {};
   }
 };
 

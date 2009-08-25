@@ -428,13 +428,20 @@ ExtMVC.registerController('crud', {
   /**
    * If a view of the given viewName is defined in this controllers viewPackage, a reference to its
    * constructor is defined.  If not, a reference to the default scaffold for the viewName is returned
-   * @param {String} viewName The name of the view to return a constructor function for
+   * @param {String} namespace The view namesapce
+   * @param {String} name The name of the view to return a constructor function for
    * @return {Function} A reference to the custom view, or the scaffold fallback
    */
-  getViewClass: function getViewClass(viewName) {
-    var userView = ExtMVC.getController("controller").getViewClass.call(this, viewName);
+  getView: function getView(namespace, name) {
+    var view;
     
-    return (userView == undefined) ? this.scaffoldViewName(viewName) : userView;
+    try {
+      view = ExtMVC.getController("controller").getView.apply(this, arguments);
+    } catch(e) {
+      view = this.scaffoldViewName(name);
+    }
+    
+    return view;
   },
   
   /**
@@ -443,7 +450,6 @@ ExtMVC.registerController('crud', {
    * @return {Function} A reference to the view class to instantiate to render this scaffold view
    */
   scaffoldViewName: function scaffoldViewName(viewName) {
-    // return ExtMVC.view.scaffold[viewName.titleize()];
     return ExtMVC.getView('scaffold', viewName);
   }
 });

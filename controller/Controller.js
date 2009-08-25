@@ -182,15 +182,6 @@ ExtMVC.registerController('controller', {
   showNotice: function(notice) {},
   
   /**
-   * Returns the view class registered for the given view name, or null
-   * @param {String} viewName The name registered for this view with this controller
-   * @return {Function/null} The view class (or null if not present)
-   */
-  getViewClass: function getViewClass(viewName) {
-    return ExtMVC.getView(this.name, viewName);
-  },
-  
-  /**
    * @property addTo
    * @type Ext.Container
    * The container to add views to using the 'add' renderMethod.  Usually set to an Ext.TabPanel instance or similar
@@ -208,9 +199,22 @@ ExtMVC.registerController('controller', {
    * @param {Object} config Configuration options passed through to the view class' constructor
    * @return {Ext.Component} The view object that was just created
    */
-  render: function render(viewName, config) {
-    //config for the view constructor
-    config = config || {};
+  render: function render() {
+    //handle both method signatures
+    switch(arguments.length) {
+      case 1:
+        //this just falls through into case 2, which provides a config {} if one is not supplied
+      case 2:
+        var namespace = this.name,
+            viewName  = arguments[0],
+            config    = arguments[1] || {};
+        break;
+      case 3:
+        var namespace = arguments[0],
+            viewName  = arguments[1],
+            config    = arguments[2] || {};
+        break;
+    }
     
     //we also use this constructor object to define whether or not the view should be added to the default
     //container or not
@@ -218,22 +222,30 @@ ExtMVC.registerController('controller', {
       autoAdd: true,
       addTo  : ExtMVC.app.main
     });
-
-    var viewC = this.getViewClass(viewName);
     
-    if (typeof viewC == "function") {
-      var view = new viewC(config);
-      
+    //NOTE: ExtMVC.getView will throw an error if the view hasn't been defined anywhere yet. At the moment this
+    //error will just propagate up as it's probably pretty clear, but we could provide a custom Error message here instead
+    var view = new (this.getView(namespace, viewName))(config);
+    
+    if (config.autoAdd === true) {
       if (view.isXType('window')) {
         view.show();
       } else {
         this.getRenderStrategy(config.addTo)(config.addTo, view);
       }
-      
-      return view;
-    } else {
-      throw new Error(String.format("View '{0}' not found", viewName));
     }
+
+    return view;
+  },
+  
+  /**
+   * Just calls ExtMVC.getView and returns. This is here because we override it in Crud Controller
+   * @param {String} namespace The view namespace
+   * @param {String} name The view name
+   * @return {Function} The view constructor function
+   */
+  getView: function(namespace, name) {
+    return ExtMVC.getView(namespace, name);
   },
   
   /**
