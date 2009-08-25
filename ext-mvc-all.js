@@ -6,6 +6,25 @@
 ExtMVC = Ext.extend(Ext.util.Observable, {
   version: "0.7a",
   
+  constructor: function() {
+    ExtMVC.superclass.constructor.apply(this, arguments);
+    
+    /**
+     * @property dispatcher
+     * @type Ext.lib.Dispatcher
+     * The dispatcher object which finds the right controller and action when ExtMVC.dispatch is called
+     */
+    // this.dispatcher = new Ext.lib.Dispatcher({
+    //   
+    // });
+  },
+  
+  dispatch: function() {
+    var dispatcher = this.dispatcher;
+    
+    dispatcher.dispatch.apply(dispatcher, arguments);
+  },
+  
   /**
    * Sets the Ext.Application instance currently in use. This is currently required :/
    * @param {Ext.Application} app The application currently in use
@@ -228,6 +247,15 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 ExtMVC = new ExtMVC();
 
 // ExtMVC.initializeClassManagers();
+
+Ext.onReady(function() {
+  /**
+   * @property dispatcher
+   * @type Ext.lib.Dispatcher
+   * The dispatcher object which finds the right controller and action when ExtMVC.dispatch is called
+   */
+  ExtMVC.dispatcher = new ExtMVC.lib.Dispatcher();
+});
 
 Ext.ns('ExtMVC.router', 'ExtMVC.plugin', 'ExtMVC.controller', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib', 'ExtMVC.test');
 
@@ -1195,6 +1223,235 @@ ExtMVC.lib.Dependencies = Ext.extend(Ext.util.Observable, {
     
     this.dependencies[dependencyName] = arr;
   }
+});
+
+/**
+ * @class ExtMVC.lib.Dispatcher
+ * @extends Ext.util.MixedCollection
+ * Normalises dispatch info received by an application, finds and calls the relevant controller action
+ * with any arguments supplied
+ */
+ExtMVC.lib.Dispatcher = Ext.extend(Ext.util.MixedCollection, {
+
+  constructor: function(config) {
+    ExtMVC.lib.Dispatcher.superclass.constructor.apply(this, arguments);
+    
+    Ext.apply(this, config || {}, {
+      /**
+       * @property matchers
+       * @type Array
+       * All registered Dispatch Matchers
+       */
+      matchers: [],
+      
+      /**
+       * @cfg matcherOrder
+       * @type Array
+       * An array of strings that correspond to DispatchMatcher names. This defines the order
+       * in which dispatch matchers will be called. Override if you wish to inject your own matchers
+       * before the default ones. This is empty by default, and pushed to whenever a matcher is registered
+       */
+      matcherOrder: []
+    });
+    
+    this.addEvents(
+      /**
+       * @event dispatch
+       * Fires before the dispatcher dispatches a request. Return false to cancel
+       * @param {Array} arguments The arguments receivd by the dispatcher
+       * @param {ExtMVC.lib.DispatchMatcher} matcher The DispatchMatcher instance that will be used
+       * @param {Object} dispatchConfig An object containing controller, action and arguments properties
+       */
+      'dispatch'
+    );
+    
+    this.registerDefaultDispatchMatchers();
+  },
+  
+  /**
+   * Dispatches to a controller action. Takes numerous argument formats, such as:
+    <pre>
+      <ul>
+        <li>dispatch('controllerName', 'actionName', ['list', 'of', 'arguments'])</li>
+        <li>dispatch({controller: 'controllerName', action: 'actionName', arguments: ['list', 'of', 'arguments']})</li>
+      </ul>
+    </pre>
+   * These are normalised, the controller found and the action called with the supplied arguments.
+   */
+  dispatch: function() {
+    var matcher = this.getDispatchMatcher.apply(this, arguments),
+        config  = matcher.getDispatchConfig.apply(matcher, arguments);
+
+    //fire the 'dispatch' event, and then dispatch if no listeners return false
+    if (this.fireEvent('dispatch', arguments, matcher, config) !== false) {
+      var controller = ExtMVC.getController(config.controller);
+      
+      if (controller == undefined) {
+        throw new Ext.Error(
+          String.format("The controller you are trying to dispatch to ({0}) does not exist", config.controller)
+        );
+      }
+      
+      if (controller[config.action] == undefined) {
+        throw new Ext.Error(
+          String.format("The action {0} does not exist on the {1} controller", config.action, config.controller)
+        );
+      }
+      
+      //if controller and action both exist, dispatch now
+      controller[config.action].call(controller, config.arguments);      
+    }
+  },
+
+  /**
+   * Registers a dispatch matcher for use with this dispatcher.
+   * @param {ExtMVC.lib.DispatchMatcher} matcher The matcher to register
+   */
+  registerDispatchMatcher: function(matcher) {
+    this.add(matcher);
+    
+    this.matcherOrder.push(matcher.name);
+  },
+
+  /**
+   * Adds the default dispatch matchers. This is called automatically by the constructor
+   */
+  registerDefaultDispatchMatchers: function() {
+    this.registerDispatchMatcher(new ExtMVC.lib.DefaultDispatchMatcher());
+    this.registerDispatchMatcher(new ExtMVC.lib.ObjectDispatchMatcher());
+  },
+  
+  /**
+   * @private
+   * Returns a DispatchMatcher object if any matchers match the supplied dispatch format
+   */
+  getDispatchMatcher: function() {
+    var dispatchArgs = arguments,
+        dispatchMatcher;
+    
+    Ext.each(this.matcherOrder, function(name) {
+      var matcher = this.get(name);
+      
+      if (matcher.matches.apply(matcher, dispatchArgs)) {
+        dispatchMatcher = matcher;
+        
+        //stops Ext.each
+        return false;
+      }
+    }, this);
+    
+    if (dispatchMatcher == undefined) {
+      throw new Ext.Error("Could not find a suitable Dispatch Matcher for the dispatch arguments provided", dispatchArgs);
+    } else {
+      return dispatchMatcher;
+    }
+  },
+  
+  /**
+   * @private
+   */
+  getKey: function(item) {
+    return item.name;
+  }
+});
+
+/**
+ * @class ExtMVC.lib.DispatchMatcher
+ * @extends Object
+ * Abstract base class for dispatch matchers. A Dispatch Matcher just takes the arguments that
+ * are passed to an ExtMVC.lib.Dispatcher's dispatch method, and returns normalised arguments.
+ * This allows the Dispatcher to accept numerous forms, such as:
+ *   dispatch('controllerName', 'actionName', ['list', 'of', 'arguments'])
+ *   dispatch({controller: 'controllerName', action: 'actionName', arguments: ['list', 'of', 'arguments']})
+ *   dispatch("controller/action/123")
+ */
+ExtMVC.lib.DispatchMatcher = Ext.extend(Object, {
+
+  constructor: function(config) {
+    Ext.applyIf(this, config || {});
+    
+    ExtMVC.lib.DispatchMatcher.superclass.constructor.apply(this, arguments);
+  },
+  
+  matches: function() {
+    throw new Ext.Error("DispatchMatcher subclass must implement this method");
+  },
+  
+  /**
+   * Returns an object like the following:
+   * {
+   *   controller: 'someControllerName',
+   *   action    : 'someActionName',
+   *   arguments : ['some', 'list', 'of', 'arguments']
+   * }
+   */
+  getDispatchConfig: function() {
+    throw new Ext.Error("DispatchMatcher subclass must implement this method");
+  }
+});
+
+/**
+ * @class ExtMVC.lib.DefaultDispatchMatcher
+ * @extends ExtMVC.lib.DispatchMatcher
+ * Dispatch matcher that accepts arguments in the form (controller, action, [args])
+ */
+ExtMVC.lib.DefaultDispatchMatcher = Ext.extend(ExtMVC.lib.DispatchMatcher, {
+  name: 'default',
+  
+  /**
+   * Returns true if the supplied arguments look like ('controllerName', 'actionName', ['args'])
+   */
+  matches: function(controller, action, args) {
+    return Ext.isString(controller) && Ext.isString(action) && Ext.isArray(args || []);
+  },
+  
+  getDispatchConfig: function() {
+    return {
+      controller: arguments[0],
+      action    : arguments[1],
+      arguments : arguments[2] || []
+    };
+  }
+});
+
+/**
+ * @class ExtMVC.lib.ObjectDispatchMatcher
+ * @extends ExtMVC.lib.DispatchMatcher
+ * Dispatch matcher that accepts arguments in the form ({controller: controller, action: action, arguments: [args]})
+ */
+ExtMVC.lib.ObjectDispatchMatcher = Ext.extend(ExtMVC.lib.DispatchMatcher, {
+  name: 'object',
+  
+  /**
+   * Returns true if the supplied arguments are parseable by this matcher
+   * @return {Boolean} true if this matcher matches the supplied arguments
+   */
+  matches: function() {
+    var obj = arguments[0];
+    
+    //set the default action to 'index', if not supplied
+    Ext.applyIf(obj, {
+      action: 'index'
+    });
+    
+    return arguments.length == 1 && obj.controller != undefined && obj.action != undefined;
+  },
+  
+  getDispatchConfig: function() {
+    return arguments[0];
+  }
+});
+
+
+/**
+ * @class ExtMVC.lib.RouterDispatchManager
+ * @extends ExtMVC.lib.DispatchMatcher
+ * Dispatch matcher that uses a Router to match a given string and split it into suitable arguments
+ */
+ExtMVC.lib.RouterDispatchManager = Ext.extend(ExtMVC.lib.DispatchMatcher, {
+  name: 'router'
+  
+  //TODO
 });
 
 /**

@@ -6,6 +6,25 @@
 ExtMVC = Ext.extend(Ext.util.Observable, {
   version: "0.7a",
   
+  constructor: function() {
+    ExtMVC.superclass.constructor.apply(this, arguments);
+    
+    /**
+     * @property dispatcher
+     * @type Ext.lib.Dispatcher
+     * The dispatcher object which finds the right controller and action when ExtMVC.dispatch is called
+     */
+    // this.dispatcher = new Ext.lib.Dispatcher({
+    //   
+    // });
+  },
+  
+  dispatch: function() {
+    var dispatcher = this.dispatcher;
+    
+    dispatcher.dispatch.apply(dispatcher, arguments);
+  },
+  
   /**
    * Sets the Ext.Application instance currently in use. This is currently required :/
    * @param {Ext.Application} app The application currently in use
@@ -228,5 +247,14 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 ExtMVC = new ExtMVC();
 
 // ExtMVC.initializeClassManagers();
+
+Ext.onReady(function() {
+  /**
+   * @property dispatcher
+   * @type Ext.lib.Dispatcher
+   * The dispatcher object which finds the right controller and action when ExtMVC.dispatch is called
+   */
+  ExtMVC.dispatcher = new ExtMVC.lib.Dispatcher();
+});
 
 Ext.ns('ExtMVC.router', 'ExtMVC.plugin', 'ExtMVC.controller', 'ExtMVC.view', 'ExtMVC.view.scaffold', 'ExtMVC.lib', 'ExtMVC.test');
