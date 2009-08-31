@@ -157,8 +157,8 @@ ExtMVC.registerController('controller', {
    * Adds the default strategies for panel and tabpanel
    */
   registerDefaultRenderStrategies: function() {
-    this.registerRenderStrategy('panel', this.panelRenderStragegy);
-    this.registerRenderStrategy('tabpanel', this.tabPanelRenderStragegy);
+    this.registerRenderStrategy('panel', this.panelRenderStrategy);
+    this.registerRenderStrategy('tabpanel', this.tabPanelRenderStrategy);
   },
   
   /**
@@ -252,7 +252,7 @@ ExtMVC.registerController('controller', {
    * @private
    * The tabpanel render strategy
    */
-  tabPanelRenderStragegy: function(container, view) {
+  tabPanelRenderStrategy: function(container, view) {
     container.add(view);
     container.doLayout();
     container.activate(view);
@@ -262,26 +262,9 @@ ExtMVC.registerController('controller', {
    * @private
    * The panel render strategy
    */
-  panelRenderStragegy: function(container, view) {
+  panelRenderStrategy: function(container, view) {
     container.removeAll();
     container.add(view);
     container.doLayout();
   }
-  
-  // /**
-  //  * Adds the given component to this application's main container.  This is usually a TabPanel
-  //  * or similar, and must be assigned to the controllers addTo property.  By default,
-  //  * this method removes any other items from the container first, then adds the new component
-  //  * and calls doLayout
-  //  * @param {Ext.Component} component The component to add to the controller's container
-  //  */
-  // renderViaAddTo: function renderViaAddTo(component) {
-  //   if (this.addTo != undefined) {
-  //     this.addTo.removeAll();
-  //     this.addTo.doLayout();        
-  //     
-  //     this.addTo.add(component);
-  //     this.addTo.doLayout();
-  //   }
-  // }
 });

@@ -45,7 +45,7 @@ ExtMVC.test.TestClient = Ext.extend(Ext.util.Observable, {
       interval: 1000,
       scope   : this,
       run     : function() {
-        this.jsonpRequest("http://192.168.4.3:5000/changes", {
+        this.jsonpRequest("http://192.168.3.2:5000/changes", {
           since: Math.floor(this.lastChangesReceived.getTime() / 1000)
         }, this.onChangePoll);
       }
@@ -86,7 +86,7 @@ ExtMVC.test.TestClient = Ext.extend(Ext.util.Observable, {
    * @param {Boolean} autoRun True to run test files as soon as they are loaded (defaults to true)
    */
   loadTestFiles: function() {
-    this.jsonpRequest('http://192.168.4.3:5000/all_test_files', {}, function(response) {
+    this.jsonpRequest('http://192.168.3.2:5000/all_test_files', {}, function(response) {
       this.runner.addTests(response.files);
       this.runner.runTests();
     });
@@ -97,7 +97,7 @@ ExtMVC.test.TestClient = Ext.extend(Ext.util.Observable, {
    * @param {Object} stats Stats object
    */
   postResults: function(stats) {
-    this.jsonpRequest('http://192.168.4.3:5000/results', stats, function() {
+    this.jsonpRequest('http://192.168.3.2:5000/results', stats, function() {
       this.fireEvent('results-posted', stats);
       
       var runner = this.runner;

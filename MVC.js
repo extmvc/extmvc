@@ -246,6 +246,16 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 
 ExtMVC = new ExtMVC();
 
+//set a few shortcuts
+Ext.apply(ExtMVC, {
+  regM: ExtMVC.registerModel,
+  regV: ExtMVC.registerView,
+  regC: ExtMVC.registerController,
+  getM: ExtMVC.getModel,
+  getV: ExtMVC.getView,
+  getC: ExtMVC.getController
+});
+
 // ExtMVC.initializeClassManagers();
 
 Ext.onReady(function() {
