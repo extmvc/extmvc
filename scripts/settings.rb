@@ -33,6 +33,22 @@ module ExtMVC
     files
   end
   
+  def self.css_files_for(environment)
+    environment['stylesheets'].collect {|s| "public/stylesheets/#{s}.css"}
+  end
+  
+  def self.mvc_development_environment
+    environment = {}
+    
+    default     = JSON::Parser.new(File.read('public/config/environment.json')).parse()
+    development = JSON::Parser.new(File.read('public/config/environments/development.json')).parse()
+    
+    environment.merge!(default)
+    environment.merge!(development)
+    
+    environment
+  end
+  
   def self.mvc_production_environment
     environment = {
       'pluginsDir'   => '../vendor/plugins',
@@ -46,8 +62,8 @@ module ExtMVC
       'stylesheets'  => ['ext-all']
     }
     
-    default     = JSON::Parser.new(File.read('config/environment.json')).parse()
-    production  = JSON::Parser.new(File.read('config/environments/production.json')).parse()
+    default     = JSON::Parser.new(File.read('public/config/environment.json')).parse()
+    production  = JSON::Parser.new(File.read('public/config/environments/production.json')).parse()
     
     environment.merge!(default)
     environment.merge!(production)

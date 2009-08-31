@@ -148,6 +148,7 @@ module ExtMVC
     def self.instances_for(name, args)
       klass = case name
         when 'app'   : ExtMVC::AppBuilder
+        when 'css'   : ExtMVC::CssBuilder
         when 'mvc'   : ExtMVC::MVCBuilder
         when 'docs'  : ExtMVC::DocsBuilder
         when 'plugin': ExtMVC::PluginBuilder
