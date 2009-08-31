@@ -293,23 +293,8 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
     this.initializeNamespaces();
     
     // Ext.onReady(this.onReady, this);
-  },
-  
-  /**
-   * @private
-   * Called when Ext.onReady fires
-   */
-  onReady: function() {    
-    if (this.fireEvent('before-launch', this)) {
-      this.initializeRouter();
-      // this.initializeViewport();
-      this.initializeEvents();
-
-      if (this.usesHistory === true) this.initializeHistory();     
-
-      this.launch();
-      this.fireEvent('launched', this);
-      
+    
+    this.on('launched', function() {
       /**
        * TODO: This used to reside in initializeHistory but this.launch() needs to be
        * called before this dispatches so it is temporarily here... ugly though
@@ -325,7 +310,23 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
         } else {
           Ext.History.init();
         }
-      }
+      }      
+    }, this);
+  },
+  
+  /**
+   * @private
+   * Called when Ext.onReady fires
+   */
+  onReady: function() {    
+    if (this.fireEvent('before-launch', this)) {
+      this.initializeRouter();
+      // this.initializeViewport();
+      this.initializeEvents();
+
+      if (this.usesHistory === true) this.initializeHistory();     
+
+      this.launch();
     }
   },
     
@@ -357,7 +358,9 @@ ExtMVC.App = Ext.extend(Ext.util.Observable, {
   /**
    * Called when the application is booted up. Override this to provide your own startup logic (defaults to Ext.emptyFn)
    */
-  launch: Ext.emptyFn,
+  launch: function() {
+    this.fireEvent('launched', this);
+  },
   
   /**
    * @property params
@@ -927,9 +930,9 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
   /**
    * @property useLoadingMask
    * @type Boolean
-   * True to automatically add an application loading mask layer to give the user loading feedback (defaults to true)
+   * True to automatically add an application loading mask layer to give the user loading feedback (defaults to false)
    */
-  useLoadingMask: true,
+  useLoadingMask: false,
   
   /**
    * Adds loading mask HTML elements to the page (called at start of bootup)
@@ -1496,7 +1499,9 @@ ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
        * @type Array
        * The stylesheets to load for this app (defaults to just ext-all)
        */
-      stylesheets: ['ext-all']
+      stylesheets: ['ext-all'],
+      
+      autoRemoveLoadingMask: true
     });
     
     ExtMVC.Environment.superclass.constructor.apply(this, arguments);
