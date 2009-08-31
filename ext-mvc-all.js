@@ -809,7 +809,7 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
    */
   loadEnvironment: function() {
     Ext.Ajax.request({
-      url    : '../config/environment.json',
+      url    : 'config/environment.json',
       scope  : this,
       success: function(response, options) {
         var envName = this.environment;
@@ -817,7 +817,7 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
         this.environment = new ExtMVC.Environment(Ext.decode(response.responseText));
 
         Ext.Ajax.request({
-          url   : String.format("../config/environments/{0}.json", envName),
+          url   : String.format("config/environments/{0}.json", envName),
           success: function(response, options) {
             this.environment.update(Ext.decode(response.responseText));
             
@@ -1099,6 +1099,12 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
       head.appendChild(fragment);
     }
   }
+});
+
+Ext.onReady(function() {
+  ExtMVC.booter = new ExtMVC.lib.Booter();
+
+  ExtMVC.booter.boot();
 });
 
 /**
@@ -1499,9 +1505,7 @@ ExtMVC.Environment = Ext.extend(Ext.util.Observable, {
        * @type Array
        * The stylesheets to load for this app (defaults to just ext-all)
        */
-      stylesheets: ['ext-all'],
-      
-      autoRemoveLoadingMask: true
+      stylesheets: ['ext-all']
     });
     
     ExtMVC.Environment.superclass.constructor.apply(this, arguments);
