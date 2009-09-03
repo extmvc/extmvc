@@ -1322,7 +1322,7 @@ ExtMVC.lib.Dispatcher = Ext.extend(Ext.util.MixedCollection, {
       }
       
       //if controller and action both exist, dispatch now
-      controller[config.action].call(controller, config.arguments);      
+      controller[config.action].apply(controller, config.arguments);      
     }
   },
 
