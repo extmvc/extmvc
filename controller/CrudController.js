@@ -138,14 +138,19 @@ ExtMVC.registerController('crud', {
   
   /**
    * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
+   * @param {Object} config Optional config object to be passed to the view's constructor
    */
-  index: function index() {
-    var index = this.render('index', {
+  index: function index(config) {
+    config = config || {};
+    
+    Ext.applyIf(config, {
       model       : this.model,
       controller  : this,
       listeners   : this.getIndexViewListeners(),
       viewsPackage: this.viewsPackage
     });
+    
+    var index = this.render('index', config);
     
     this.fireEvent('index');
     

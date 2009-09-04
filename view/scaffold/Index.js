@@ -539,7 +539,7 @@ ExtMVC.registerView('scaffold', 'index', {
   onDelete: function() {
     Ext.Msg.confirm(
       'Are you sure?',
-      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.prototype.modelName.titleize()),
+      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.prototype.modelName.humanize()),
       function(btn) {
         if (btn == 'yes') {
           var selected = this.getSelectionModel().getSelected();

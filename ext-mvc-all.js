@@ -22,7 +22,7 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
   dispatch: function() {
     var dispatcher = this.dispatcher;
     
-    dispatcher.dispatch.apply(dispatcher, arguments);
+    return dispatcher.dispatch.apply(dispatcher, arguments);
   },
   
   /**
@@ -245,16 +245,6 @@ ExtMVC = Ext.extend(Ext.util.Observable, {
 });
 
 ExtMVC = new ExtMVC();
-
-//set a few shortcuts
-Ext.apply(ExtMVC, {
-  regM: ExtMVC.registerModel,
-  regV: ExtMVC.registerView,
-  regC: ExtMVC.registerController,
-  getM: ExtMVC.getModel,
-  getV: ExtMVC.getView,
-  getC: ExtMVC.getController
-});
 
 // ExtMVC.initializeClassManagers();
 
@@ -1322,7 +1312,7 @@ ExtMVC.lib.Dispatcher = Ext.extend(Ext.util.MixedCollection, {
       }
       
       //if controller and action both exist, dispatch now
-      controller[config.action].apply(controller, config.arguments);      
+      return controller[config.action].apply(controller, config.arguments);      
     }
   },
 
@@ -2965,14 +2955,19 @@ ExtMVC.registerController('crud', {
   
   /**
    * Renders the custom Index view if present, otherwise falls back to the default scaffold grid
+   * @param {Object} config Optional config object to be passed to the view's constructor
    */
-  index: function index() {
-    var index = this.render('index', {
+  index: function index(config) {
+    config = config || {};
+    
+    Ext.applyIf(config, {
       model       : this.model,
       controller  : this,
       listeners   : this.getIndexViewListeners(),
       viewsPackage: this.viewsPackage
     });
+    
+    var index = this.render('index', config);
     
     this.fireEvent('index');
     
@@ -4449,7 +4444,7 @@ ExtMVC.model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.model.plugin.ada
     
     Ext.applyIf(options, {
       headers: {
-        "Content-type": "application/json"
+        "Content-Type": "application/json"
       }
     });
     
@@ -5127,7 +5122,11 @@ ExtMVC.registerView('extmvc', 'formwindow', {
    * Called when the user clicks the save button
    */
   onSave: function() {
-    this.fireEvent('save', this.getFormValues(), this);
+    if (this.instance == undefined) {
+      this.fireEvent('save', this.getFormValues(), this);
+    } else {
+      this.fireEvent('save', this.instance, this.getFormValues(), this);
+    }
   },
   
   /**
@@ -6206,7 +6205,7 @@ ExtMVC.registerView('scaffold', 'index', {
   onDelete: function() {
     Ext.Msg.confirm(
       'Are you sure?',
-      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.prototype.modelName.titleize()),
+      String.format("Are you sure you want to delete this {0}?  This cannot be undone.", this.model.prototype.modelName.humanize()),
       function(btn) {
         if (btn == 'yes') {
           var selected = this.getSelectionModel().getSelected();

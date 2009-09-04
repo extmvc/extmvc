@@ -31,7 +31,7 @@ ExtMVC.model.plugin.adapter.RESTJSONAdapter = Ext.extend(ExtMVC.model.plugin.ada
     
     Ext.applyIf(options, {
       headers: {
-        "Content-type": "application/json"
+        "Content-Type": "application/json"
       }
     });
     
