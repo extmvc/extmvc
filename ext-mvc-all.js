@@ -2407,6 +2407,28 @@ ExtMVC.lib.ViewClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
 
 ExtMVC.registerClassManager('view', new ExtMVC.lib.ViewClassManager());
 
+/**
+ * Override how getXTypes works so that it doesn't require that every single class has
+ * an xtype registered for it.
+ */
+Ext.override(Ext.Component, {
+  getXTypes : function(){
+      var tc = this.constructor;
+      if(!tc.xtypes){
+          var c = [], sc = this;
+          while(sc){ //was: while(sc && sc.constructor.xtype) {
+            var xtype = sc.constructor.xtype;
+            if (xtype != undefined) c.unshift(xtype);
+            
+            sc = sc.constructor.superclass;
+          }
+          tc.xtypeChain = c;
+          tc.xtypes = c.join('/');
+      }
+      return tc.xtypes;
+  }
+});
+
 // /**
 //  * An extension to Ext.extend which calls the extended object's onExtended function, if it exists
 //  * The only lines that are different from vanilla Ext.extend are the 2 before the return sb statement
