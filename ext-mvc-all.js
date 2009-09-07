@@ -5150,7 +5150,7 @@ ExtMVC.registerView('extmvc', 'formwindow', {
    * Called when the user clicks the save button
    */
   onSave: function() {
-    if (this.instance == undefined) {
+    if (this.instance == undefined || this.instance.newRecord()) {
       this.fireEvent('save', this.getFormValues(), this);
     } else {
       this.fireEvent('save', this.instance, this.getFormValues(), this);
