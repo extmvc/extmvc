@@ -3858,7 +3858,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
        */
       find: function(conditions, options) {
         //assume to be the primary key
-        if (typeof(conditions) == 'number') conditions = {primaryKey: conditions};
+        if (typeof(conditions) == 'number' || typeof(conditions) == 'string') conditions = {primaryKey: conditions};
         
         return this.adapter.doFind(conditions, options, this);
       },
