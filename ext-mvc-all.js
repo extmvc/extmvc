@@ -3009,8 +3009,8 @@ ExtMVC.registerController('crud', {
     var buildView = this.render('new', {
       model       : this.model,
       controller  : this,
-      listeners   : this.getBuildViewListeners(),
-      items       : ExtMVC.getFields(this.name)
+      listeners   : this.getBuildViewListeners()
+      // items       : ExtMVC.getFields(this.name)
     });
     
     this.onBuild(buildView);
@@ -3032,7 +3032,7 @@ ExtMVC.registerController('crud', {
         model       : this.model,
         controller  : this,
         listeners   : this.getEditViewListeners(),
-        items       : ExtMVC.getFields(this.name),
+        // items       : ExtMVC.getFields(this.name),
         id          : String.format("{0}_edit_{1}", this.name, instance.get(instance.primaryKey))        
       });
       
