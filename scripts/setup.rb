@@ -5,10 +5,8 @@ module ExtMVC
   # overwrites all instances of 'MyApp' with the namespace provided
   def self.setup(namespace)
     files = %w(
-      app/OS.js
       app/controllers/IndexController.js
       app/views/index/Index.js
-      config/initialize.js
       config/settings.yml
     )
     
