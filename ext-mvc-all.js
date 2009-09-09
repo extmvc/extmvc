@@ -3009,8 +3009,8 @@ ExtMVC.registerController('crud', {
     var buildView = this.render('new', {
       model       : this.model,
       controller  : this,
-      listeners   : this.getBuildViewListeners(),
-      viewsPackage: this.viewsPackage
+      listeners   : this.getBuildViewListeners()
+      // items       : ExtMVC.getFields(this.name)
     });
     
     this.onBuild(buildView);
@@ -3032,7 +3032,7 @@ ExtMVC.registerController('crud', {
         model       : this.model,
         controller  : this,
         listeners   : this.getEditViewListeners(),
-        viewsPackage: this.viewsPackage,
+        // items       : ExtMVC.getFields(this.name),
         id          : String.format("{0}_edit_{1}", this.name, instance.get(instance.primaryKey))        
       });
       
@@ -3858,7 +3858,7 @@ ExtMVC.model.plugin.adapter.Abstract.prototype = {
        */
       find: function(conditions, options) {
         //assume to be the primary key
-        if (typeof(conditions) == 'number') conditions = {primaryKey: conditions};
+        if (typeof(conditions) == 'number' || typeof(conditions) == 'string') conditions = {primaryKey: conditions};
         
         return this.adapter.doFind(conditions, options, this);
       },
@@ -5150,7 +5150,7 @@ ExtMVC.registerView('extmvc', 'formwindow', {
    * Called when the user clicks the save button
    */
   onSave: function() {
-    if (this.instance == undefined) {
+    if (this.instance == undefined || this.instance.newRecord()) {
       this.fireEvent('save', this.getFormValues(), this);
     } else {
       this.fireEvent('save', this.instance, this.getFormValues(), this);
