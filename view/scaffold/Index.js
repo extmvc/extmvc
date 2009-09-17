@@ -27,7 +27,14 @@ ExtMVC.registerView('scaffold', 'index', {
       viewConfig: { forceFit: true },
       id:         String.format("{0}_index", this.model.prototype.tableName),
 
-      loadMask: true
+      loadMask: true,
+      
+      /**
+       * @property dblClickToEdit
+       * @type Boolean
+       * True to edit a record when it is double clicked (defaults to true)
+       */
+      dblClickToEdit: true
     });
 
     Ext.grid.GridPanel.prototype.constructor.call(this, config);
@@ -100,10 +107,12 @@ ExtMVC.registerView('scaffold', 'index', {
    * Mostly, this is simply a case of capturing events received and re-emitting normalized events
    */
   initListeners: function() {
-    this.on({
-      scope     : this,
-      'dblclick': this.onEdit
-    });
+    if (this.dblClickToEdit === true) {
+      this.on({
+        scope        : this,
+        'rowdblclick': this.onEdit
+      });      
+    }
     
     if (this.controller != undefined) {
       this.controller.on('delete', this.refreshStore, this);

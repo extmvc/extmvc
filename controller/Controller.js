@@ -253,9 +253,17 @@ ExtMVC.registerController('controller', {
    * The tabpanel render strategy
    */
   tabPanelRenderStrategy: function(container, view) {
-    container.add(view);
-    container.doLayout();
-    container.activate(view);
+    var existing = container.getItem(view.id);
+    
+    //don't add a tab with the same id as an existing one
+    if (existing == undefined) {
+      container.add(view);
+      container.doLayout();
+      container.activate(view);      
+    } else {
+      container.setActiveTab(view.id);
+      view.destroy();
+    }
   },
   
   /**
