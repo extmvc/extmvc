@@ -2045,6 +2045,23 @@ ExtMVC.router.Router.prototype = {
     //there were no matches so return false
     return false;
   },
+
+  /**
+   * Immediately redirects to the specified route.
+   * @param {String} route The route 
+   */
+  route: function(route) {
+    document.location.hash = route;
+  },
+
+  /**
+   * Creates a handler for redirecting to the specified route
+   * @param {String} route The route
+   * @return {Function} handler A function that redirects to the route
+   */
+  handleRoute: function(url) {
+    return this.route.createDelegate(this, [url]);
+  },
   
   //experimental...
   withOptions: function(options, routes) {
