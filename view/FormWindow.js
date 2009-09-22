@@ -53,7 +53,21 @@ ExtMVC.registerView('extmvc', 'formwindow', {
         }
       ],
       layout: 'fit',
-      closeAction: 'hide'
+      closeAction: 'hide',
+      
+      /**
+       * @property maskOnSave
+       * @type Boolean
+       * True to add a mask to the field while saving (defaults to true)
+       */
+      maskOnSave: true,
+      
+      /**
+       * @property saveMaskMessage
+       * @type String
+       * The message to show in the saving mask (defaults to "Saving...")
+       */
+      saveMaskMessage: "Saving..."
     });
     
     Ext.Window.prototype.initComponent.apply(this, arguments);
@@ -86,6 +100,8 @@ ExtMVC.registerView('extmvc', 'formwindow', {
    * Called when the user clicks the save button
    */
   onSave: function() {
+    if (this.maskOnSave === true) this.el.mask(this.saveMaskMessage);
+    
     if (this.instance == undefined || this.instance.newRecord()) {
       this.fireEvent('save', this.getFormValues(), this);
     } else {
