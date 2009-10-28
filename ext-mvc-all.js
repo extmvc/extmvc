@@ -5202,7 +5202,7 @@ ExtMVC.registerView('extmvc', 'formwindow', {
    * Called when the usre clicks the cancel button. By default this just hides the window
    */
   onCancel: function() {
-    this.hide();
+    this.close();
   },
   
   /**
