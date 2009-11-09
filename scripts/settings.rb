@@ -22,9 +22,9 @@ module ExtMVC
     files = []
     
     [
+      environment["plugins"].collect {|o| "vendor/plugins/#{o}/#{o}-all.js"},
       environment["overrides"].collect {|o| "config/overrides/#{o}.js"},
       environment["config"].collect {|o| "#{o}.js"},
-      environment["plugins"].collect {|o| "vendor/plugins/#{o}/#{o}-all.js"},
       environment["models"].collect {|o| "app/models/#{o}.js"},
       environment["controllers"].collect {|o| "app/controllers/#{o}Controller.js"},
       environment["views"].collect {|o| o.collect {|dir, fileList| fileList.collect {|fileName| "app/views/#{dir}/#{fileName}.js"}.flatten}}.flatten

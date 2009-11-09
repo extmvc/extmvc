@@ -858,7 +858,6 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
     // };
     
 
-    
     Ext.each(env.config, function(file) {
       baseFiles.push(String.format("../{0}.js", file));
     }, this);
@@ -866,7 +865,6 @@ ExtMVC.lib.Booter = Ext.extend(Ext.util.Observable, {
     Ext.each(env.plugins, function(file) {
       pluginFiles.push(String.format("{0}/{1}/{2}-all.js", env.pluginsDir, file, file));
     }, this);
-    
     
     Ext.each(env.overrides, function(file) {
       pluginFiles.push(String.format("{0}/{1}.js", env.overridesDir, file));
