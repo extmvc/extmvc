@@ -5127,20 +5127,6 @@ ExtMVC.registerView('extmvc', 'formwindow', {
       items : [
         this.form
       ],
-      buttons: [
-        {
-          text   : 'Save',
-          iconCls: 'save',
-          scope  : this,
-          handler: this.onSave
-        },
-        {
-          text   : 'Cancel',
-          iconCls: 'cancel',
-          scope  : this,
-          handler: this.onCancel
-        }
-      ],
       layout: 'fit',
       closeAction: 'hide',
       
@@ -5156,10 +5142,72 @@ ExtMVC.registerView('extmvc', 'formwindow', {
        * @type String
        * The message to show in the saving mask (defaults to "Saving...")
        */
-      saveMaskMessage: "Saving..."
+      saveMaskMessage: "Saving...",
+      
+     /**
+       * @property hasSaveButton
+       * @type Boolean
+       * True to include a save button (defaults to true)
+       */
+      hasSaveButton: true,
+
+      /**
+       * @property hasCancelButton
+       * @type Boolean
+       * True to include a cancel button (defaults to true)
+       */
+      hasCancelButton: true
     });
     
+    //applyIf applies when buttons: [] is passed, which meant there was no way to
+    //specify any empty set of buttons before
+    if (!Ext.isArray(this.buttons)) {
+      Ext.apply(this, {
+        buttons: this.buildButtons()
+      });
+    };
+    
     Ext.Window.prototype.initComponent.apply(this, arguments);
+  },
+  
+  /**
+   * Builds the buttons added to this form.  By default this returns an array containing
+   * a Save button and a Cancel button, which fire the 'save' and 'cancel' events respectively
+   * @return {Array} An array of Ext.Button objects or configs
+   */
+  buildButtons: function() {
+    var buttons = [];
+    
+    if (this.hasSaveButton   === true) buttons.push(this.buildSaveButton());
+    if (this.hasCancelButton === true) buttons.push(this.buildCancelButton());
+    
+    return buttons;
+  },
+  
+  /**
+   * Builds the Save button config. Override this to provide your own
+   * @return {Object/Ext.Button} The button config or object
+   */
+  buildSaveButton: function() {
+    return {
+      text   : 'Save',
+      iconCls: 'save',
+      scope  : this,
+      handler: this.onSave
+    };
+  },
+  
+  /**
+   * Builds the Cancel button config. Override this to provide your own
+   * @return {Object/Ext.Button} The button config or object
+   */
+  buildCancelButton: function() {
+    return {
+      text:     'Cancel',
+      scope:    this,
+      iconCls:  'cancel',
+      handler:  this.onCancel
+    };
   },
   
   /**
