@@ -4228,7 +4228,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
         params : this.buildPostData(instance),
         
         success: function(instance, userCallback, scope) {
-          scope = scope || this;
+          var scope = scope || this;
           
           return function(response, options) {
             var jsonPath = instance.modelName.underscore(),
@@ -4238,9 +4238,15 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
               instance.set(key, jsonData[key]);
             }
             
-            userCallback.call(this, instance);
+            userCallback.call(scope, instance);
           };
-        }(instance, successFn, options.scope)
+        }(instance, successFn, options.scope),
+        
+        failure: function(instance, userCallback, scope) {
+          var scope = scope || this;
+          
+          userCallback.call(scope, instance);
+        }(instance, failureFn, options.scope)
       }, options)
     );
   },
