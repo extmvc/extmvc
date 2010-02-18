@@ -2240,10 +2240,10 @@ ExtMVC.lib.ViewClassManager = Ext.extend(ExtMVC.lib.ClassManager, {
    * @param {String} name The name of the view to turn from config object to class constructor
    */
   define: function define(name) {
-    var overrides = this.getRegistered(name),
-        xtype     = overrides.xtype || 'panel';
-
+    var overrides = this.getRegistered(name);
     if (overrides == undefined) this.throwViewNotFoundError(name);
+    
+    var xtype = overrides.xtype || 'panel';
     
     delete overrides.xtype;
     
@@ -4242,11 +4242,11 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
           };
         }(instance, successFn, options.scope),
         
-        failure: function(instance, userCallback, scope) {
-          var scope = scope || this;
+        failure: function() {
+          var scope = options.scope || this;
           
-          userCallback.call(scope, instance);
-        }(instance, failureFn, options.scope)
+          failureFn.call(scope, instance);
+        }
       }, options)
     );
   },
