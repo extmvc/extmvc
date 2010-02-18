@@ -114,11 +114,13 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
           };
         }(instance, successFn, options.scope),
         
-        failure: function() {
+        failure: function(instance, userCallback, scope) {
           var scope = options.scope || this;
           
-          failureFn.call(scope, instance);
-        }
+          return function(response, options) {
+            failureFn.call(scope, instance);            
+          };
+        }(instance, failureFn, options.scope)
       }, options)
     );
   },
