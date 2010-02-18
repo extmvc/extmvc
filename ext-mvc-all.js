@@ -4228,7 +4228,7 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
         params : this.buildPostData(instance),
         
         success: function(instance, userCallback, scope) {
-          scope = scope || this;
+          var scope = scope || this;
           
           return function(response, options) {
             var jsonPath = instance.modelName.underscore(),
@@ -4238,9 +4238,15 @@ ExtMVC.model.plugin.adapter.RESTAdapter = Ext.extend(ExtMVC.model.plugin.adapter
               instance.set(key, jsonData[key]);
             }
             
-            userCallback.call(this, instance);
+            userCallback.call(scope, instance);
           };
-        }(instance, successFn, options.scope)
+        }(instance, successFn, options.scope),
+        
+        failure: function(instance, userCallback, scope) {
+          var scope = scope || this;
+          
+          userCallback.call(scope, instance);
+        }(instance, failureFn, options.scope)
       }, options)
     );
   },
@@ -5127,20 +5133,6 @@ ExtMVC.registerView('extmvc', 'formwindow', {
       items : [
         this.form
       ],
-      buttons: [
-        {
-          text   : 'Save',
-          iconCls: 'save',
-          scope  : this,
-          handler: this.onSave
-        },
-        {
-          text   : 'Cancel',
-          iconCls: 'cancel',
-          scope  : this,
-          handler: this.onCancel
-        }
-      ],
       layout: 'fit',
       closeAction: 'hide',
       
@@ -5156,10 +5148,72 @@ ExtMVC.registerView('extmvc', 'formwindow', {
        * @type String
        * The message to show in the saving mask (defaults to "Saving...")
        */
-      saveMaskMessage: "Saving..."
+      saveMaskMessage: "Saving...",
+      
+     /**
+       * @property hasSaveButton
+       * @type Boolean
+       * True to include a save button (defaults to true)
+       */
+      hasSaveButton: true,
+
+      /**
+       * @property hasCancelButton
+       * @type Boolean
+       * True to include a cancel button (defaults to true)
+       */
+      hasCancelButton: true
     });
     
+    //applyIf applies when buttons: [] is passed, which meant there was no way to
+    //specify any empty set of buttons before
+    if (!Ext.isArray(this.buttons)) {
+      Ext.apply(this, {
+        buttons: this.buildButtons()
+      });
+    };
+    
     Ext.Window.prototype.initComponent.apply(this, arguments);
+  },
+  
+  /**
+   * Builds the buttons added to this form.  By default this returns an array containing
+   * a Save button and a Cancel button, which fire the 'save' and 'cancel' events respectively
+   * @return {Array} An array of Ext.Button objects or configs
+   */
+  buildButtons: function() {
+    var buttons = [];
+    
+    if (this.hasSaveButton   === true) buttons.push(this.buildSaveButton());
+    if (this.hasCancelButton === true) buttons.push(this.buildCancelButton());
+    
+    return buttons;
+  },
+  
+  /**
+   * Builds the Save button config. Override this to provide your own
+   * @return {Object/Ext.Button} The button config or object
+   */
+  buildSaveButton: function() {
+    return {
+      text   : 'Save',
+      iconCls: 'save',
+      scope  : this,
+      handler: this.onSave
+    };
+  },
+  
+  /**
+   * Builds the Cancel button config. Override this to provide your own
+   * @return {Object/Ext.Button} The button config or object
+   */
+  buildCancelButton: function() {
+    return {
+      text:     'Cancel',
+      scope:    this,
+      iconCls:  'cancel',
+      handler:  this.onCancel
+    };
   },
   
   /**
@@ -5467,7 +5521,8 @@ ExtMVC.registerView('scaffold', 'form', {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      items: this.buildItems(),
+      items       : this.buildItems(),
+      monitorPoll : 500,
       keys : [
         {
           key:     Ext.EventObject.ESC,
@@ -5554,6 +5609,10 @@ ExtMVC.registerView('scaffold', 'form', {
        */
       'cancel'
     );
+    
+    //taken from default Ext.FormPanel.initEvents - used to listen to the current validation of the form
+    //and fire off events
+    if (this.monitorValid) this.startMonitoring();
   },
   
   /**
@@ -5593,10 +5652,11 @@ ExtMVC.registerView('scaffold', 'form', {
    */
   buildSaveButton: function() {
     return {
-      text:    'Save',
-      scope:   this,
-      iconCls: 'save',
-      handler: this.onSave
+      text:     'Save',
+      scope:    this,
+      iconCls:  'save',
+      handler:  this.onSave,
+      formBind: (this.monitorValid) ? true : false
     };
   },
   
@@ -5606,10 +5666,10 @@ ExtMVC.registerView('scaffold', 'form', {
    */
   buildCancelButton: function() {
     return {
-      text:    'Cancel',
-      scope:   this,
-      iconCls: 'cancel',
-      handler: this.onCancel
+      text:     'Cancel',
+      scope:    this,
+      iconCls:  'cancel',
+      handler:  this.onCancel
     };
   },
   

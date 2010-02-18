@@ -29,7 +29,8 @@ ExtMVC.registerView('scaffold', 'form', {
    */
   initComponent: function() {
     Ext.applyIf(this, {
-      items: this.buildItems(),
+      items       : this.buildItems(),
+      monitorPoll : 500,
       keys : [
         {
           key:     Ext.EventObject.ESC,
@@ -116,6 +117,10 @@ ExtMVC.registerView('scaffold', 'form', {
        */
       'cancel'
     );
+    
+    //taken from default Ext.FormPanel.initEvents - used to listen to the current validation of the form
+    //and fire off events
+    if (this.monitorValid) this.startMonitoring();
   },
   
   /**
@@ -155,10 +160,11 @@ ExtMVC.registerView('scaffold', 'form', {
    */
   buildSaveButton: function() {
     return {
-      text:    'Save',
-      scope:   this,
-      iconCls: 'save',
-      handler: this.onSave
+      text:     'Save',
+      scope:    this,
+      iconCls:  'save',
+      handler:  this.onSave,
+      formBind: (this.monitorValid) ? true : false
     };
   },
   
@@ -168,10 +174,10 @@ ExtMVC.registerView('scaffold', 'form', {
    */
   buildCancelButton: function() {
     return {
-      text:    'Cancel',
-      scope:   this,
-      iconCls: 'cancel',
-      handler: this.onCancel
+      text:     'Cancel',
+      scope:    this,
+      iconCls:  'cancel',
+      handler:  this.onCancel
     };
   },
   
