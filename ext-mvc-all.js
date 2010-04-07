@@ -5557,7 +5557,7 @@ ExtMVC.registerView('scaffold', 'form', {
     
     //applyIf applies when buttons: [] is passed, which meant there was no way to
     //specify any empty set of buttons before
-    if (!Ext.isArray(this.buttons)) {
+    if (!Ext.isArray(this.buttons) && this.buttons !== false) {
       Ext.apply(this, {
         buttons: this.buildButtons()
       });
