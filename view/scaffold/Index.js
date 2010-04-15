@@ -25,7 +25,8 @@ ExtMVC.registerView('scaffold', 'index', {
     
     Ext.applyIf(config, {
       viewConfig: { forceFit: true },
-      id:         Ext.id(undefined, String.format("{0}_index", this.model.prototype.tableName)),
+      // id:         Ext.id(undefined, String.format("{0}_index", this.model.prototype.tableName)),
+      id:         String.format("{0}_index", this.model.prototype.tableName),
 
       loadMask: true,
       
